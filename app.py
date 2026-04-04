@@ -225,39 +225,66 @@ async def home(request: Request) -> HTMLResponse:
 # ---------------------------------------------------------------------------
 def _build_messages(user_message: str) -> list[dict]:
     force_rag = user_message.startswith("/content")
-    query = user_message.removeprefix("/content").strip() if force_rag else user_message
+    force_doc = user_message.startswith("/doc")
 
-    logger.info(f"💬 Mensagem recebida [{len(user_message)} chars] | force_rag={force_rag} | query='{query[:80]}{'...' if len(query) > 80 else ''}'")
+    if force_rag:
+        query = user_message.removeprefix("/content").strip()
+    elif force_doc:
+        query = user_message.removeprefix("/doc").strip()
+    else:
+        query = user_message
 
-    hits = bm25_index.search(query)
+    logger.info(f"💬 Mensagem recebida [{len(user_message)} chars] | force_rag={force_rag} | force_doc={force_doc} | query='{query[:80]}{'...' if len(query) > 80 else ''}'")
 
-    if force_rag or hits:
-        if hits:
-            for h in hits:
-                logger.info(f"   🎯 BM25 hit → '{h['source']}' | score={h['score']:.3f} | chunk='{h['text'][:60].strip()}...'")
-            ctx = "\n\n---\n\n".join(
-                f"[Fonte: {h['source']} | Score: {h['score']:.2f}]\n{h['text']}"
-                for h in hits
-            )
-            ctx_chars = sum(len(h["text"]) for h in hits)
-            logger.info(f"   📦 Contexto RAG montado: {len(hits)} chunk(s) | ~{ctx_chars} chars injetados no system prompt")
-        else:
-            logger.info("   ⚡ /content forçado mas BM25 sem hits — injetando top-5 chunks do índice")
+    if force_doc:
+        doc_chunks = [c for c in bm25_index.chunks if c["source"].lower() == "documentation.md"]
+        if doc_chunks:
+            logger.info(f"   ⚡ /doc forçado — injetando {len(doc_chunks)} chunks de documentation.md")
             ctx = "\n\n---\n\n".join(
                 f"[Fonte: {c['source']}]\n{c['text']}"
-                for c in bm25_index.chunks[:5]
+                for c in doc_chunks
             )
+            system_content = (
+                f"{SYSTEM_PROMPT_GERAL}\n\n"
+                "Você possui acesso à sua própria documentação técnica e de arquitetura. "
+                "Utilize-a como referência rígida para responder dúvidas sobre seu funcionamento, configurações, estrutura e diretrizes gerais:\n\n"
+                f"{ctx}"
+            )
+            logger.info(f"   🔑 Modo: DOC | system prompt total ~{len(system_content)} chars")
+        else:
+            logger.warning("   ⚠ /doc forçado mas documentation.md não encontrado no índice.")
+            system_content = SYSTEM_PROMPT_GERAL
 
-        system_content = (
-            f"{SYSTEM_PROMPT_GERAL}\n\n"
-            "Você possui acesso à seguinte base de conhecimento local. "
-            "Use-a como referência primária para responder:\n\n"
-            f"{ctx}"
-        )
-        logger.info(f"   🔑 Modo: RAG | system prompt total ~{len(system_content)} chars")
     else:
-        system_content = SYSTEM_PROMPT_GERAL
-        logger.info("   🤖 Modo: assistente geral (nenhum chunk BM25 ≥ threshold)")
+        hits = bm25_index.search(query)
+
+        if force_rag or hits:
+            if hits:
+                for h in hits:
+                    logger.info(f"   🎯 BM25 hit → '{h['source']}' | score={h['score']:.3f} | chunk='{h['text'][:60].strip()}...'")
+                ctx = "\n\n---\n\n".join(
+                    f"[Fonte: {h['source']} | Score: {h['score']:.2f}]\n{h['text']}"
+                    for h in hits
+                )
+                ctx_chars = sum(len(h["text"]) for h in hits)
+                logger.info(f"   📦 Contexto RAG montado: {len(hits)} chunk(s) | ~{ctx_chars} chars injetados no system prompt")
+            else:
+                logger.info("   ⚡ /content forçado mas BM25 sem hits — injetando top-5 chunks do índice")
+                ctx = "\n\n---\n\n".join(
+                    f"[Fonte: {c['source']}]\n{c['text']}"
+                    for c in bm25_index.chunks[:5]
+                )
+
+            system_content = (
+                f"{SYSTEM_PROMPT_GERAL}\n\n"
+                "Você possui acesso à seguinte base de conhecimento local. "
+                "Use-a como referência primária para responder:\n\n"
+                f"{ctx}"
+            )
+            logger.info(f"   🔑 Modo: RAG | system prompt total ~{len(system_content)} chars")
+        else:
+            system_content = SYSTEM_PROMPT_GERAL
+            logger.info("   🤖 Modo: assistente geral (nenhum chunk BM25 ≥ threshold)")
 
     return [
         {"role": "system", "content": system_content},
