@@ -22,18 +22,24 @@ O ACL é uma aplicação monolítica de **propósito único**: transformar um di
 ## 2. Estrutura de Arquivos
 
 ```
-BotTes/
-├── app.py              # Toda a lógica de backend (único módulo Python)
-├── requirements.txt    # Dependências do projeto
+KernelBots/
+├── main.py             # Orquestração: logging, SearchEngine, watchdog, create_app
+├── core/               # Settings (env), logging_config
+├── engine/             # SearchEngine (BM25), ContentWatcher, ContextManager, ChatProvider
+├── api/                # Rotas FastAPI (GET /, POST /chat)
+├── app/                # create_app(), estado injetado (AppServices)
+├── requirements.txt
 ├── .env                # Segredo: OPENROUTER_API_KEY
-├── content/            # Base de conhecimento — arquivos .md servidos ao BM25
+├── content/            # Base de conhecimento — arquivos .md indexados pelo BM25
+│   ├── documentation.md
 │   ├── acl-overview.md
-│   └── aula-*.md       # Conteúdo educacional (17 arquivos no momento)
+│   └── aula-*.md
+├── tests/              # Smoke tests (pytest)
 └── templates/
-    └── index.html      # Frontend completo: UI, CSS e JS em um único arquivo
+    └── index.html      # Frontend: UI, CSS e JS em um único arquivo
 ```
 
-**Por que tudo em `app.py`?** Escolha de portabilidade — o projeto roda com `python app.py` em qualquer máquina com Python 3.11+ e as dependências instaladas. A refatoração em pacotes só se justifica quando houver múltiplos domínios (autenticação, jobs bg, APIs separadas).
+**Organização em pacotes:** separa config (`core`), motor RAG + LLM (`engine`), HTTP (`api`) e fábrica FastAPI (`app`). O ponto de entrada continua sendo um único comando (`python main.py` ou `uvicorn main:app`).
 
 ---
 
@@ -46,13 +52,13 @@ flowchart TD
         SSE["EventSource\nSSE Reader"]
     end
 
-    subgraph Backend["Backend (app.py — FastAPI)"]
+    subgraph Backend["Backend (main.py + FastAPI)"]
         EP_HOME["GET /\nServe index.html"]
         EP_CHAT["POST /chat\nStreamingResponse"]
-        ROUTER["_build_messages()\nROUTER DE CONTEXTO"]
-        BM25["BM25Index\n(singleton in-memory)"]
+        ROUTER["ContextManager.build_messages()"]
+        BM25["SearchEngine\n(instância in-memory)"]
         WATCHER["ContentWatcher\n(Thread Watchdog)"]
-        STREAM["_stream_response()\nSSE Generator"]
+        STREAM["ChatProvider.stream_response()\nSSE Generator"]
     end
 
     subgraph External["Externo"]
@@ -82,9 +88,9 @@ flowchart TD
 
 ## 4. Módulos e Responsabilidades
 
-### 4.1 `BM25Index` — Índice de Recuperação
+### 4.1 `SearchEngine` — Índice de Recuperação (BM25)
 
-**Responsabilidade:** Manter em memória um índice BM25 de todos os chunks extraídos dos arquivos `.md` em `/content`. É o coração do sistema RAG.
+**Responsabilidade:** Manter em memória um índice BM25 de todos os chunks extraídos dos arquivos `.md` em `/content`. É o coração do sistema RAG (evolução do antigo `BM25Index`).
 
 **Por que BM25 e não embedding vetorial?**
 BM25 é determinístico, não requer GPU, não tem custo de API, e para domínios de texto técnico estruturado (como aulas em Markdown) a precisão é comparável a embeddings de modelos pequenos. A escolha é conscientemente pragmática para um sistema portável.
@@ -101,7 +107,7 @@ def search(self, query: str, top_k: int = 3) -> list[dict]:
 ```
 - Tokeniza a query da mesma forma que os documentos.
 - Obtém scores BM25 brutos e **normaliza pelo score máximo** (escala 0–1).
-- Filtra por `BM25_SCORE_THRESHOLD = 0.7` — chunks abaixo disso são descartados.
+- Filtra por `Settings.bm25_score_threshold` (0.7) — chunks abaixo disso são descartados.
 - Retorna os `top_k` hits com score acima do threshold.
 
 > [!IMPORTANT]
@@ -119,21 +125,15 @@ def search(self, query: str, top_k: int = 3) -> list[dict]:
 def _debounced_rebuild(self) -> None:
     if self._timer and self._timer.is_alive():
         self._timer.cancel()
-    self._timer = threading.Timer(1.5, self._index.rebuild)
+    self._timer = threading.Timer(1.5, self._search_engine.rebuild)
     self._timer.start()
 ```
 
-O observer é iniciado **fora** do lifespan do FastAPI, diretamente no escopo do módulo (`observer.start()`). O shutdown é feito no lifespan:
-```python
-async def lifespan(app: FastAPI):
-    yield
-    observer.stop()
-    observer.join()
-```
+O `Observer` é iniciado em **`main.py`** após instanciar o `SearchEngine`. O encerramento (`stop()` / `join()`) ocorre no **`lifespan`** de `create_app()` em `app/factory.py`.
 
 ---
 
-### 4.3 `_build_messages()` — Roteador de Contexto
+### 4.3 `ContextManager.build_messages()` — Roteador de Contexto
 
 **Responsabilidade:** Decidir se a requisição precisa de contexto RAG ou não, e montar a lista de mensagens para o LLM.
 
@@ -161,7 +161,7 @@ O comando `/content` é um override manual: força busca no índice mesmo que o 
 
 ---
 
-### 4.4 `_stream_response()` — Gerador SSE com Fallback
+### 4.4 `ChatProvider.stream_response()` — Gerador SSE com Fallback
 
 **Responsabilidade:** Fazer requisição streaming ao OpenRouter, parsear os chunks SSE da API, e re-emitir para o cliente como SSE.
 
@@ -188,6 +188,8 @@ E o frontend desfaz o escape:
 ```js
 fullText += payload.replace(/\\n/g, '\n');
 ```
+
+**Metadado `ACL_META` (rastreabilidade):** antes dos tokens do modelo, o servidor pode enviar `data: [ACL_META]` + JSON (`v`, `label`, `sources`) derivado de `ContextManager.build_messages` → `trace`, para breadcrumbs e feedback “Analisando resumos de …” no cliente modular (`frontend/src/api.js`).
 
 ---
 
@@ -232,12 +234,12 @@ Usuário digita mensagem → Enter
 POST /chat { message: "..." }
     │
     ▼
-_build_messages(user_message)
-    ├── BM25Index.search(query) → [chunk1, chunk2, ...]
+ContextManager.build_messages(user_message)
+    ├── SearchEngine.search(query) → [chunk1, chunk2, ...]
     └── compõe system prompt (RAG ou geral)
     │
     ▼
-StreamingResponse(_stream_response(messages))
+StreamingResponse(ChatProvider.stream_response(messages))
     │
     ▼
 httpx.AsyncClient → OpenRouter API (stream=True)
@@ -272,6 +274,7 @@ python-dotenv
 jinja2
 rank-bm25
 watchdog
+pytest
 ```
 
 > [!WARNING]
@@ -281,10 +284,10 @@ watchdog
 
 ```bash
 # Método 1 — direto
-python app.py
+python main.py
 
 # Método 2 — uvicorn com reload (desenvolvimento)
-uvicorn app:app --host 127.0.0.1 --port 8000 --reload
+uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 Servidor sobe em `http://127.0.0.1:8000`.
