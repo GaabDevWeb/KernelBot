@@ -24,6 +24,7 @@ search_engine = SearchEngine(
     settings.content_dir,
     settings.bm25_score_threshold,
     settings.global_context_mode,
+    settings=settings,
 )
 observer = start_content_observer(search_engine, settings.content_dir)
 

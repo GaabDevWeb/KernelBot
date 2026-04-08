@@ -27,6 +27,11 @@ class Settings:
     pinned_max_turns: int
     pinned_max_chars: int
     pinned_weak_score: float
+    db_host: str
+    db_port: int
+    db_name: str
+    db_user: str
+    db_password: str
 
     @property
     def openrouter_headers(self) -> dict[str, str]:
@@ -87,6 +92,23 @@ class Settings:
             raise RuntimeError("ACL_PINNED_WEAK_SCORE deve ser um número.") from None
         pinned_weak_score = max(0.05, min(0.95, pinned_weak_score))
 
+        """ !Credenciais do banco! """
+
+        db_host = (os.getenv("DB_HOST") or "").strip()
+
+        db_port_raw = (os.getenv("DB_PORT") or "3306").strip()
+
+        try:
+            db_port = int(db_port_raw)
+        except ValueError:
+            raise RuntimeError("DB_PORT deve ser um inteiro.") from None
+
+        db_name = (os.getenv("DB_NAME") or "").strip()
+
+        db_user = (os.getenv("DB_USER") or "").strip()
+
+        db_password = (os.getenv("DB_PASSWORD") or "").strip()
+
         return cls(
             openrouter_api_key=key,
             project_root=project_root,
@@ -100,4 +122,9 @@ class Settings:
             pinned_max_turns=pinned_max_turns,
             pinned_max_chars=pinned_max_chars,
             pinned_weak_score=pinned_weak_score,
+            db_host=db_host,
+            db_port=db_port,
+            db_name=db_name,
+            db_user=db_user,
+            db_password=db_password,
         )

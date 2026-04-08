@@ -8,6 +8,8 @@ import re
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 
+from collections.abc import AsyncGenerator
+
 log = logging.getLogger("kernelbots.api.chat")
 
 router = APIRouter()
@@ -73,6 +75,28 @@ async def chat(request: Request) -> StreamingResponse:
         raise HTTPException(
             status_code=400,
             detail="Campo 'session_id' deve ser string ou omitido.",
+        )
+
+    if user_message.strip().lower() == "/reload":
+        log.info("🔄 Comando /reload recebido — reconstruindo índice BM25...")
+        services.search_engine.rebuild()
+        chunk_count = len(services.search_engine.chunks)
+        db_count = sum(1 for c in services.search_engine.chunks if c.get("source", "").startswith("db:"))
+        md_count = chunk_count - db_count
+        status = (
+            f"Índice reconstruído: {chunk_count} chunk(s) total "
+            f"({md_count} de arquivos .md + {db_count} do MySQL)."
+        )
+        log.info("✅ /reload concluído — %s", status)
+
+        async def _reload_stream() -> AsyncGenerator[str, None]:
+            yield f"data: {status}\n\n"
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(
+            _reload_stream(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"},
         )
 
     built = services.context_manager.build_messages(

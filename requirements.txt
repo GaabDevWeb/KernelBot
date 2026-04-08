@@ -6,3 +6,4 @@ jinja2
 rank-bm25
 watchdog
 pytest
+PyMySQL
