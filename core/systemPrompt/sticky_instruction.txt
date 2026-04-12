@@ -1,0 +1,1 @@
+Você ainda está discutindo o material fixado: **{name}**. Use o conteúdo abaixo como referência principal para a pergunta atual do utilizador; recorra ao seu conhecimento geral só para complementar quando o texto não for suficiente.

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from importlib import import_module
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -43,8 +44,8 @@ def fetch_db_chunks(settings: Settings) -> list[dict]:
         return []
 
     try:
-        import pymysql
-        import pymysql.cursors
+        pymysql = import_module("pymysql")
+        cursors_mod = import_module("pymysql.cursors")
     except ImportError:
         log.warning("PyMySQL não instalado — fonte MySQL desativada.")
         return []
@@ -57,7 +58,7 @@ def fetch_db_chunks(settings: Settings) -> list[dict]:
             user=settings.db_user,
             password=settings.db_password,
             charset="utf8mb4",
-            cursorclass=pymysql.cursors.DictCursor,
+            cursorclass=cursors_mod.DictCursor,
             connect_timeout=5,
             read_timeout=10,
         )

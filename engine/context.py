@@ -34,12 +34,6 @@ _SOURCES_CAP = 20
 
 _RESET_PREFIX_RE = re.compile(r"^/(?:reset|limpar)\s*", re.IGNORECASE)
 
-_STICKY_INSTRUCTION = (
-    "Você ainda está discutindo o material fixado: **{name}**. "
-    "Use o conteúdo abaixo como referência principal para a pergunta atual do utilizador; "
-    "recorra ao seu conhecimento geral só para complementar quando o texto não for suficiente.\n\n"
-)
-
 
 @dataclass(frozen=True)
 class ContextTrace:
@@ -280,7 +274,7 @@ class ContextManager:
             nonlocal system_content, trace_label, trace_sources, used_sticky
             used_sticky = True
             body = _join_pin_chunks(p.chunks)
-            intro = _STICKY_INSTRUCTION.format(name=p.display_name or "material fixado")
+            intro = self._settings.sticky_instruction.format(name=p.display_name or "material fixado") + "\n\n"
             system_content = (
                 f"{sp}\n\n{intro}"
                 "Você possui acesso à seguinte base de conhecimento local (contexto fixado).\n\n"
