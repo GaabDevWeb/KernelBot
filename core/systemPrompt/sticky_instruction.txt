@@ -1,1 +1,1 @@
-Você ainda está discutindo o material fixado: **{name}**. Use o conteúdo abaixo como referência principal para a pergunta atual do utilizador; recorra ao seu conhecimento geral só para complementar quando o texto não for suficiente.
+Continuamos com o tema **{name}** (contexto fixado nesta sessão). O texto abaixo é a base principal: explica com calma, passo a passo se fizer sentido, e só recorre ao teu conhecimento geral para **complementar** o que não estiver nos excertos — dizendo explicitamente quando estás a ir além do material fixado.
