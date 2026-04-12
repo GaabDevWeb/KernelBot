@@ -12,6 +12,8 @@ from typing import Any
 from rank_bm25 import BM25Okapi
 
 from core.config import GlobalContextMode
+from core.config import Settings
+from engine.database import fetch_db_chunks
 
 log = logging.getLogger(f"kernelbots.{__name__}")
 
@@ -26,10 +28,12 @@ class SearchEngine:
         content_dir: Path,
         score_threshold: float,
         global_context_mode: GlobalContextMode = "geral",
+        settings: Settings | None = None,   # <-- adicionar
     ) -> None:
         self._content_dir = content_dir.resolve()
         self._score_threshold = score_threshold
         self._global_context_mode: GlobalContextMode = global_context_mode
+        self._settings = settings 
         self._lock = threading.RLock()
         self._silos: dict[str, dict[str, Any]] = {}
         self._discipline_ids: frozenset[str] = frozenset()
@@ -151,6 +155,15 @@ class SearchEngine:
             log.warning(
                 "⚠  Nenhum .md indexado — BM25 desativado. Modo assistente geral ativo."
             )
+                
+        # --- chunks do MySQL (silo "db") ---
+        db_chunks: list[dict] = []
+        if self._settings is not None:
+            db_chunks = fetch_db_chunks(self._settings)
+        if db_chunks:
+            tokenized_db = [self._tokenize(c["text"]) for c in db_chunks]
+            new_silos["db"] = {"chunks": db_chunks, "bm25": BM25Okapi(tokenized_db)}
+            all_chunks.extend(db_chunks)
 
         elapsed = (time.perf_counter() - t0) * 1000
         with self._lock:
@@ -158,11 +171,11 @@ class SearchEngine:
             self._silos = new_silos
             self._all_chunks = all_chunks
 
+        db_count = len(db_chunks)
+        md_count = len(all_chunks) - db_count
         log.info(
-            "✅ Índice BM25 por silo pronto — %s chunk(s) | %s silo(s) | rebuild em %.1fms",
-            len(all_chunks),
-            len(new_silos),
-            elapsed,
+            "✅ Índice BM25 por silo pronto — %s chunk(s) (%s .md + %s MySQL) | %s silo(s) | rebuild em %.1fms",
+            len(all_chunks), md_count, db_count, len(new_silos), elapsed,
         )
 
     def normalize_discipline(self, raw: str | None) -> str | None:
@@ -225,7 +238,10 @@ class SearchEngine:
                 return self._hits_in_silo(nd, query, top_k)
 
             if self._global_context_mode == "geral":
-                return self._hits_in_silo("geral", query, top_k)
+                hits = self._hits_in_silo("geral", query, top_k)
+                hits += self._hits_in_silo("db", query, top_k)
+                hits.sort(key=lambda h: h["score"], reverse=True)
+                return hits[:top_k]
 
             merged: list[dict] = []
             for silo in sorted(self._silos.keys()):
