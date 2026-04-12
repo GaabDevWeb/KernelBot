@@ -1,11 +1,8 @@
 .env
 
-__pycache__/
-api/__pycache__/
-app/__pycache__/
-core/__pycache__/
-engine/__pycache__/
-tests/__pycache__/
-utils/__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
 
 cursor/
