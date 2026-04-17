@@ -1,8 +1,8 @@
 name: KernelBot Metrics
 on:
-  schedule: [{cron: "0 0 * * *"}] # Atualiza todo dia
-  workflow_dispatch:            # Permite rodar na mão
-  push: {branches: ["master", "main"]} # Gatilho ao subir código
+  schedule: [{cron: "0 0 * * *"}]
+  workflow_dispatch:
+  push: {branches: ["master", "main"]}
 
 permissions:
   contents: write
@@ -14,28 +14,32 @@ jobs:
       - uses: lowlighter/metrics@latest
         with:
           token: ${{ secrets.METRICS_TOKEN }}
+          committer_token: ${{ secrets.METRICS_TOKEN }}
           user: GaabDevWeb
           repo: KernelBot
           template: classic
-          base: ""         # REMOVE CABEÇALHO PESSOAL
+          
+          # Ajuste de base para garantir a geração do arquivo
+          base: repositories
+          base_setup: yes
+          base_repositories: no
+          
           config_timezone: America/Sao_Paulo
           config_twotone: yes
           
-          # PLUGIN: IDIOMAS (Anatomia do sistema)
+          # Plugins solicitados
           plugin_languages: yes
           plugin_languages_details: lines, percentage
           plugin_languages_indepth: yes
           
-          # PLUGIN: FOLLOWUP (Backlog e Workflow)
           plugin_followup: yes
           plugin_followup_sections: repositories
           
-          # PLUGIN: LINES (Progresso de Refatoração)
           plugin_lines: yes
           
-          # PLUGIN: TRAFFIC (Engajamento do Repo)
           plugin_traffic: yes
 
-          # OUTPUT
+          # Configurações de Output e Commit
           filename: kernel-status.svg
-          committer_token: ${{ secrets.METRICS_TOKEN }}
+          output_action: commit
+          committer_branch: main # <--- Certifique-se que sua branch é main ou master
