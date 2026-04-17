@@ -1,30 +1,41 @@
-- uses: lowlighter/metrics@latest
+name: KernelBot Metrics
+on:
+  schedule: [{cron: "0 0 * * *"}] # Atualiza todo dia
+  workflow_dispatch:            # Permite rodar na mão
+  push: {branches: ["master", "main"]} # Gatilho ao subir código
+
+permissions:
+  contents: write
+
+jobs:
+  github-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: lowlighter/metrics@latest
         with:
-          filename: kernel-status.svg
           token: ${{ secrets.METRICS_TOKEN }}
-          committer_token: ${{ secrets.METRICS_TOKEN }} # Necessário para o push automático
           user: GaabDevWeb
           repo: KernelBot
           template: classic
-          base: "" 
+          base: ""         # REMOVE CABEÇALHO PESSOAL
           config_timezone: America/Sao_Paulo
           config_twotone: yes
-          config_display: large
-
-          # Foco em Linguagem e Complexidade (Arquitetura do Kernel)
+          
+          # PLUGIN: IDIOMAS (Anatomia do sistema)
           plugin_languages: yes
           plugin_languages_details: lines, percentage
           plugin_languages_indepth: yes
           
-          # Foco em Engenharia e Workflow (Gestão de Branches/PRs)
-          plugin_lines: yes
+          # PLUGIN: FOLLOWUP (Backlog e Workflow)
           plugin_followup: yes
           plugin_followup_sections: repositories
           
-          # Atividade e Ritmo (Visual de "Dashboard" Industrial)
-          plugin_habits: yes
-          plugin_habits_charts: yes # Gera os gráficos de barras sólidos
-          plugin_habits_trim: yes
+          # PLUGIN: LINES (Progresso de Refatoração)
+          plugin_lines: yes
           
-          # Tráfego (Interesse no Repositório)
+          # PLUGIN: TRAFFIC (Engajamento do Repo)
           plugin_traffic: yes
+
+          # OUTPUT
+          filename: kernel-status.svg
+          committer_token: ${{ secrets.METRICS_TOKEN }}
