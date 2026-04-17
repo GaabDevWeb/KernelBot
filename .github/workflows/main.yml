@@ -15,31 +15,32 @@ jobs:
         with:
           token: ${{ secrets.METRICS_TOKEN }}
           committer_token: ${{ secrets.METRICS_TOKEN }}
-          user: GaabDevWeb
-          repo: KernelBot
+          user: GaabDevWeb  # <--- Usei o user que apareceu no seu log
           template: classic
-          
-          # Ajuste de base para garantir a geração do arquivo
-          base: repositories
-          base_setup: yes
-          base_repositories: no
+          base: "" # Agora vai funcionar porque o plugin de linguagens dará o conteúdo
           
           config_timezone: America/Sao_Paulo
-          config_twotone: yes
+          config_display: large
           
-          # Plugins solicitados
+          # PLUGIN: IDIOMAS (Focado no que você codou)
           plugin_languages: yes
           plugin_languages_details: lines, percentage
           plugin_languages_indepth: yes
+          plugin_languages_analysis_timeout: 15
           
+          # PLUGIN: ATIVIDADE (Linhas de código)
+          plugin_lines: yes
+          
+          # PLUGIN: WORKFLOW (Issues e PRs)
           plugin_followup: yes
           plugin_followup_sections: repositories
           
-          plugin_lines: yes
-          
-          plugin_traffic: yes
+          # PLUGIN: HÁBITOS (O visual brutalista de barras)
+          plugin_habits: yes
+          plugin_habits_charts: yes
+          plugin_habits_trim: yes
 
-          # Configurações de Output e Commit
+          # OUTPUT
           filename: kernel-status.svg
           output_action: commit
-          committer_branch: main # <--- Certifique-se que sua branch é main ou master
+          committer_branch: main
