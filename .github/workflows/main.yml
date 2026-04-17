@@ -1,23 +1,43 @@
 name: Metrics
 on:
-  schedule: [{cron: "0 0 * * *"}] # Roda todo dia à meia-noite
-  workflow_dispatch: # Permite rodar manualmente
+  # Agenda para rodar todo dia à meia-noite
+  schedule: [{cron: "0 0 * * *"}]
+  # Permite que você rode manualmente na aba Actions
+  workflow_dispatch:
+  # Opcional: roda sempre que você der push na main
+  push: {branches: ["master", "main"]}
+
+permissions:
+  contents: write
+
 jobs:
   github-metrics:
     runs-on: ubuntu-latest
     steps:
       - uses: lowlighter/metrics@latest
         with:
-          token: ${{ secrets.METRICS_TOKEN }} # Você precisará criar esse Token (PAT)
-          user: GaabDevWeb
+          token: ${{ secrets.METRICS_TOKEN }}
+          
+          user: GaabDevWeb  
           template: classic
-          base: header, activity, community, repositories, metadata
+          base: header, activity, community, repositories
           config_timezone: America/Sao_Paulo
           
-          # Plugins que combinam com seu estilo:
-          plugin_lines: yes # Mostra linhas de código escritas
-          plugin_habits: yes # Mostra seus horários de maior foco (estilo gráfico de sistema)
-          plugin_habits_charts: yes
+          config_twotone: yes
+          config_display: large
+          
+          plugin_lines: yes
+          
           plugin_languages: yes
-          plugin_languages_details: bytes-size, percentage
+          plugin_languages_details: percentage
           plugin_languages_sections: most-used
+          plugin_languages_indepth: yes
+          
+          plugin_habits: yes
+          plugin_habits_from: 200
+          plugin_habits_days: 14
+          plugin_habits_charts: yes
+          plugin_habits_trim: yes
+          
+          # CONFIGURAÇÃO DE OUTPUT
+          filename: github-metrics.svg
