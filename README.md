@@ -53,3 +53,7 @@ O projeto usa `logging` da biblioteca padrão com loggers prefixados `kernelbots
 
 - `/content …` — força uso da base local (com fallback para os primeiros chunks se não houver hit BM25).
 - `/doc …` — injeta o conteúdo de `documentation.md` quando disponível no índice.
+
+## Status do projeto
+
+![KernelBot Metrics](https://raw.githubusercontent.com/GaabDevWeb/KernelBot/main/kernel-status.svg)

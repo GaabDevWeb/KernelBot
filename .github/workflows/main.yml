@@ -15,30 +15,42 @@ jobs:
         with:
           token: ${{ secrets.METRICS_TOKEN }}
           committer_token: ${{ secrets.METRICS_TOKEN }}
-          user: GaabDevWeb  # <--- Usei o user que apareceu no seu log
-          template: classic
-          base: "" # Agora vai funcionar porque o plugin de linguagens dará o conteúdo
-          
+          user: GaabDevWeb
+          repo: KernelBot
+          template: repository
+          base: ""
+
           config_timezone: America/Sao_Paulo
-          config_display: large
-          
-          # PLUGIN: IDIOMAS (Focado no que você codou)
+
+          # Descrição e tópicos do repositório
+          plugin_introduction: yes
+          plugin_introduction_repository: yes
+
+          # Stack de linguagens (análise profunda do repo)
           plugin_languages: yes
           plugin_languages_details: lines, percentage
           plugin_languages_indepth: yes
           plugin_languages_analysis_timeout: 15
-          
-          # PLUGIN: ATIVIDADE (Linhas de código)
+
+          # Volume de código
           plugin_lines: yes
-          
-          # PLUGIN: WORKFLOW (Issues e PRs)
+
+          # Saúde de issues e PRs
           plugin_followup: yes
           plugin_followup_sections: repositories
-          
-          # PLUGIN: HÁBITOS (O visual brutalista de barras)
-          plugin_habits: yes
-          plugin_habits_charts: yes
-          plugin_habits_trim: yes
+
+          # Contribuidores e tipo de contribuição
+          plugin_contributors: yes
+          plugin_contributors_contributions: yes
+
+          # Licença do repositório
+          plugin_licenses: yes
+
+          # Tráfego: views e clones (requer scope "repo" no token)
+          plugin_traffic: yes
+
+          # Crescimento de stars ao longo do tempo
+          plugin_stargazers: yes
 
           # OUTPUT
           filename: kernel-status.svg
