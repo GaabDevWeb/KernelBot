@@ -1,11 +1,21 @@
-# KernelBots (ACL)
+# KernelBot
 
-Agente de contexto local com RAG (BM25) sobre Markdown em `content/`, interface em `templates/` e respostas em streaming via OpenRouter.
+Agente de contexto local com RAG (BM25) sobre Markdown, interface Jinja2 e respostas em streaming via OpenRouter.
+
+![Python](https://img.shields.io/badge/python-3.10+-111111?style=flat-square&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-111111?style=flat-square&logo=fastapi&logoColor=white)
+![License](https://img.shields.io/github/license/GaabDevWeb/KernelBot?style=flat-square&color=111111&labelColor=111111&logoColor=white)
+![Last Commit](https://img.shields.io/github/last-commit/GaabDevWeb/KernelBot?style=flat-square&color=111111&labelColor=111111)
+![Open Issues](https://img.shields.io/github/issues/GaabDevWeb/KernelBot?style=flat-square&color=111111&labelColor=111111)
+
+---
 
 ## Requisitos
 
 - Python 3.10+
-- Chave `OPENROUTER_API_KEY` no arquivo `.env` na raiz do repositório
+- `OPENROUTER_API_KEY` no `.env` na raiz
+
+---
 
 ## Instalação
 
@@ -13,24 +23,28 @@ Agente de contexto local com RAG (BM25) sobre Markdown em `content/`, interface 
 pip install -r requirements.txt
 ```
 
+---
+
 ## Executar
 
 ```bash
 python main.py
 ```
 
-Ou com Uvicorn:
+Com Uvicorn:
 
 ```bash
 uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
-Abra `http://127.0.0.1:8000`.
+`http://127.0.0.1:8000`
+
+---
 
 ## Estrutura
 
 | Caminho | Função |
-|--------|--------|
+|---|---|
 | `main.py` | Orquestração: logging, `SearchEngine`, watchdog, `create_app` |
 | `core/` | Config (`Settings`), logging centralizado |
 | `engine/` | BM25 (`SearchEngine`), `ContentWatcher`, `ContextManager`, `ChatProvider` |
@@ -39,29 +53,27 @@ Abra `http://127.0.0.1:8000`.
 | `content/` | Arquivos `.md` indexados |
 | `templates/` | UI (Jinja2) |
 
+---
+
 ## Testes
 
 ```bash
 python -m pytest tests/ -v
 ```
 
+---
+
 ## Logging
 
-O projeto usa `logging` da biblioteca padrão com loggers prefixados `kernelbots.*` (ex.: `kernelbots.engine.search`, `kernelbots.api.chat`). Para logs estruturados em JSON no stdout, é possível estender `core/logging_config.py` com algo como `structlog` no mesmo ponto de configuração.
+Loggers prefixados `kernelbots.*` (ex.: `kernelbots.engine.search`, `kernelbots.api.chat`). Para JSON estruturado no stdout, estender `core/logging_config.py` com `structlog`.
 
-## Comandos no chat
+---
 
-- `/content …` — força uso da base local (com fallback para os primeiros chunks se não houver hit BM25).
-- `/doc …` — injeta o conteúdo de `documentation.md` quando disponível no índice.
+## Comandos
 
-## Status do projeto
+`/content …` — força uso da base local (BM25, fallback para os primeiros chunks).  
+`/doc …` — injeta `documentation.md` no contexto quando disponível no índice.
+
+---
 
 ![KernelBot Metrics](https://raw.githubusercontent.com/GaabDevWeb/KernelBot/main/kernel-status.svg)
-
-<div align="center">
-
-| 2025 | 2026 |
-|:----:|:----:|
-| ![Skyline 2025](https://raw.githubusercontent.com/GaabDevWeb/KernelBot/main/kernel-skyline-2025.svg) | ![Skyline 2026](https://raw.githubusercontent.com/GaabDevWeb/KernelBot/main/kernel-skyline-2026.svg) |
-
-</div>

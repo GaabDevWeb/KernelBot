@@ -11,8 +11,6 @@ jobs:
   github-metrics:
     runs-on: ubuntu-latest
     steps:
-
-      # ─── 1. Métricas do repositório ───────────────────────────────────────
       - uses: lowlighter/metrics@latest
         with:
           token: ${{ secrets.METRICS_TOKEN }}
@@ -33,6 +31,7 @@ jobs:
           plugin_languages_details: lines, percentage
           plugin_languages_indepth: yes
           plugin_languages_analysis_timeout: 15
+          plugin_languages_colors: github
 
           # Volume de código
           plugin_lines: yes
@@ -51,53 +50,11 @@ jobs:
           # Tráfego: views e clones (requer scope "repo" no token)
           plugin_traffic: yes
 
-          # Crescimento de stars ao longo do tempo
+          # Crescimento de stars ao longo do tempo (curva suave)
           plugin_stargazers: yes
+          plugin_stargazers_charts_type: graph
 
-          # Calendário isométrico de commits (ano completo)
-          plugin_isocalendar: yes
-          plugin_isocalendar_duration: full-year
-
+          # OUTPUT
           filename: kernel-status.svg
-          output_action: commit
-          committer_branch: main
-
-      # ─── 2. GitHub Skyline 2025 ───────────────────────────────────────────
-      - uses: lowlighter/metrics@latest
-        with:
-          token: ${{ secrets.METRICS_TOKEN }}
-          committer_token: ${{ secrets.METRICS_TOKEN }}
-          user: GaabDevWeb
-          template: classic
-          base: ""
-
-          config_timezone: America/Sao_Paulo
-
-          plugin_skyline: yes
-          plugin_skyline_year: 2025
-          plugin_skyline_frames: 6
-          plugin_skyline_quality: 1
-
-          filename: kernel-skyline-2025.svg
-          output_action: commit
-          committer_branch: main
-
-      # ─── 3. GitHub Skyline 2026 ───────────────────────────────────────────
-      - uses: lowlighter/metrics@latest
-        with:
-          token: ${{ secrets.METRICS_TOKEN }}
-          committer_token: ${{ secrets.METRICS_TOKEN }}
-          user: GaabDevWeb
-          template: classic
-          base: ""
-
-          config_timezone: America/Sao_Paulo
-
-          plugin_skyline: yes
-          plugin_skyline_year: 2026
-          plugin_skyline_frames: 6
-          plugin_skyline_quality: 1
-
-          filename: kernel-skyline-2026.svg
           output_action: commit
           committer_branch: main
