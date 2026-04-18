@@ -57,3 +57,11 @@ O projeto usa `logging` da biblioteca padrão com loggers prefixados `kernelbots
 ## Status do projeto
 
 ![KernelBot Metrics](https://raw.githubusercontent.com/GaabDevWeb/KernelBot/main/kernel-status.svg)
+
+<div align="center">
+
+| 2025 | 2026 |
+|:----:|:----:|
+| ![Skyline 2025](https://raw.githubusercontent.com/GaabDevWeb/KernelBot/main/kernel-skyline-2025.svg) | ![Skyline 2026](https://raw.githubusercontent.com/GaabDevWeb/KernelBot/main/kernel-skyline-2026.svg) |
+
+</div>
