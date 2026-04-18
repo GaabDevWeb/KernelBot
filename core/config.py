@@ -22,11 +22,17 @@ class Settings:
     openrouter_base: str
     models: tuple[str, ...]
     system_prompt_geral: str
+    sticky_instruction: str
     http_timeout: float
     # Contexto fixado (sessão): ver `documentation.md`
     pinned_max_turns: int
     pinned_max_chars: int
     pinned_weak_score: float
+    db_host: str
+    db_port: int
+    db_name: str
+    db_user: str
+    db_password: str
 
     @property
     def openrouter_headers(self) -> dict[str, str]:
@@ -53,10 +59,24 @@ class Settings:
             "google/gemini-2.5-flash:free",
             "meta-llama/llama-3.3-70b-instruct:free",
         )
-        system_prompt = (
-            "Você é o ACL (Agente de Contexto Local), um assistente técnico direto e preciso. "
-            "Responda em português (PT-BR). Evite enrolação."
-        )
+
+        prompts_dir = Path(__file__).resolve().parent / "systemPrompt"
+        system_prompt_file = prompts_dir / "system_prompt.txt"
+        sticky_instruction_file = prompts_dir / "sticky_instruction.txt"
+
+        if not system_prompt_file.exists():
+            raise RuntimeError(
+                f"Arquivo de system prompt não encontrado: {system_prompt_file}. "
+                "Crie o arquivo core/systemPrompt/system_prompt.txt com o texto do assistente."
+            )
+        if not sticky_instruction_file.exists():
+            raise RuntimeError(
+                f"Arquivo de instrução sticky não encontrado: {sticky_instruction_file}. "
+                "Crie o arquivo core/systemPrompt/sticky_instruction.txt com o template de contexto fixado."
+            )
+
+        system_prompt = system_prompt_file.read_text(encoding="utf-8").strip()
+        sticky_instruction = sticky_instruction_file.read_text(encoding="utf-8").strip()
 
         raw_global = (os.getenv("ACL_GLOBAL_CONTEXT") or "geral").strip().lower()
         if raw_global == "geral":
@@ -87,6 +107,23 @@ class Settings:
             raise RuntimeError("ACL_PINNED_WEAK_SCORE deve ser um número.") from None
         pinned_weak_score = max(0.05, min(0.95, pinned_weak_score))
 
+        """ !Credenciais do banco! """
+
+        db_host = (os.getenv("DB_HOST") or "").strip()
+
+        db_port_raw = (os.getenv("DB_PORT") or "3306").strip()
+
+        try:
+            db_port = int(db_port_raw)
+        except ValueError:
+            raise RuntimeError("DB_PORT deve ser um inteiro.") from None
+
+        db_name = (os.getenv("DB_NAME") or "").strip()
+
+        db_user = (os.getenv("DB_USER") or "").strip()
+
+        db_password = (os.getenv("DB_PASSWORD") or "").strip()
+
         return cls(
             openrouter_api_key=key,
             project_root=project_root,
@@ -96,8 +133,14 @@ class Settings:
             openrouter_base="https://openrouter.ai/api/v1/chat/completions",
             models=models,
             system_prompt_geral=system_prompt,
+            sticky_instruction=sticky_instruction,
             http_timeout=60.0,
             pinned_max_turns=pinned_max_turns,
             pinned_max_chars=pinned_max_chars,
             pinned_weak_score=pinned_weak_score,
+            db_host=db_host,
+            db_port=db_port,
+            db_name=db_name,
+            db_user=db_user,
+            db_password=db_password,
         )
