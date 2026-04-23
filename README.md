@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/assets/images/KernelBanner.png" alt="KernelBot" width="100%" />
+  <img src="frontend/assets/images/KernelBanner.webp" alt="KernelBot" width="100%" />
 </p>
 
 # KernelBots (ACL)
