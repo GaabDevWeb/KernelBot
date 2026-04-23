@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="frontend/assets/images/KernelBanner.png" alt="KernelBot" width="100%" />
+</p>
+
 # KernelBots (ACL)
 
 Agente de contexto local com RAG (BM25) sobre Markdown em `content/`, interface em `templates/` e respostas em streaming via OpenRouter.

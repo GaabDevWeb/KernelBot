@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 
 import uvicorn
-
+        
 from app.factory import create_app
 from app.state import AppServices
 from core.config import Settings
