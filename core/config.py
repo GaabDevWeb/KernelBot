@@ -22,6 +22,7 @@ class Settings:
     openrouter_base: str
     models: tuple[str, ...]
     system_prompt_geral: str
+    sticky_instruction: str
     http_timeout: float
     # Contexto fixado (sessão): ver `documentation.md`
     pinned_max_turns: int
@@ -58,10 +59,24 @@ class Settings:
             "google/gemini-2.5-flash:free",
             "meta-llama/llama-3.3-70b-instruct:free",
         )
-        system_prompt = (
-            "Você é o ACL (Agente de Contexto Local), um assistente técnico direto e preciso. "
-            "Responda em português (PT-BR). Evite enrolação."
-        )
+
+        prompts_dir = Path(__file__).resolve().parent / "systemPrompt"
+        system_prompt_file = prompts_dir / "system_prompt.txt"
+        sticky_instruction_file = prompts_dir / "sticky_instruction.txt"
+
+        if not system_prompt_file.exists():
+            raise RuntimeError(
+                f"Arquivo de system prompt não encontrado: {system_prompt_file}. "
+                "Crie o arquivo core/systemPrompt/system_prompt.txt com o texto do assistente."
+            )
+        if not sticky_instruction_file.exists():
+            raise RuntimeError(
+                f"Arquivo de instrução sticky não encontrado: {sticky_instruction_file}. "
+                "Crie o arquivo core/systemPrompt/sticky_instruction.txt com o template de contexto fixado."
+            )
+
+        system_prompt = system_prompt_file.read_text(encoding="utf-8").strip()
+        sticky_instruction = sticky_instruction_file.read_text(encoding="utf-8").strip()
 
         raw_global = (os.getenv("ACL_GLOBAL_CONTEXT") or "geral").strip().lower()
         if raw_global == "geral":
@@ -118,6 +133,7 @@ class Settings:
             openrouter_base="https://openrouter.ai/api/v1/chat/completions",
             models=models,
             system_prompt_geral=system_prompt,
+            sticky_instruction=sticky_instruction,
             http_timeout=60.0,
             pinned_max_turns=pinned_max_turns,
             pinned_max_chars=pinned_max_chars,
