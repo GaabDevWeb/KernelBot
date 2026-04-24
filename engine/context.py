@@ -315,7 +315,7 @@ class ContextManager:
                 )
                 system_content = (
                     f"{sp}\n\n"
-                    "Você possui acesso à documentação em content/doc/. "
+                    "Você possui acesso à documentação do sistema. "
                     "Utilize-a como referência rígida para responder:\n\n"
                     f"{ctx}"
                 )

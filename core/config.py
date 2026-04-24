@@ -55,9 +55,9 @@ class Settings:
         content_dir.mkdir(exist_ok=True)
 
         models = (
-            "arcee-ai/trinity-large-preview:free",
-            "google/gemini-2.5-flash:free",
-            "meta-llama/llama-3.3-70b-instruct:free",
+            "openrouter/free",
+            "deepseek/deepseek-r1:free",
+            "meta-llama/llama-4-maverick:free",
         )
 
         prompts_dir = Path(__file__).resolve().parent / "systemPrompt"

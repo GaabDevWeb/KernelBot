@@ -1,4 +1,4 @@
-"""Ponto de entrada: logging, serviços, watchdog e aplicação FastAPI."""
+"""Ponto de entrada: logging, serviços e aplicação FastAPI."""
 
 from __future__ import annotations
 
@@ -14,19 +14,16 @@ from engine.chat_provider import ChatProvider
 from engine.context import ContextManager
 from engine.pinned_store import PinnedSessionStore
 from engine.search import SearchEngine
-from engine.watcher import start_content_observer
 
 configure_logging()
 log = logging.getLogger("kernelbots.main")
 
 settings = Settings.load()
 search_engine = SearchEngine(
-    settings.content_dir,
     settings.bm25_score_threshold,
     settings.global_context_mode,
     settings=settings,
 )
-observer = start_content_observer(search_engine, settings.content_dir)
 
 pinned_store = PinnedSessionStore()
 context_manager = ContextManager(settings, search_engine, pinned_store=pinned_store)
@@ -36,7 +33,6 @@ services = AppServices(
     search_engine=search_engine,
     context_manager=context_manager,
     chat_provider=chat_provider,
-    observer=observer,
     pinned_store=pinned_store,
 )
 app = create_app(services)
@@ -45,9 +41,9 @@ app = create_app(services)
 if __name__ == "__main__":
     log.info("=" * 60)
     log.info("  ACL — Agente de Contexto Local")
-    log.info(f"  Content dir : {settings.content_dir}")
+    log.info(f"  Fonte de dados: MySQL ({settings.db_host}:{settings.db_port}/{settings.db_name})")
     log.info(f"  BM25 threshold: {settings.bm25_score_threshold}")
     log.info(f"  Contexto global (sem filtro): {settings.global_context_mode}")
     log.info(f"  Modelos ({len(settings.models)}): {', '.join(settings.models)}")
     log.info("=" * 60)
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=False)
+    uvicorn.run("main:app", host="127.0.0.1", port=8001, reload=False)

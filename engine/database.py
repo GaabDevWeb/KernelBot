@@ -1,4 +1,4 @@
-"""Fonte de dados MySQL para o índice BM25."""
+"""Fonte de dados MySQL para o índice BM25 (schema v2)."""
 from __future__ import annotations
 
 import logging
@@ -14,7 +14,7 @@ DB_CHUNK_WORDS   = 500
 DB_CHUNK_OVERLAP = 50
 
 
-def _chunk_text(text: str, title: str, source: str) -> list[dict]:
+def _chunk_text(text: str, title: str, source: str, discipline: str) -> list[dict]:
     """Divide texto em janelas de ~500 palavras com overlap de 50."""
     words = text.split()
     if not words:
@@ -26,7 +26,7 @@ def _chunk_text(text: str, title: str, source: str) -> list[dict]:
         chunks.append({
             "text": f"{title}\n" + " ".join(words[start:end]),
             "source": source,
-            "discipline": "db",
+            "discipline": discipline,
         })
         if end == len(words):
             break
@@ -36,7 +36,7 @@ def _chunk_text(text: str, title: str, source: str) -> list[dict]:
 
 def fetch_db_chunks(settings: Settings) -> list[dict]:
     """
-    Busca rows ativas da tabela knowledge e retorna lista de chunks BM25.
+    Busca rows ativas da tabela knowledge (v2) e retorna lista de chunks BM25.
     Retorna [] com warning se o DB não estiver configurado ou falhar.
     """
     if not all([settings.db_host, settings.db_name, settings.db_user]):
@@ -65,15 +65,16 @@ def fetch_db_chunks(settings: Settings) -> list[dict]:
         with conn:
             with conn.cursor() as cursor:
                 cursor.execute(
-                    "SELECT id, title, content, category "
-                    "FROM knowledge WHERE active = 1 ORDER BY id"
+                    "SELECT id, slug, title, discipline, `order`, content "
+                    "FROM knowledge WHERE active = 1 ORDER BY discipline, `order`"
                 )
                 rows = cursor.fetchall()
 
         all_chunks: list[dict] = []
         for row in rows:
-            source = f"db:{row['category']}"
-            chunks = _chunk_text(row["content"], row["title"], source)
+            discipline = row["discipline"]
+            source = f"db:{discipline}/{row['slug']}"
+            chunks = _chunk_text(row["content"], row["title"], source, discipline)
             all_chunks.extend(chunks)
             log.debug("   🗄  row id=%s '%s' → %s chunk(s)", row["id"], row["title"], len(chunks))
 
@@ -81,5 +82,35 @@ def fetch_db_chunks(settings: Settings) -> list[dict]:
         return all_chunks
 
     except Exception:
-        log.warning("⚠  Falha ao conectar ao MySQL — continuando apenas com .md.", exc_info=True)
+        log.warning("⚠  Falha ao conectar ao MySQL — continuando sem dados do DB.", exc_info=True)
         return []
+
+
+def fetch_db_discipline_ids(settings: Settings) -> frozenset[str]:
+    """Return distinct discipline values from the DB (for silo registration)."""
+    if not all([settings.db_host, settings.db_name, settings.db_user]):
+        return frozenset()
+    try:
+        pymysql = import_module("pymysql")
+        cursors_mod = import_module("pymysql.cursors")
+    except ImportError:
+        return frozenset()
+    try:
+        conn = pymysql.connect(
+            host=settings.db_host,
+            port=settings.db_port,
+            database=settings.db_name,
+            user=settings.db_user,
+            password=settings.db_password,
+            charset="utf8mb4",
+            cursorclass=cursors_mod.DictCursor,
+            connect_timeout=5,
+            read_timeout=5,
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT DISTINCT discipline FROM knowledge WHERE active = 1")
+                return frozenset(row["discipline"] for row in cursor.fetchall())
+    except Exception:
+        log.warning("⚠  Falha ao buscar disciplines do MySQL.", exc_info=True)
+        return frozenset()

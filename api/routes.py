@@ -81,11 +81,10 @@ async def chat(request: Request) -> StreamingResponse:
         log.info("🔄 Comando /reload recebido — reconstruindo índice BM25...")
         services.search_engine.rebuild()
         chunk_count = len(services.search_engine.chunks)
-        db_count = sum(1 for c in services.search_engine.chunks if c.get("source", "").startswith("db:"))
-        md_count = chunk_count - db_count
+        silo_count = len(services.search_engine.discipline_ids)
         status = (
             f"Índice reconstruído: {chunk_count} chunk(s) total "
-            f"({md_count} de arquivos .md + {db_count} do MySQL)."
+            f"({silo_count} silo(s) do MySQL)."
         )
         log.info("✅ /reload concluído — %s", status)
 

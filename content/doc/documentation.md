@@ -1,49 +1,33 @@
 # ACL — Agente de Contexto Local
-> Chatbot RAG de alta performance com indexação BM25, file-watching reativo e streaming SSE via OpenRouter.
+> Chatbot RAG de alta performance com indexação BM25 sobre MySQL, streaming SSE via OpenRouter e payloads JSON estruturados por aula.
 
 ---
 
-## 1. Visão Geral
+## Propósito do sistema
 
-O ACL é uma aplicação monolítica de **propósito único**: transformar um diretório local de arquivos Markdown em uma base de conhecimento consultável via chat, usando um LLM externo como motor de respostas. A arquitetura é deliberadamente enxuta — sem banco de dados, sem fila assíncrona, sem cache distribuído. Toda a inteligência fica na memória do processo.
+O ACL (Agente de Contexto Local) é uma aplicação monolítica de propósito único: transformar um banco de dados MySQL de aulas estruturadas em uma base de conhecimento consultável via chat, usando um LLM externo como motor de respostas.
 
-**Stack:**
+O público-alvo são alunos de graduação em tecnologia. Cada aula (originada de arquivos Markdown com front-matter YAML) é ingerida no MySQL com metadados estruturados (`payload JSON`) e texto integral (`content`). O motor BM25 indexa o conteúdo em memória, agrupado por disciplina (silo), e injeta os trechos mais relevantes no prompt do LLM antes de cada resposta.
+
+A arquitetura é deliberadamente enxuta — sem fila assíncrona, sem cache distribuído, sem embeddings vetoriais. Toda a inteligência de busca fica na memória do processo; a persistência e a estrutura ficam no MySQL.
+
+---
+
+## Arquitetura
+
+### Stack
+
 | Camada | Tecnologia |
 |---|---|
 | Servidor HTTP | FastAPI + Uvicorn |
-| Índice de busca | BM25Okapi (`rank-bm25`) |
-| File watching | Watchdog (thread background) |
+| Índice de busca | BM25Okapi (`rank-bm25`) — in-memory, por silo |
+| Banco de dados | MySQL 8.0 (`knowledge` com `payload JSON` + `content TEXT`) |
+| Ingestão | `scripts/ingest_content.py` (parse Markdown → MySQL) |
 | LLM gateway | OpenRouter API (via `httpx` async) |
 | Frontend | HTML/CSS/JS puro (Jinja2 template) |
 | Streaming | Server-Sent Events (SSE) |
 
----
-
-## 2. Estrutura de Arquivos
-
-```
-KernelBots/
-├── main.py             # Orquestração: logging, SearchEngine, watchdog, create_app
-├── core/               # Settings (env), logging_config
-├── engine/             # SearchEngine (BM25), ContentWatcher, ContextManager, ChatProvider
-├── api/                # Rotas FastAPI (GET /, POST /chat)
-├── app/                # create_app(), estado injetado (AppServices)
-├── requirements.txt
-├── .env                # Segredo: OPENROUTER_API_KEY
-├── content/            # Base de conhecimento — arquivos .md indexados pelo BM25
-│   ├── documentation.md
-│   ├── acl-overview.md
-│   └── aula-*.md
-├── tests/              # Smoke tests (pytest)
-└── templates/
-    └── index.html      # Frontend: UI, CSS e JS em um único arquivo
-```
-
-**Organização em pacotes:** separa config (`core`), motor RAG + LLM (`engine`), HTTP (`api`) e fábrica FastAPI (`app`). O ponto de entrada continua sendo um único comando (`python main.py` ou `uvicorn main:app`).
-
----
-
-## 3. Arquitetura
+### Diagrama de componentes
 
 ```mermaid
 flowchart TD
@@ -56,268 +40,330 @@ flowchart TD
         EP_HOME["GET /\nServe index.html"]
         EP_CHAT["POST /chat\nStreamingResponse"]
         ROUTER["ContextManager.build_messages()"]
-        BM25["SearchEngine\n(instância in-memory)"]
-        WATCHER["ContentWatcher\n(Thread Watchdog)"]
+        BM25["SearchEngine\n(in-memory, por silo)"]
         STREAM["ChatProvider.stream_response()\nSSE Generator"]
+    end
+
+    subgraph DataLayer["Camada de dados"]
+        DB["MySQL 8.0\ntabela knowledge\n(payload JSON + content TEXT)"]
+        INGEST["scripts/ingest_content.py\n(parse .md → UPSERT)"]
+        MD["content/*.md\n(fonte legado)"]
     end
 
     subgraph External["Externo"]
         OR["OpenRouter API\n3 modelos com fallback"]
     end
 
-    subgraph FS["Filesystem"]
-        MD["content/*.md\nBase de conhecimento"]
-    end
-
-    UI -->|POST /chat JSON| EP_CHAT
-    EP_HOME -->|HTMLResponse| UI
+    UI -->|"POST /chat JSON"| EP_CHAT
+    EP_HOME -->|"HTMLResponse"| UI
     EP_CHAT --> ROUTER
-    ROUTER -->|query| BM25
-    BM25 -->|chunks + scores| ROUTER
-    ROUTER -->|messages list| STREAM
-    STREAM -->|SSE chunks| SSE
-    SSE -->|tokens| UI
+    ROUTER -->|"query"| BM25
+    BM25 -->|"chunks + scores"| ROUTER
+    ROUTER -->|"messages list"| STREAM
+    STREAM -->|"SSE chunks"| SSE
+    SSE -->|"tokens"| UI
+    STREAM -->|"HTTP streaming"| OR
 
-    WATCHER -->|detecta mudança| BM25
-    MD -->|leitura inicial| BM25
-    MD -->|evento inotify| WATCHER
-    STREAM -->|HTTP streaming| OR
+    DB -->|"SELECT ... WHERE active=1"| BM25
+    MD -->|"parse YAML + H2"| INGEST
+    INGEST -->|"UPSERT por slug"| DB
+```
+
+### Estrutura de arquivos
+
+```
+KernelBot/
+├── main.py                 # Orquestração: logging, SearchEngine, create_app
+├── core/                   # Settings (env), logging_config, systemPrompt/
+├── engine/
+│   ├── search.py           # SearchEngine (BM25 por silo, fonte: MySQL)
+│   ├── database.py         # fetch_db_chunks(), fetch_db_discipline_ids()
+│   ├── context.py          # ContextManager.build_messages() — roteador RAG
+│   ├── chat_provider.py    # ChatProvider — streaming SSE com fallback
+│   ├── pinned_store.py     # PinnedSessionStore — contexto fixado por sessão
+│   └── watcher.py          # (legado — não utilizado, mantido para referência)
+├── api/
+│   └── routes.py           # GET / e POST /chat
+├── app/
+│   ├── factory.py          # create_app() com lifespan
+│   └── state.py            # AppServices dataclass
+├── scripts/
+│   └── ingest_content.py   # Parse .md → validação → UPSERT no MySQL
+├── SQL/
+│   ├── schema.sql          # DDL da tabela knowledge v2
+│   ├── schemas/
+│   │   └── lesson_v1.json  # JSON Schema (Draft 2020-12) do payload
+│   ├── migrations/
+│   │   └── 001_to_v2.sql   # ALTER de v1 para v2
+│   ├── create_readonly_user.sql
+│   └── README.md           # Documentação do schema e ingestão
+├── content/                # Fonte .md (legado — lido apenas pelo script de ingestão)
+│   ├── doc/                # acl-overview.md, documentation.md
+│   ├── python/             # 16 aulas
+│   ├── visualizacao-sql/   # 17 aulas
+│   ├── projeto-bloco/      # 9 aulas
+│   └── planejamento-curso-carreira/  # 7 aulas
+├── tests/
+│   ├── test_ingest.py      # 19 testes unitários (parse, validação, checksum)
+│   └── test_integration.py # 10 testes de integração (search + MySQL)
+├── templates/
+│   └── index.html          # Frontend: UI, CSS e JS em arquivo único
+├── requirements.txt
+└── .env                    # OPENROUTER_API_KEY + DB_HOST/PORT/NAME/USER/PASSWORD
 ```
 
 ---
 
-## 4. Módulos e Responsabilidades
+## Módulos e responsabilidades
 
-### 4.1 `SearchEngine` — Índice de Recuperação (BM25)
+### `SearchEngine` — Índice BM25 por silo (fonte: MySQL)
 
-**Responsabilidade:** Manter em memória um índice BM25 de todos os chunks extraídos dos arquivos `.md` em `/content`. É o coração do sistema RAG (evolução do antigo `BM25Index`).
+Mantém em memória um índice BM25 por disciplina (silo), alimentado exclusivamente pelo MySQL. Não lê mais o filesystem.
 
-**Por que BM25 e não embedding vetorial?**
-BM25 é determinístico, não requer GPU, não tem custo de API, e para domínios de texto técnico estruturado (como aulas em Markdown) a precisão é comparável a embeddings de modelos pequenos. A escolha é conscientemente pragmática para um sistema portável.
-
-**Fluxo de indexação:**
-1. `__init__` chama `rebuild()` imediatamente na inicialização.
-2. `_chunk_markdown(path)` divide cada `.md` em seções por headers `#`, `##`, `###`. Cada seção vira um `dict { text, source }`.
-3. Todos os chunks de todos os arquivos são tokenizados com regex `\w+` (lowercase) e alimentados ao `BM25Okapi`.
-4. O índice e os chunks ficam protegidos por `threading.Lock` para acesso seguro do Watchdog.
+**Inicialização:**
+1. `__init__` chama `rebuild()`.
+2. `fetch_db_chunks()` executa `SELECT id, slug, title, discipline, order, content FROM knowledge WHERE active = 1`.
+3. Cada row é dividida em janelas de ~500 palavras com overlap de 50 (`_chunk_text` em `database.py`).
+4. Chunks são agrupados por `discipline` em silos independentes, cada um com seu `BM25Okapi`.
+5. `fetch_db_discipline_ids()` traz os nomes de disciplina válidos para whitelist.
 
 **Busca:**
-```python
-def search(self, query: str, top_k: int = 3) -> list[dict]:
-```
-- Tokeniza a query da mesma forma que os documentos.
-- Obtém scores BM25 brutos e **normaliza pelo score máximo** (escala 0–1).
-- Filtra por `Settings.bm25_score_threshold` (0.7) — chunks abaixo disso são descartados.
-- Retorna os `top_k` hits com score acima do threshold.
-
-> [!IMPORTANT]
-> O threshold de 0.7 é agressivo. Se o usuário perguntar algo cujos termos não colidem bem com os tokens do índice, o sistema degrada para modo "assistente geral" sem contexto. Isso é intencional para evitar injeção de contexto irrelevante, mas pode surpreender.
-
----
-
-### 4.2 `ContentWatcher` — File Watching Reativo
-
-**Responsabilidade:** Monitorar `/content` em uma thread de background e acionar rebuild do BM25 quando arquivos `.md` forem criados, modificados ou deletados.
-
-**Decisão de design crítica:** debounce de **1.5 segundos** via `threading.Timer`. Se múltiplos eventos chegarem em sequência (ex: editor salvando com escrita atômica em dois estágios), apenas o último dispara o rebuild. Cancela o timer anterior antes de criar um novo.
 
 ```python
-def _debounced_rebuild(self) -> None:
-    if self._timer and self._timer.is_alive():
-        self._timer.cancel()
-    self._timer = threading.Timer(1.5, self._search_engine.rebuild)
-    self._timer.start()
+def search(self, query: str, top_k: int = 3, discipline_filter: str | None = None) -> list[dict]:
 ```
 
-O `Observer` é iniciado em **`main.py`** após instanciar o `SearchEngine`. O encerramento (`stop()` / `join()`) ocorre no **`lifespan`** de `create_app()` em `app/factory.py`.
+- Tokeniza a query com regex `\w+` (lowercase).
+- Se `discipline_filter` fornecido e válido: busca apenas naquele silo.
+- Se `global_context_mode == "geral"`: busca em **todos** os silos, merge por score, trunca em `top_k`.
+- Threshold de 0.7 — chunks abaixo são descartados (intencional: evita contexto irrelevante).
 
----
+**Rebuild manual:**
+O comando `/reload` no chat aciona `search_engine.rebuild()`, que refaz toda a leitura do MySQL e reconstrói os índices BM25.
 
-### 4.3 `ContextManager.build_messages()` — Roteador de Contexto
+### `database.py` — Acesso ao MySQL (schema v2)
 
-**Responsabilidade:** Decidir se a requisição precisa de contexto RAG ou não, e montar a lista de mensagens para o LLM.
+Duas funções públicas:
 
-**Lógica de decisão:**
+| Função | Retorno | Query |
+|--------|---------|-------|
+| `fetch_db_chunks(settings)` | `list[dict]` com `text`, `source`, `discipline` | `SELECT id, slug, title, discipline, order, content FROM knowledge WHERE active = 1` |
+| `fetch_db_discipline_ids(settings)` | `frozenset[str]` | `SELECT DISTINCT discipline FROM knowledge WHERE active = 1` |
+
+Cada chunk tem `source = "db:{discipline}/{slug}"` e `discipline` real (não mais um valor fixo `"db"`).
+
+### `ContextManager.build_messages()` — Roteador de contexto
+
+Decide qual contexto injetar no prompt e monta a lista `messages` para o LLM.
 
 ```mermaid
 flowchart TD
-    A[user_message] --> B{começa com /content?}
-    B -->|sim| C[force_rag = True\nremove prefix]
-    B -->|não| D[force_rag = False]
-    C --> E[BM25 search query]
-    D --> E
-    E --> F{hits encontrados?}
-    F -->|sim| G[Injeta chunks no system prompt]
-    F -->|não e force_rag| H[Injeta top-5 chunks raw]
-    F -->|não e não force_rag| I[System prompt geral\nsem contexto]
-    G --> J[mode: RAG]
-    H --> J
-    I --> K[mode: assistente geral]
-    J --> L[retorna messages list]
-    K --> L
+    A["user_message"] --> B{"/doc?"}
+    B -->|sim| C["Injeta chunks discipline=doc"]
+    B -->|não| D{"/content ou /discipline?"}
+    D -->|sim| E["force_rag = True"]
+    D -->|não| F["Busca BM25 normal"]
+    E --> G["BM25 search(query, discipline)"]
+    F --> G
+    G --> H{"hits acima do threshold?"}
+    H -->|sim| I["Injeta chunks no system prompt"]
+    H -->|não, mas tem pin| J["Usa contexto fixado da sessão"]
+    H -->|não, force_rag| K["Injeta top-5 chunks brutos"]
+    H -->|não| L["System prompt geral (sem contexto)"]
 ```
 
-O comando `/content` é um override manual: força busca no índice mesmo que o score seja zero, injetando os 5 primeiros chunks como contexto de último recurso.
+Comandos reconhecidos: `/doc`, `/content`, `/python`, `/visualizacao-sql`, `/projeto-bloco`, `/planejamento-curso-carreira`, `/reload`, `/reset`, `/limpar`.
 
----
+### `ChatProvider.stream_response()` — Streaming SSE com fallback
 
-### 4.4 `ChatProvider.stream_response()` — Gerador SSE com Fallback
+Faz requisição streaming ao OpenRouter e re-emite tokens via SSE.
 
-**Responsabilidade:** Fazer requisição streaming ao OpenRouter, parsear os chunks SSE da API, e re-emitir para o cliente como SSE.
+**Modelos com fallback (em ordem):**
 
-**Modelos com fallback (em ordem de tentativa):**
 | Prioridade | Modelo |
 |---|---|
-| 1 | `arcee-ai/trinity-large-preview:free` |
-| 2 | `google/gemini-2.5-flash:free` |
-| 3 | `meta-llama/llama-3.3-70b-instruct:free` |
+| 1 | `openrouter/free` (router automático) |
+| 2 | `deepseek/deepseek-r1:free` |
+| 3 | `meta-llama/llama-4-maverick:free` |
 
-**Condições de fallback:**
-- HTTP 429 (rate limit) → tenta próximo imediatamente.
-- HTTP >= 400 (qualquer outro erro) → loga o body e tenta próximo.
-- `httpx.TimeoutException` (limite 60s) → tenta próximo.
-- Qualquer exceção inesperada → loga com traceback e tenta próximo.
+**Condições de fallback:** HTTP 429 (rate limit), HTTP >= 400 (erro), timeout (60s), exceção inesperada — todos acionam o próximo modelo.
 
-**Protocolo de escape SSE:**
-O backend não pode emitir `\n` literal dentro de um campo `data:` SSE (quebraria o protocolo). A solução é escapar:
-```python
-safe = token.replace("\n", "\\n")
-yield f"data: {safe}\n\n"
+**Metadado `ACL_META`:** antes dos tokens, emite `data: [ACL_META]{json}` com `label`, `sources`, `pinned_active` para rastreabilidade no frontend.
+
+### `scripts/ingest_content.py` — Pipeline de ingestão
+
+Parseia arquivos `.md` de `content/`, extrai front-matter YAML e seções H2+, valida contra `SQL/schemas/lesson_v1.json`, calcula SHA-256 e faz UPSERT por `slug` no MySQL.
+
 ```
-E o frontend desfaz o escape:
-```js
-fullText += payload.replace(/\\n/g, '\n');
+content/*.md → parse YAML + H2 → validar JSON Schema → SHA-256 → UPSERT por slug → MySQL
 ```
 
-**Metadado `ACL_META` (rastreabilidade):** antes dos tokens do modelo, o servidor pode enviar `data: [ACL_META]` + JSON (`v`, `label`, `sources`) derivado de `ContextManager.build_messages` → `trace`, para breadcrumbs e feedback “Analisando resumos de …” no cliente modular (`frontend/src/api.js`).
+**Flags:** `--dry-run`, `--only-discipline <nome>`, `--verbose`.
+
+**Idempotência:** compara `source_checksum` (SHA-256 do arquivo) com o valor no banco. Se igual, SKIP. Se diferente, UPDATE. Se novo, INSERT.
 
 ---
 
-### 4.5 `index.html` — Frontend Monolítico
+## Modelo de dados (tabela `knowledge` v2)
 
-O frontend é **autocontido** em um único arquivo Jinja2, sem bundler, sem framework JS.
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `id` | `INT UNSIGNED AUTO_INCREMENT` | PK |
+| `slug` | `VARCHAR(255) UNIQUE` | Identificador da aula (ex: `por-que-programar-python`) |
+| `discipline` | `VARCHAR(70)` | Silo/disciplina (ex: `python`, `visualizacao-sql`) |
+| `title` | `VARCHAR(255)` | Título da aula |
+| `order` | `INT` | Posição na sequência da disciplina |
+| `content` | `MEDIUMTEXT` | Texto integral do .md (usado pelo chunker BM25) |
+| `payload` | `JSON` | Representação estruturada (front-matter + seções + exercícios) |
+| `payload_version` | `SMALLINT` | Versão do schema JSON (atualmente 1) |
+| `source_checksum` | `CHAR(64)` | SHA-256 do arquivo .md de origem |
+| `active` | `TINYINT(1)` | 1 = ativa, 0 = desativada |
+| `created_at` / `updated_at` | `TIMESTAMP` | Timestamps automáticos |
 
-**Dependências externas (CDN):**
-- `marked.js v12` — parse de Markdown para HTML.
-- `highlight.js v11.9` — syntax highlighting em blocos de código.
-- `Inter` e `JetBrains Mono` — Google Fonts.
+**Índices:** `uk_slug` (unique), `idx_active_discipline`, `idx_discipline_order`.
 
-**Design tokens (CSS custom properties):**
-| Token | Valor | Uso |
-|---|---|---|
-| `--bg` | `#1E1E1E` | Background geral |
-| `--surface` | `#27272A` | Header/Footer |
-| `--accent` | `#5B88B2` | Botões, links, foco |
-| `--error` | `#F87171` | Mensagens de erro |
-| `--success` | `#4ADE80` | Badge "Online" |
-
-**Gerenciamento de estado:**
-- Histórico de conversa é persistido em `sessionStorage` com chave `acl_history`.
-- Limite de 10 mensagens (`MAX_HISTORY = 10`) — truncagem pela cauda mais antiga.
-- Na recarga da página, o histórico é re-renderizado com `renderSavedHistory()`.
-
-**Fluxo de streaming no frontend:**
-1. `fetch('/chat', { method: 'POST', body: JSON.stringify({ message }) })`
-2. `res.body.getReader()` — leitura manual do stream.
-3. Buffer de texto parcial para lidar com chunks SSE fragmentados entre `read()` calls.
-4. Re-render Markdown incremental a cada token recebido (`bubble.innerHTML = renderMarkdown(fullText)`).
-5. Cursor piscante (`.cursor-blink::after { content: "▋" }`) removido ao final do stream.
+**JSON payload (v1):** `schema_version`, `title`, `slug`, `discipline`, `order`, `description`, `reading_time`, `difficulty`, `concepts[]`, `prerequisites[]`, `learning_objectives[]`, `review_after_days[]`, `sections[{heading, level, body_md}]`, `exercises[{level?, question, answer?, hint?}]`.
 
 ---
 
-## 5. Fluxo Completo de uma Requisição
+## APIs
+
+### Base URL
+
+`http://127.0.0.1:8001` (configurável em `main.py`). Sem autenticação.
+
+### Endpoints
+
+| Método | Caminho | Descrição |
+|--------|---------|-----------|
+| `GET` | `/` | Serve a interface web (`index.html` via Jinja2) |
+| `POST` | `/chat` | Recebe mensagem, retorna streaming SSE com resposta do LLM |
+
+### `POST /chat`
+
+**Request body (JSON):**
+
+```json
+{
+  "message": "string (obrigatório)",
+  "discipline": "string | null (opcional — filtra silo)",
+  "session_id": "string | null (opcional — contexto fixado)"
+}
+```
+
+**Response:** `text/event-stream` (SSE).
+
+Cada evento é uma linha `data: <conteúdo>\n\n`:
+- `data: [ACL_META]{...}` — metadados de rastreabilidade (primeiro evento).
+- `data: <token>` — token parcial do LLM (newlines escapadas como `\\n`).
+- `data: [DONE]` — fim do stream.
+- `data: [ERROR] <mensagem>` — erro (todos os modelos falharam).
+
+**Comandos especiais via `message`:**
+
+| Comando | Efeito |
+|---------|--------|
+| `/reload` | Reconstrói o índice BM25 a partir do MySQL |
+| `/doc <query>` | Força uso dos chunks de `discipline=doc` |
+| `/content <query>` | Força RAG com fallback para top-5 chunks brutos |
+| `/python <query>` | Filtra busca pelo silo `python` |
+| `/visualizacao-sql <query>` | Filtra busca pelo silo `visualizacao-sql` |
+| `/projeto-bloco <query>` | Filtra busca pelo silo `projeto-bloco` |
+| `/planejamento-curso-carreira <query>` | Filtra pelo silo `planejamento-curso-carreira` |
+| `/reset` ou `/limpar` | Limpa contexto fixado da sessão |
+
+**Erros HTTP:**
+
+| Status | Causa |
+|--------|-------|
+| 400 | JSON inválido, `message` ausente/vazia, `discipline` com tipo errado, `session_id` inválido |
+
+---
+
+## Fluxos
+
+### Fluxo 1: Ingestão de conteúdo (.md → MySQL)
 
 ```
-Usuário digita mensagem → Enter
-    │
-    ▼
-POST /chat { message: "..." }
-    │
-    ▼
-ContextManager.build_messages(user_message)
-    ├── SearchEngine.search(query) → [chunk1, chunk2, ...]
-    └── compõe system prompt (RAG ou geral)
-    │
-    ▼
-StreamingResponse(ChatProvider.stream_response(messages))
-    │
-    ▼
-httpx.AsyncClient → OpenRouter API (stream=True)
-    │
-    ├── modelo 1 falha? → modelo 2 → modelo 3
-    └── stream de tokens SSE
-    │
-    ▼
-yield "data: <token>\n\n" (por token)
-    │
-    ▼
-Frontend: reader.read() → buffer → parse SSE → marked.parse() → innerHTML
+1. Dev edita/cria arquivo .md em content/<discipline>/
+2. Dev executa: python scripts/ingest_content.py
+3. Script parseia YAML front-matter + seções H2 do corpo
+4. Valida payload contra SQL/schemas/lesson_v1.json
+5. Calcula SHA-256 do arquivo
+6. UPSERT por slug no MySQL (INSERT se novo, UPDATE se checksum mudou, SKIP se igual)
+7. Resultado: 51 rows em knowledge (49 aulas + 2 docs)
+```
+
+### Fluxo 2: Requisição de chat (ponta a ponta)
+
+```
+1. Usuário digita mensagem no frontend → Enter
+2. POST /chat { message: "variáveis em Python", discipline: null }
+3. ContextManager analisa prefixos (/doc, /content, /python, etc.)
+4. SearchEngine.search(query, discipline_filter) executa BM25 nos silos
+5. Chunks com score >= 0.7 são injetados no system prompt
+6. ChatProvider.stream_response() envia ao OpenRouter (modelo 1 → fallback)
+7. Tokens SSE são re-emitidos ao frontend
+8. Frontend renderiza Markdown incremental via marked.js
+9. Contexto é fixado na sessão (PinnedSessionStore) para turnos seguintes
+```
+
+### Fluxo 3: Rebuild do índice (/reload)
+
+```
+1. Usuário envia /reload no chat
+2. api/routes.py intercepta e chama search_engine.rebuild()
+3. SearchEngine refaz fetch_db_chunks() + fetch_db_discipline_ids()
+4. Novos índices BM25 por silo substituem os anteriores (lock)
+5. Resposta SSE: "Índice reconstruído: N chunk(s) total (M silo(s) do MySQL)."
 ```
 
 ---
 
-## 6. Configuração e Operação
+## Variáveis de ambiente (`.env`)
 
-### Variáveis de Ambiente (`.env`)
-
-| Variável | Obrigatório | Descrição |
-|---|---|---|
-| `OPENROUTER_API_KEY` | **Sim** | Chave de API do OpenRouter. Falha fatal se ausente. |
-
-### Dependências (`requirements.txt`)
-
-```
-fastapi
-uvicorn
-httpx
-python-dotenv
-jinja2
-rank-bm25
-watchdog
-pytest
-```
-
-> [!WARNING]
-> Nenhuma versão está fixada. Em produção, isso é uma bomba-relógio. Use `pip freeze > requirements.txt` após validação e commite as versões exatas.
-
-### Inicialização
-
-```bash
-# Método 1 — direto
-python main.py
-
-# Método 2 — uvicorn com reload (desenvolvimento)
-uvicorn main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-Servidor sobe em `http://127.0.0.1:8000`.
-
-### Adicionando conteúdo à base de conhecimento
-
-Basta copiar arquivos `.md` para `/content/`. O Watchdog detecta em até 1.5s e reconstrói o índice automaticamente. Nenhum restart necessário.
-
----
-
-## 7. Limitações e Pontos de Atenção
-
-| # | Problema | Impacto | Mitigação atual |
+| Variável | Obrigatório | Default | Descrição |
 |---|---|---|---|
-| 1 | **Sem persistência de histórico no servidor** | Cada requisição é stateless. O histórico é só local (sessionStorage) | Intencional para simplicidade |
-| 2 | **BM25 threshold rígido (0.7)** | Queries com vocabulário diferente do corpus não ativam RAG | Usar `/content` para forçar |
-| 3 | **Modelos gratuitos com rate limit** | Fallback entre 3 modelos pode esgotar e retornar erro | Monitorar logs; adicionar modelos pagos |
-| 4 | **API key exposta no `.env` sem rotação** | Risco de vazamento se o repo for publicado | `.env` deve estar no `.gitignore` |
-| 5 | **Sem autenticação na interface** | Qualquer um na rede local acessa o chat | Deploy apenas em `127.0.0.1` |
-| 6 | **Versões não fixadas nas dependências** | Quebra silenciosa em novas instalações | Fixar com `pip freeze` |
-| 7 | **Re-render Markdown a cada token** | CPU despendida em parse repetido durante stream | Aceitável para tráfego baixo |
+| `OPENROUTER_API_KEY` | Sim | — | Chave da API OpenRouter. Falha fatal se ausente. |
+| `DB_HOST` | Sim | — | Host do MySQL |
+| `DB_PORT` | Não | `3306` | Porta do MySQL |
+| `DB_NAME` | Sim | — | Nome do banco (ex: `pybot`) |
+| `DB_USER` | Sim | — | Usuário MySQL |
+| `DB_PASSWORD` | Sim | — | Senha do MySQL |
+| `ACL_GLOBAL_CONTEXT` | Não | `geral` | `geral` (todos silos) ou `all` |
+| `ACL_PINNED_MAX_TURNS` | Não | `5` | Turnos máximos com contexto fixado |
+| `ACL_PINNED_MAX_CHARS` | Não | `24000` | Limite de chars no contexto fixado |
+| `ACL_PINNED_WEAK_SCORE` | Não | `0.4` | Threshold para considerar hit "fraco" |
 
 ---
 
-## 8. Extensões Naturais
+## Limitações e pontos de atenção
 
-Se o projeto crescer, estes são os próximos passos arquiteturais em ordem de impacto:
+| # | Problema | Impacto | Mitigação |
+|---|---|---|---|
+| 1 | Sem persistência de histórico no servidor | Cada requisição é stateless; histórico só em `sessionStorage` | Intencional para simplicidade |
+| 2 | BM25 threshold rígido (0.7) | Queries com vocabulário diferente do corpus não ativam RAG | Usar `/content` para forçar |
+| 3 | Modelos gratuitos com rate limit | Fallback pode esgotar | `openrouter/free` como primeiro modelo é mais resiliente |
+| 4 | Sem autenticação na interface | Qualquer um na rede local acessa | Deploy apenas em `127.0.0.1` |
+| 5 | Chunker por janela de palavras (não por seção) | Chunks podem cortar no meio de uma seção | Evolução futura: chunker semântico usando `payload.sections` |
+| 6 | Watcher desativado | Mudanças em `.md` não refletem automaticamente | Usar `/reload` após `ingest_content.py` |
+| 7 | `content/` é legado | Não é lido pelo engine, apenas pelo script de ingestão | Manter como fonte para re-ingestão |
 
-1. **Fixar versões** em `requirements.txt` → imediato, zero custo.
-2. **Rate limiter no endpoint `/chat`** → `slowapi` + Redis para proteger em rede local.
-3. **Multi-turno real** → passar histórico de mensagens no payload ao LLM (atualmente cada request é stateless no servidor).
-4. **Embeddings híbridos** → combinar BM25 com um modelo de embedding local (ex: `sentence-transformers`) para recall semântico.
-5. **Autenticação básica** → `fastapi.security.HTTPBasic` se exposto além de localhost.
+---
+
+## Glossário e referências
+
+| Termo | Definição |
+|-------|-----------|
+| **Silo** | Partição lógica do índice BM25 por disciplina (`python`, `visualizacao-sql`, etc.) |
+| **Chunk** | Trecho de ~500 palavras extraído de uma aula para indexação BM25 |
+| **Payload** | Campo JSON na tabela `knowledge` com metadados estruturados da aula |
+| **Discipline** | Identificador da disciplina/trilha (corresponde a uma pasta em `content/`) |
+| **Pin / Contexto fixado** | Chunks mantidos na sessão do usuário por até N turnos sem nova busca BM25 |
+| **Ingestão** | Processo de parse `.md` → validação → UPSERT no MySQL via `ingest_content.py` |
+
+**Referências:**
+- JSON Schema do payload: `SQL/schemas/lesson_v1.json`
+- DDL da tabela: `SQL/schema.sql`
+- Documentação do banco: `SQL/README.md`
+- Script de ingestão: `scripts/ingest_content.py`

@@ -1,1 +1,1 @@
-"""Motor RAG (BM25), watcher de conteúdo, contexto e streaming LLM."""
+"""Motor RAG (BM25) sobre MySQL, contexto e streaming LLM."""
