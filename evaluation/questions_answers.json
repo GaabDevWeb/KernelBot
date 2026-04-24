@@ -316,5 +316,150 @@
     },
     "elapsed_ms": 59611,
     "source_line": 17
+  },
+  {
+    "discipline": "visualizacao-sql",
+    "question": "loop em sql existe tipo python?",
+    "response": "# Loops em SQL vs Python\n\n## Resposta curta\n\n**Não existe algo exatamente igual a um loop `for` ou `while` em SQL padrão.** SQL é uma linguagem **declarativa** — você diz *o que* quer obter, não *como* fazer passo a passo. O próprio SQL já processa várias linhas de uma vez, dispensando muitos loops.\n\n---\n\n## Por que não precisa de loop na maioria dos casos?\n\nEm Python, você faz:\n```python\nfor linha in dados:\n    print(linha)\n```\n\nEm SQL, você simplesmente diz:\n```sql\nSELECT * FROM tabela;\n```\nO banco processa todas as linhas de uma vez — sem precisar iterar explicitamente.\n\n---\n\n## Quando você precisa de algo \"tipo loop\"\n\nExistem alternativas em casos específicos:\n\n### 1. **CTEs Recursivas** (simula iteração)\nUsada para gerar sequências ou percorrer hierarquias:\n```sql\nWITH RECURSIVE contagem(n) AS (\n    SELECT 1          -- caso inicial\n    UNION ALL\n    SELECT n + 1 FROM contagem WHERE n < 10  -- caso recursivo\n)\nSELECT * FROM contagem;\n```\n*Disponível em PostgreSQL, SQL Server, Oracle, MySQL 8+.*\n\n---\n\n### 2. **Stored Procedures** (lógica procedural)\nAlguns SGBDs permitem loops dentro de procedimentos armazenados:\n```sql\n-- Exemplo em SQL Server\nDECLARE @i INT = 1;\nWHILE @i <= 10\nBEGIN\n    PRINT @i;\n    SET @i = @i + 1;\nEND;\n```\n*Isto já é programação procedural, não SQL puro.*\n\n---\n\n### 3. **Cursors** (iterar linha a linha)\nExiste, mas é **geralmente desencorajado** por ser lento e anti-pattern em SQL.\n\n---\n\n## Resumo\n\n| Situação | Solução em SQL |\n|----------|---------------|\n| Processar todas as linhas | Consulta simples (`SELECT`) |\n| Gerar sequência/recursão | `WITH RECURSIVE` |\n| Lógica complexa com loop | Stored procedure (PL/SQL, T-SQL, etc.) |\n\nSe descrever o que você precisa fazer, posso sugerir a abordagem mais adequada!",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:40:05.120392+00:00",
+    "finished_at": "2026-04-24T18:41:28.212020+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Visualização SQL",
+      "sources": [
+        "db:visualizacao-sql/introducao-bancos-dados-tipos-dados-sql",
+        "db:visualizacao-sql/sql-group-by-dimensoes-ordenacao-duplicatas"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 83091,
+    "source_line": 18
+  },
+  {
+    "discipline": "python",
+    "question": "como salvar dados tipo banco",
+    "response": null,
+    "status": "error",
+    "error": "RuntimeError: [ERROR] Todos os modelos de fallback falharam. Tente novamente mais tarde.",
+    "started_at": "2026-04-24T18:41:28.214221+00:00",
+    "finished_at": "2026-04-24T18:41:30.904084+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": null,
+    "elapsed_ms": 2689,
+    "source_line": 19
+  },
+  {
+    "discipline": "visualizacao-sql",
+    "question": "sql serve pra lógica tipo if?",
+    "response": "# Lógica Condicional em SQL\n\nSim! SQL tem recursos para lógica condicional. O principal é o **`CASE WHEN`**, que funciona como um \"if/else\" dentro de consultas.\n\n## CASE WHEN — o \"if\" do SQL\n\nA sintaxe básica é:\n\n```sql\nSELECT \n    nome,\n    idade,\n    CASE \n        WHEN idade < 18 THEN 'Menor de idade'\n        WHEN idade < 60 THEN 'Adulto'\n        ELSE 'Idoso'\n    END AS categoria\nFROM pessoas;\n```\n\nIsso é equivalente a:\n\n```\nif (idade < 18) {\n    return 'Menor de idade'\n} else if (idade < 60) {\n    return 'Adulto'\n} else {\n    return 'Idoso'\n}\n```\n\n## Outros recursos condicionais úteis\n\n| Recurso | Para que serve | Exemplo |\n|---------|----------------|---------|\n| `CASE WHEN` | Condições gerais | Classificar faixas etárias |\n| `COALESCE` | Substituir nulos | `COALESCE(campo, 'padrão')` — retorna o primeiro valor não-nulo |\n| `NULLIF` | Tratar divisões por zero | `NULLIF(divisor, 0)` — retorna null se divisor for zero |\n| `WHERE` | Filtrar linhas (já é condicional!) | `WHERE saldo > 1000` |\n\n## Exemplo prático com CASE em agregação\n\nVocê pode usar `CASE` dentro de funções de agregação para contar ou somar condicionalmente:\n\n```sql\nSELECT \n    COUNT(*) AS total_transacoes,\n    SUM(CASE WHEN valor > 1000 THEN 1 ELSE 0 END) AS transacoes_altas\nFROM account_transactions;\n```\n\n---\n\n**Resumo:** Sim, SQL suporta lógica condicional — principalmente através de `CASE WHEN`, que é muito usado para criar categorias, transformar dados e fazer agregações condicionais.\n\nQuer um exemplo mais específico para o contexto do seu projeto (conta bancária)?",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:41:30.906324+00:00",
+    "finished_at": "2026-04-24T18:42:47.556720+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Visualização SQL",
+      "sources": [
+        "db:visualizacao-sql/dashboard-comparacao-anos-conta-bancaria-looker",
+        "db:visualizacao-sql/sql-order-by-ordenacao-resultados"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 76650,
+    "source_line": 20
+  },
+  {
+    "discipline": "projeto-bloco",
+    "question": "projeto fica bagunçado",
+    "response": "## Por que o projeto pode parecer “bagunçado”?\n\n1. **Falta de estrutura de pastas** – Todos os arquivos (SQL, Python, notebooks, dashboards) acabam num único diretório.\n2. **Código repetido** – Funções de extração, transformação e carga são copiadas em vários scripts em vez de centralizadas.\n3. **Nomenclatura inconsistente** – Arquivos e variáveis com nomes ambíguos ou em idiomas mistos (ex.: `load_data.py`, `extrair_dados.sql`, `Dashboard.ipynb`).\n4. **Documentação dispersa** – Informações sobre o fluxo, requisitos e decisões estão espalhadas em README, comentários e e‑mails.\n5. **Backlog não estruturado** – Sem backlog ou sprint backlog, não há visão clara de prioridades e entregas.\n\n## Como organizar o projeto de forma limpa e escalável\n\n| Etapa | O que fazer | Por que ajuda |\n|-------|-------------|---------------|\n| **1. Definir a estrutura de pastas** | ```text\nprojeto‑bloco/\n│\n├── data/               # Arquivos brutos (CSV, JSON, etc.)\n├── sql/                # Scripts de consulta e transformação\n├── notebooks/          # Jupyter ou VS Code notebooks exploratórios\n├── src/                # Código Python (ETL, utilidades)\n│   ├── __init__.py\n│   ├── extract.py\n│   ├── transform.py\n│   └── load.py\n├── dashboards/         # Arquivos de visualização (PowerBI, Tableau, Streamlit)\n├── tests/              # Testes unitários e de integração\n├── docs/               # Documentação técnica (Markdown)\n├── requirements.txt    # Dependências\n└── README.md           # Visão geral\n``` | Mantém tudo organizado por responsabilidade. Facilita navegação e versionamento. |\n| **2. Centralizar o ETL** | Crie uma camada de *pipeline* em `src/` (ex.: `pipeline.py`) que chama `extract()`, `transform()` e `load()`. Cada função deve estar em um módulo separado. | Evita duplicação e permite reutilizar funções em notebooks ou scripts de teste. |\n| **3. Padronizar nomenclatura** | Use **snake_case** para arquivos e variáveis. Inclua a data ou versão quando relevante (`vendas_2024_01.csv`). | Reduz confusão e facilita a busca. |\n| **4. Documentar na raiz** | O `README.md` deve conter: <br>• Visão geral do projeto <br>• Fluxo de dados (etapas e responsáveis) <br>• Como rodar (comandos `pip install -r requirements.txt`, `python src/pipeline.py`) <br>• Como abrir dashboards | Qualquer pessoa nova no repositório tem um ponto de partida claro. |\n| **5. Usar um backlog mínimo** | Crie um arquivo `backlog.md` (ou use um issue tracker) com itens de valor de negócio: <br>• Faturamento total por mês <br>• Produtos mais vendidos <br>• Taxa de conversão <br>Defina prioridades e estimativas de esforço. | Garante que a equipe esteja focada no que realmente importa. |\n| **6. Testes automatizados** | Em `tests/` escreva testes unitários para funções de extração, transformação e carga. | Detecta regressões rapidamente e confere que a lógica não mudou inesperadamente. |\n| **7. Versão de dados e metadados** | Mantenha um arquivo `data/metadata.yaml` descrevendo esquema, origem, frequência de atualização. | Auxilia na governança e na comunicação com stakeholders. |\n| **8. Scripts de preparação** | Um script `setup_env.sh` (ou `Makefile`) que cria virtualenv, instala dependências e pré‑processa dados. | Reduz “works on my machine” e facilita onboarding. |\n\n## Checklist rápido para refatorar\n\n- [ ] Crie a estrutura de pastas sugerida.\n- [ ] Mova todos os scripts SQL para `sql/`.\n- [ ] Implemente funções `extract()`, `transform()`, `load()` em `src/`.\n- [ ] Atualize o `README.md` com instruções de execução.\n- [ ] Adicione um `backlog.md` ou use issues do GitHub.\n- [ ] Escreva pelo menos dois testes unitários.\n- [ ] Execute `make setup` (ou `setup_env.sh`) e verifique que tudo roda.\n\n---\n\n### Dica de boas práticas\n\n> **Não deixe a estrutura de pastas “vir de improviso”** – defina‑a antes de começar a codificar.  \n> **Documente tudo, mas vá de simples a complexo** – comece com a descrição de alto nível, depois afine nas notas de cada módulo.\n\nCom essa organização, o projeto deixa de ser bagunçado e passa a ser **mantível, escalável e claro para qualquer colaborador**. Se precisar de exemplos de código ou templates específicos, é só pedir!",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:42:47.558588+00:00",
+    "finished_at": "2026-04-24T18:43:16.120323+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Projeto bloco",
+      "sources": [
+        "db:projeto-bloco/metodologias-projeto-de-dados",
+        "db:projeto-bloco/introducao-projeto-bloco-formacao",
+        "db:projeto-bloco/pipeline-ferramentas-bancos-dados"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 28561,
+    "source_line": 21
+  },
+  {
+    "discipline": "planejamento-curso-carreira",
+    "question": "n sei estudar",
+    "response": "## Como “não saber estudar” pode ser resolvido passo a passo\n\n### 1. **Entenda o que significa “não saber estudar”**\n\n- **Falta de método**: Você tenta resolver tudo de uma vez, sem organizar o material.\n- **Desmotivação**: Não vê sentido no que faz, ou acha que não vai conseguir.\n- **Falta de rotina**: Não tem horários definidos, o que gera ansiedade e procrastinação.\n- **Gestão de tempo ruim**: Você fica preso em tarefas que não trazem muita produtividade.\n\nReconhecer qual desses (ou quais) se aplica a você já dá o primeiro passo.\n\n---\n\n### 2. **Defina pequenos objetivos claros**\n\n| Objetivo | Por que é importante | Como medir |\n|----------|----------------------|------------|\n| **Organizar o material** | Dá base para o estudo, evita perda de tempo | Lista de tópicos e fontes |\n| **Criar um cronograma semanal** | Mantém a disciplina | Horas de estudo por dia |\n| **Estabelecer metas diárias** | Dá sensação de progresso | Tarefas concluídas |\n\n---\n\n### 3. **Use a técnica Pomodoro**\n\n1. **25 min de foco** (estudo intenso, sem interrupções).  \n2. **5 min de pausa** (levante, estique).  \n3. Repita **4 vezes** e depois faça uma pausa maior (15–30 min).\n\n> **Dica**: Grave no celular o tempo e o que foi estudado em cada Pomodoro. Isso ajuda a perceber onde o tempo está sendo bem usado.\n\n---\n\n### 4. **Escolha o método de estudo que funciona para você**\n\n| Método | Quando usar | Como aplicar |\n|--------|-------------|--------------|\n| **Leitura ativa** | Conceitos novos | Leia, depois escreva resumidamente o que entendeu. |\n| **Mapas mentais** | Revisão e conexões | Desenhe ideias principais e sub‑ideias. |\n| **Flashcards (Anki, Quizlet)** | Memória de fatos | Crie cartões com perguntas e respostas. |\n| **Ensinar alguém** | Consolidar | Explique o tópico para um amigo ou escreva em blog. |\n\n---\n\n### 5. **Faça pausas estratégicas**\n\n- **Intervalo curto** (5 min) após 25 min de estudo.  \n- **Intervalo longo** (15–30 min) após 4 Pomodoros.  \n- **Descanso completo** (1–2 h) antes de voltar ao estudo se sentir exausto.\n\n---\n\n### 6. **Monitore seu progresso**\n\n- **Diário de estudo**: Anote o que estudou, quanto tempo gastou e como se sentiu.  \n- **Checklist de metas**: Marque as tarefas concluídas.  \n- **Revisão semanal**: Avalie o que funcionou e o que pode ser melhorado.\n\n---\n\n### 7. **Ajuste a rota se algo não estiver funcionando**\n\n- Se perceber que está se sentindo sobrecarregado, reduza a carga de horas por dia.  \n- Se não voltar a estudar, identifique a causa: distrações, falta de motivação, conteúdo muito denso?  \n- Ajuste o método: talvez o mapa mental não esteja ajudando; experimente flashcards.\n\n---\n\n### 8. **Busque apoio**\n\n- **Grupo de estudos**: Troque ideias e dúvidas.  \n- **Mentor ou tutor**: Pergunte sobre pontos críticos.  \n- **Ferramentas online**: Plataformas como Khan Academy, Coursera ou mesmo vídeos curtos no YouTube podem oferecer explicações diferentes.\n\n---\n\n## Resumo rápido\n\n1. **Diagnostique**: O que exatamente está te impedindo de estudar?  \n2. **Planeje**: Defina metas pequenas, crie um cronograma.  \n3. **Estude**: Use Pomodoro + método que se encaixe no seu estilo.  \n4. **Monitore**: Diário, checklist, revisão semanal.  \n5. **Ajuste**: Se algo não funcionar, mude o método ou a rotina.\n\nE lembre-se: **não há “um jeito certo”**. O que importa é encontrar um processo que funcione para você e o manter. Boa sorte!",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:43:16.123037+00:00",
+    "finished_at": "2026-04-24T18:43:54.439955+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Planejamento de carreira",
+      "sources": [
+        "db:planejamento-curso-carreira/bloco-entrada-estagio-atividades-complementares",
+        "db:planejamento-curso-carreira/habitos-mudanca-equipes-proatividade"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 38316,
+    "source_line": 22
+  },
+  {
+    "discipline": "planejamento-curso-carreira",
+    "question": "esqueço tudo",
+    "response": "Sem estresse! É super comum sentir que \"esquecemos tudo\" quando o conteúdo abrange várias frentes ou tem muitos detalhes práticos — isso acontece com quase todo mundo, ainda mais em temas de carreira que misturam autoconhecimento, ferramentas práticas e regras acadêmicas.\n\nPara te ajudar a recuperar o contexto rápido, separei os pontos centrais de cada material que temos disponível na base de conhecimento, de forma bem condensada:\n\n1. **[Fonte: db:planejamento-curso-carreira/privilegios-etica-diversidade-gatilhos]**  \n   Pontos-chave: Trajetórias profissionais têm pontos de partida diferentes (evite comparar só resultados finais); em TI, use as perguntas *quero? devo? posso?* para guiar decisões éticas com dados; diversidade em equipes gera soluções melhores; identificar gatilhos emocionais ajuda a reagir com maturidade em conflitos.\n\n2. **[Fonte: db:planejamento-curso-carreira/linkedin-carreira-oportunidades]**  \n   Pontos-chave: LinkedIn deve ser tratado como ferramenta profissional (evite postagens pessoais ou polêmicas); perfis funcionais têm título claro, foto, resumo e competências preenchidas (mesmo para estágio ou transição de carreira); networking ativo (interagir com posts, parabenizar conquistas de contatos) gera oportunidades.\n\n3. **[Fonte: db:planejamento-curso-carreira/bloco-entrada-estagio-atividades-complementares]**  \n   Pontos-chave: A graduação no Infinity é organizada em blocos de disciplinas com projetos integrados (não tem TCC tradicional); estágio obrigatório é carga horária de trabalho na área, enquanto atividades complementares são formações extras (cursos, palestras); planejar essas horas desde o início evita acúmulo no final do curso.\n\nSe você quiser aprofundar algum desses temas, ou esclarecer um ponto específico que ficou confuso, é só me avisar! Posso explicar com mais detalhes, trazer exemplos práticos ou montar um resumo ainda mais curto para você.",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:43:54.442011+00:00",
+    "finished_at": "2026-04-24T18:44:39.021535+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Planejamento de carreira",
+      "sources": [
+        "db:planejamento-curso-carreira/privilegios-etica-diversidade-gatilhos",
+        "db:planejamento-curso-carreira/linkedin-carreira-oportunidades",
+        "db:planejamento-curso-carreira/bloco-entrada-estagio-atividades-complementares"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 44579,
+    "source_line": 23
+  },
+  {
+    "discipline": "planejamento-curso-carreira",
+    "question": "estudo e n evoluo",
+    "response": null,
+    "status": "error",
+    "error": "ReadTimeout: timed out",
+    "started_at": "2026-04-24T18:44:39.024103+00:00",
+    "finished_at": "2026-04-24T18:46:39.363427+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": null,
+    "elapsed_ms": 120339,
+    "source_line": 24
   }
 ]

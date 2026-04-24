@@ -7,9 +7,9 @@
 
 O ACL (Agente de Contexto Local) é uma aplicação monolítica de propósito único: transformar um banco de dados MySQL de aulas estruturadas em uma base de conhecimento consultável via chat, usando um LLM externo como motor de respostas.
 
-O público-alvo são alunos de graduação em tecnologia. Cada aula (originada de arquivos Markdown com front-matter YAML) é ingerida no MySQL com metadados estruturados (`payload JSON`) e texto integral (`content`). O motor BM25 indexa o conteúdo em memória, agrupado por disciplina (silo), e injeta os trechos mais relevantes no prompt do LLM antes de cada resposta.
+O público-alvo são alunos de graduação em tecnologia. Cada aula (originada de arquivos Markdown com front-matter YAML) é ingerida no MySQL com metadados estruturados (`payload JSON`) e texto integral (`content`). O motor BM25 indexa o conteúdo em memória, agrupado por disciplina (silo). A camada `engine/retrieval.py` decide se há contexto suficiente; só então os trechos selecionados entram no prompt do LLM. Em **modo estrito** (padrão), pergunta sem base ou com baixa confiança lexical **não** chama o LLM — o sistema responde com hard stop e mensagem orientando reformulação.
 
-A arquitetura é deliberadamente enxuta — sem fila assíncrona, sem cache distribuído, sem embeddings vetoriais. Toda a inteligência de busca fica na memória do processo; a persistência e a estrutura ficam no MySQL.
+A arquitetura é deliberadamente enxuta — sem fila assíncrona, sem cache distribuído, sem embeddings vetoriais. O BM25 é mitigação **temporária** (`retrieval_mode = bm25_lexical_temporary` no trace); a evolução natural é busca híbrida (BM25 + embeddings + reranking). Toda a inteligência de busca lexical fica na memória do processo; a persistência e a estrutura ficam no MySQL.
 
 ---
 
@@ -40,8 +40,9 @@ flowchart TD
         EP_HOME["GET /\nServe index.html"]
         EP_CHAT["POST /chat\nStreamingResponse"]
         ROUTER["ContextManager.build_messages()"]
-        BM25["SearchEngine\n(in-memory, por silo)"]
-        STREAM["ChatProvider.stream_response()\nSSE Generator"]
+        BM25["SearchEngine\nsearch_candidates"]
+        POLICY["retrieval.build_decision\n(modo strict)"]
+        STREAM["ChatProvider.stream_response()\nSSE + hard stop"]
     end
 
     subgraph DataLayer["Camada de dados"]
@@ -58,7 +59,8 @@ flowchart TD
     EP_HOME -->|"HTMLResponse"| UI
     EP_CHAT --> ROUTER
     ROUTER -->|"query"| BM25
-    BM25 -->|"chunks + scores"| ROUTER
+    BM25 -->|"candidatos raw_score"| POLICY
+    POLICY -->|"allow_generation ou hard_stop"| ROUTER
     ROUTER -->|"messages list"| STREAM
     STREAM -->|"SSE chunks"| SSE
     SSE -->|"tokens"| UI
@@ -76,10 +78,11 @@ KernelBot/
 ├── main.py                 # Orquestração: logging, SearchEngine, create_app
 ├── core/                   # Settings (env), logging_config, systemPrompt/
 ├── engine/
-│   ├── search.py           # SearchEngine (BM25 por silo, fonte: MySQL)
+│   ├── search.py           # SearchEngine — BM25 por silo; search_candidates()
+│   ├── retrieval.py        # Contratos + build_decision + post_generation_flags
 │   ├── database.py         # fetch_db_chunks(), fetch_db_discipline_ids()
-│   ├── context.py          # ContextManager.build_messages() — roteador RAG
-│   ├── chat_provider.py    # ChatProvider — streaming SSE com fallback
+│   ├── context.py          # ContextManager — roteador + hard stop UX
+│   ├── chat_provider.py    # ChatProvider — SSE, hard stop sem LLM, sanity pós-geração
 │   ├── pinned_store.py     # PinnedSessionStore — contexto fixado por sessão
 │   └── watcher.py          # (legado — não utilizado, mantido para referência)
 ├── api/
@@ -104,8 +107,15 @@ KernelBot/
 │   ├── projeto-bloco/      # 9 aulas
 │   └── planejamento-curso-carreira/  # 7 aulas
 ├── tests/
-│   ├── test_ingest.py      # 19 testes unitários (parse, validação, checksum)
-│   └── test_integration.py # 10 testes de integração (search + MySQL)
+│   ├── test_retrieval.py       # Política de retrieval e gates
+│   ├── test_context.py         # ContextManager com SearchEngine fake
+│   ├── test_chat_provider.py   # Hard stop SSE sem chamar OpenRouter
+│   └── test_calibration_runner.py
+├── evaluation/
+│   ├── calibration_runner.py   # JSONL de traces para calibração manual
+│   ├── calibration_summary.py  # Percentis e taxas a partir do JSONL
+│   ├── all.md                  # Amostra de perguntas para calibração
+│   └── test_questions_runner.py
 ├── templates/
 │   └── index.html          # Frontend: UI, CSS e JS em arquivo único
 ├── requirements.txt
@@ -130,13 +140,15 @@ Mantém em memória um índice BM25 por disciplina (silo), alimentado exclusivam
 **Busca:**
 
 ```python
-def search(self, query: str, top_k: int = 3, discipline_filter: str | None = None) -> list[dict]:
+def search_candidates(self, query: str, candidate_k: int = 8, discipline_filter: str | None = None) -> list[RetrievalCandidate]:
 ```
 
-- Tokeniza a query com regex `\w+` (lowercase).
+- Tokeniza a query com regex `\w+` (lowercase) e expande acento→sem-acento (Fase 3).
 - Se `discipline_filter` fornecido e válido: busca apenas naquele silo.
-- Se `global_context_mode == "geral"`: busca em **todos** os silos, merge por score, trunca em `top_k`.
-- Threshold de 0.7 — chunks abaixo são descartados (intencional: evita contexto irrelevante).
+- Se `global_context_mode == "geral"`: busca em **todos** os silos, merge por score bruto, trunca em `candidate_k`.
+- **Não** aplica threshold por score; a decisão de suficiência fica em `engine/retrieval.build_decision`.
+- Cada `RetrievalCandidate` carrega `raw_score` (BM25 cru) e `normalized_score` (normalizado por silo, apenas para UI).
+- A API antiga `search()` continua disponível para compatibilidade (devolve `list[dict]`).
 
 **Rebuild manual:**
 O comando `/reload` no chat aciona `search_engine.rebuild()`, que refaz toda a leitura do MySQL e reconstrói os índices BM25.
@@ -152,27 +164,46 @@ Duas funções públicas:
 
 Cada chunk tem `source = "db:{discipline}/{slug}"` e `discipline` real (não mais um valor fixo `"db"`).
 
-### `ContextManager.build_messages()` — Roteador de contexto
+### `ContextManager.build_messages()` — Roteador com decisão de retrieval
 
-Decide qual contexto injetar no prompt e monta a lista `messages` para o LLM.
+Desde a mitigação incremental, o `ContextManager` consome uma `RetrievalDecision` produzida em `engine/retrieval.py` e só monta o prompt quando `allow_generation=True`. Hard stop vira resposta pronta (`assistant` message) e o `ChatProvider` pula o LLM.
 
 ```mermaid
 flowchart TD
     A["user_message"] --> B{"/doc?"}
-    B -->|sim| C["Injeta chunks discipline=doc"]
-    B -->|não| D{"/content ou /discipline?"}
-    D -->|sim| E["force_rag = True"]
-    D -->|não| F["Busca BM25 normal"]
-    E --> G["BM25 search(query, discipline)"]
-    F --> G
-    G --> H{"hits acima do threshold?"}
-    H -->|sim| I["Injeta chunks no system prompt"]
-    H -->|não, mas tem pin| J["Usa contexto fixado da sessão"]
-    H -->|não, force_rag| K["Injeta top-5 chunks brutos"]
-    H -->|não| L["System prompt geral (sem contexto)"]
+    B -->|sim| C["Injeta chunks discipline=doc (determinístico)"]
+    B -->|não| D["SearchEngine.search_candidates (score cru)"]
+    D --> E["build_decision(query, candidates, mode=strict)"]
+    E -->|allow_generation| F["Prompt estrito + chunks selecionados"]
+    E -->|hard_stop insufficient_context| G["Mensagem padrão + reformulação guiada"]
+    E -->|hard_stop underspecified_query| H["UX [tecnologia]+[problema]+[contexto]"]
+    E -->|hard_stop vague_but_high_risk| I["UX de reformulação estruturada"]
+    E -->|hard_stop ambiguous_retrieval| J["Mensagem de ambiguidade + pedido de detalhe"]
+    E -->|hard_stop context_misaligned| K["Mensagem de contexto fraco"]
+    E -->|hard_stop low_confidence| L["Mensagem de confiança baixa"]
 ```
 
+Regras críticas:
+
+- `/content` **não injeta mais `scope_chunks[:5]`**. Sem hit forte → hard stop com UX de reformulação.
+- `/doc` continua sendo fluxo determinístico (injeta todos os chunks do silo `doc`).
+- Pin NÃO ressuscita contexto bloqueado: no modo `strict` o pin só serve como histórico de UI.
+- O modo padrão é `strict`. `assistive` existe como flag, mas não é ativado por padrão.
+
 Comandos reconhecidos: `/doc`, `/content`, `/python`, `/visualizacao-sql`, `/projeto-bloco`, `/planejamento-curso-carreira`, `/reload`, `/reset`, `/limpar`.
+
+### `engine/retrieval.py` — Contratos e política
+
+Camada nova que centraliza:
+
+- `RetrievalCandidate` (score bruto + normalizado + termos que bateram).
+- `RetrievalTrace` (estrutura serializável para avaliação).
+- `RetrievalDecision` (allow_generation, reason, confidence, trace).
+- `extract_informative_terms`, `coverage`, `coverage_weighted`, `classify_terms`, `is_vague_but_high_risk`, `build_decision`.
+- `post_generation_flags` para sanity check pós-geração (Fase 3).
+- `expand_query_tokens` para rewriting conservador (acento-sem-acento).
+
+Toda métrica nova precisa justificar decisão concreta em até uma fase; caso contrário, sai do plano ou fica como debug temporário.
 
 ### `ChatProvider.stream_response()` — Streaming SSE com fallback
 
@@ -188,7 +219,22 @@ Faz requisição streaming ao OpenRouter e re-emite tokens via SSE.
 
 **Condições de fallback:** HTTP 429 (rate limit), HTTP >= 400 (erro), timeout (60s), exceção inesperada — todos acionam o próximo modelo.
 
-**Metadado `ACL_META`:** antes dos tokens, emite `data: [ACL_META]{json}` com `label`, `sources`, `pinned_active` para rastreabilidade no frontend.
+**Metadado `ACL_META` (v2):** antes dos tokens, emite `data: [ACL_META]{json}` com:
+
+| Campo | Descrição |
+|---|---|
+| `v` | Versão do meta (2 desde a mitigação) |
+| `label` | Rótulo do contexto (ex.: `Python`, `Documentação (doc)`) |
+| `sources` | Fontes do banco (ex.: `db:python/algoritmos-e-notebooks`) |
+| `pinned_active` / `pinned_display` | Estado do pin da sessão |
+| `mode` | `strict` ou `assistive` |
+| `decision` | `answer` ou `hard_stop` |
+| `reason` | `ok`, `insufficient_context`, `underspecified_query`, `vague_but_high_risk`, `ambiguous_retrieval`, `context_misaligned`, `low_confidence`, `post_generation_misalignment`, `provider_error` |
+| `confidence` | `high`, `medium` ou `low` |
+| `llm_called` | `true` se o provider chamou o LLM, `false` em hard stop |
+| `tokens_used` | Tokens contados (quando aplicável) |
+
+**Hard stop:** quando `decision == "hard_stop"`, o provider envia a mensagem pronta (sem chamar o LLM) seguido de `[DONE]`. O sanity check pós-geração pode emitir um segundo `ACL_META` com `decision=hard_stop, reason=post_generation_misalignment` e anexar um aviso.
 
 ### `scripts/ingest_content.py` — Pipeline de ingestão
 
@@ -264,8 +310,8 @@ Cada evento é uma linha `data: <conteúdo>\n\n`:
 | Comando | Efeito |
 |---------|--------|
 | `/reload` | Reconstrói o índice BM25 a partir do MySQL |
-| `/doc <query>` | Força uso dos chunks de `discipline=doc` |
-| `/content <query>` | Força RAG com fallback para top-5 chunks brutos |
+| `/doc <query>` | Injeta todos os chunks de `discipline=doc` (fluxo determinístico, sem decisão) |
+| `/content <query>` | Busca global com política estrita; **sem fallback** de chunks brutos |
 | `/python <query>` | Filtra busca pelo silo `python` |
 | `/visualizacao-sql <query>` | Filtra busca pelo silo `visualizacao-sql` |
 | `/projeto-bloco <query>` | Filtra busca pelo silo `projeto-bloco` |
@@ -299,13 +345,20 @@ Cada evento é uma linha `data: <conteúdo>\n\n`:
 ```
 1. Usuário digita mensagem no frontend → Enter
 2. POST /chat { message: "variáveis em Python", discipline: null }
-3. ContextManager analisa prefixos (/doc, /content, /python, etc.)
-4. SearchEngine.search(query, discipline_filter) executa BM25 nos silos
-5. Chunks com score >= 0.7 são injetados no system prompt
-6. ChatProvider.stream_response() envia ao OpenRouter (modelo 1 → fallback)
-7. Tokens SSE são re-emitidos ao frontend
-8. Frontend renderiza Markdown incremental via marked.js
-9. Contexto é fixado na sessão (PinnedSessionStore) para turnos seguintes
+3. ContextManager analisa prefixos (/doc, /content, /python, etc.) e seleciona modo=strict
+4. SearchEngine.search_candidates(query, candidate_k=8, discipline_filter) devolve candidatos brutos
+5. build_decision(query, candidates, mode="strict") aplica:
+     - hard stop por ausência de hits ou top_score < MIN_SCORE,
+     - underspecified_query (< MIN_TERMS termos informativos),
+     - vague_but_high_risk (termo vago sem central forte),
+     - ambiguous_retrieval (margem top1/top2 < MIN_SCORE_MARGIN),
+     - context_misaligned (coverage < MIN_COVERAGE),
+     - low_confidence (coverage ponderada baixa ou termo central ausente).
+6. Se allow_generation=False, provider envia a mensagem de hard stop sem chamar o LLM.
+7. Se allow_generation=True, ChatProvider.stream_response() envia ao OpenRouter (modelo 1 → fallback).
+8. Tokens SSE são re-emitidos ao frontend.
+9. Sanity check pós-geração (Fase 3): se a resposta falha, override para post_generation_misalignment.
+10. Contexto é fixado na sessão (PinnedSessionStore) para turnos seguintes.
 ```
 
 ### Fluxo 3: Rebuild do índice (/reload)
@@ -317,6 +370,21 @@ Cada evento é uma linha `data: <conteúdo>\n\n`:
 4. Novos índices BM25 por silo substituem os anteriores (lock)
 5. Resposta SSE: "Índice reconstruído: N chunk(s) total (M silo(s) do MySQL)."
 ```
+
+### Fluxo 4: Calibração de thresholds (avaliação)
+
+Para calibrar `ACL_RETRIEVAL_*` com dados reais do MySQL, use a pasta `evaluation/`:
+
+```bash
+python -m evaluation.calibration_runner --questions evaluation/all.md --out evaluation/calibration_traces.jsonl --limit 20
+python -m evaluation.calibration_summary --traces evaluation/calibration_traces.jsonl
+```
+
+- O **runner** gera uma linha JSON por pergunta com `query`, `top_score`, `second_score`, `score_margin`, `coverage`, `informative_terms`, `selected_sources`, `decision`, `reason`, `confidence`, `debug` (termos centrais/opcionais, `coverage_weighted`, etc.) e campos vazios `manual_label` / `manual_notes` para revisão humana.
+- Linhas com `flow: doc_injection` correspondem a `/doc` (injeta o silo `doc` inteiro; não passam por `build_decision`).
+- O **summary** imprime distribuição de `decision`/`reason`, percentis de `top_score` nos casos `answer`, taxas `Stop vs Answer`, `Ambiguous Retrieval Rate`, `Underspecified Query Rate` e `Vague But High Risk Rate`.
+
+Regra de produto: thresholds não devem ser “chute”; ajuste com base nos percentis e nas etiquetas manuais (`manual_label`) após revisar os 20 casos (bootstrap). Evolução prevista: ampliar para 100–200 casos com sampling balanceado.
 
 ---
 
@@ -333,7 +401,15 @@ Cada evento é uma linha `data: <conteúdo>\n\n`:
 | `ACL_GLOBAL_CONTEXT` | Não | `geral` | `geral` (todos silos) ou `all` |
 | `ACL_PINNED_MAX_TURNS` | Não | `5` | Turnos máximos com contexto fixado |
 | `ACL_PINNED_MAX_CHARS` | Não | `24000` | Limite de chars no contexto fixado |
-| `ACL_PINNED_WEAK_SCORE` | Não | `0.4` | Threshold para considerar hit "fraco" |
+| `ACL_PINNED_WEAK_SCORE` | Não | `0.4` | Threshold legado para pin fraco |
+| `ACL_RETRIEVAL_MIN_SCORE` | Não | `1.5` | Hard stop abaixo desse `top_score` BM25 bruto |
+| `ACL_RETRIEVAL_MIN_SCORE_MARGIN` | Não | `0.15` | Margem mínima entre top1 e top2 |
+| `ACL_RETRIEVAL_MIN_COVERAGE` | Não | `0.34` | Cobertura mínima de termos informativos |
+| `ACL_RETRIEVAL_MIN_COVERAGE_WEIGHTED` | Não | `0.34` | Idem com termos centrais valendo 2x |
+| `ACL_RETRIEVAL_MIN_TERMS` | Não | `2` | Termos informativos mínimos no modo strict |
+| `ACL_RETRIEVAL_CANDIDATE_K` | Não | `8` | Candidatos devolvidos pelo SearchEngine |
+| `ACL_RETRIEVAL_TOP_K` | Não | `4` | Chunks selecionados para o prompt |
+| `ACL_RETRIEVAL_MAX_CHUNKS_PER_SOURCE` | Não | `2` | Diversidade mínima (evita 1 fonte dominando) |
 
 ---
 
@@ -342,12 +418,14 @@ Cada evento é uma linha `data: <conteúdo>\n\n`:
 | # | Problema | Impacto | Mitigação |
 |---|---|---|---|
 | 1 | Sem persistência de histórico no servidor | Cada requisição é stateless; histórico só em `sessionStorage` | Intencional para simplicidade |
-| 2 | BM25 threshold rígido (0.7) | Queries com vocabulário diferente do corpus não ativam RAG | Usar `/content` para forçar |
-| 3 | Modelos gratuitos com rate limit | Fallback pode esgotar | `openrouter/free` como primeiro modelo é mais resiliente |
-| 4 | Sem autenticação na interface | Qualquer um na rede local acessa | Deploy apenas em `127.0.0.1` |
-| 5 | Chunker por janela de palavras (não por seção) | Chunks podem cortar no meio de uma seção | Evolução futura: chunker semântico usando `payload.sections` |
-| 6 | Watcher desativado | Mudanças em `.md` não refletem automaticamente | Usar `/reload` após `ingest_content.py` |
-| 7 | `content/` é legado | Não é lido pelo engine, apenas pelo script de ingestão | Manter como fonte para re-ingestão |
+| 2 | BM25-only (lexical) | Não captura intenção semântica; score alto com chunk errado ainda é possível | Gates de coverage, margem, `low_confidence`, sanity check pós-geração; calibrar com `evaluation/`; roadmap híbrido |
+| 3 | Modo strict aumenta falsos negativos | Mais hard stops e pedidos de reformulação | Preferível a resposta confiante sem base; ajustar `ACL_RETRIEVAL_*` com traces |
+| 4 | Modelos gratuitos com rate limit | Fallback pode esgotar | `openrouter/free` como primeiro modelo é mais resiliente; `provider_error` com UX amigável |
+| 5 | Sem autenticação na interface | Qualquer um na rede local acessa | Deploy apenas em `127.0.0.1` |
+| 6 | Chunker por janela de palavras (não por seção) | Chunks podem cortar no meio de uma seção | Evolução futura: chunker semântico usando `payload.sections` |
+| 7 | Watcher desativado | Mudanças em `.md` não refletem automaticamente | Usar `/reload` após `ingest_content.py` |
+| 8 | `content/` é legado | Não é lido pelo engine, apenas pelo script de ingestão | Manter como fonte para re-ingestão |
+| 9 | Segundo `ACL_META` no stream | Sanity pós-geração pode emitir novo meta após tokens parciais | Frontend pode ignorar campos desconhecidos; UI mostra aviso concatenado |
 
 ---
 
@@ -359,7 +437,9 @@ Cada evento é uma linha `data: <conteúdo>\n\n`:
 | **Chunk** | Trecho de ~500 palavras extraído de uma aula para indexação BM25 |
 | **Payload** | Campo JSON na tabela `knowledge` com metadados estruturados da aula |
 | **Discipline** | Identificador da disciplina/trilha (corresponde a uma pasta em `content/`) |
-| **Pin / Contexto fixado** | Chunks mantidos na sessão do usuário por até N turnos sem nova busca BM25 |
+| **Pin / Contexto fixado** | Chunks mantidos na sessão do usuário por até N turnos; no modo strict **não** substitui decisão de hard stop |
+| **Hard stop** | Resposta fixa sem LLM quando retrieval ou sanity check reprova a geração |
+| **RetrievalTrace** | Registro serializável (`to_dict`) para logs e calibração |
 | **Ingestão** | Processo de parse `.md` → validação → UPSERT no MySQL via `ingest_content.py` |
 
 **Referências:**

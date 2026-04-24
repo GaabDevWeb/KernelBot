@@ -105,7 +105,11 @@ async def chat(request: Request) -> StreamingResponse:
     )
 
     return StreamingResponse(
-        services.chat_provider.stream_response(built.messages, trace=built.trace),
+        services.chat_provider.stream_response(
+            built.messages,
+            trace=built.trace,
+            decision=built.decision,
+        ),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
