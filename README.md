@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="kernel-status.svg" alt="KernelBot Metrics" />
+  <img src="frontend/assets/images/KernelBanner.webp" alt="Banner" />
 </div>
 
 # KernelBot
