@@ -1,55 +1,21 @@
-# KernelBots (ACL)
+<div align="center">
+  <img src="frontend/assets/images/KernelBanner.webp" alt="Banner" />
+</div>
 
-Agente de contexto local com RAG (BM25) sobre Markdown em `content/`, interface em `templates/` e respostas em streaming via OpenRouter.
+<div style="width: 100%; overflow: hidden; margin-top: 20px;">
+  <div style="width: 52%; float: left; padding-right: 16px; box-sizing: border-box;">
+    <h2 style="margin-top: 0;">🚧 Em obras (ou quase isso)</h2>
+    <p style="margin: 0 0 12px 0;">
+      O código já está performando mais que muito sênior por aí, mas a documentação ainda está sendo "indexada" pela minha produtividade.
+    </p>
+    <p style="margin: 0 0 12px 0;">
+      Se você é um recrutador: O código fala mais que mil palavras. Olhe a pasta <code>engine/</code>.
+      <br />
+      Se você é um curioso: Volte em breve. Ou dê um <code>python main.py</code> e descubra.
+    </p>
+  </div>
 
-## Requisitos
+  <img src="frontend/assets/images/spiderMan.webp" alt="Spider-Man" style="width: 48%; float: right;" />
+</div>
 
-- Python 3.10+
-- Chave `OPENROUTER_API_KEY` no arquivo `.env` na raiz do repositório
-
-## Instalação
-
-```bash
-pip install -r requirements.txt
-```
-
-## Executar
-
-```bash
-python main.py
-```
-
-Ou com Uvicorn:
-
-```bash
-uvicorn main:app --host 127.0.0.1 --port 8000
-```
-
-Abra `http://127.0.0.1:8000`.
-
-## Estrutura
-
-| Caminho | Função |
-|--------|--------|
-| `main.py` | Orquestração: logging, `SearchEngine`, watchdog, `create_app` |
-| `core/` | Config (`Settings`), logging centralizado |
-| `engine/` | BM25 (`SearchEngine`), `ContentWatcher`, `ContextManager`, `ChatProvider` |
-| `api/` | Rotas FastAPI (`GET /`, `POST /chat`) |
-| `app/` | `create_app()`, estado injetado em `app.state` |
-| `content/` | Arquivos `.md` indexados |
-| `templates/` | UI (Jinja2) |
-
-## Testes
-
-```bash
-python -m pytest tests/ -v
-```
-
-## Logging
-
-O projeto usa `logging` da biblioteca padrão com loggers prefixados `kernelbots.*` (ex.: `kernelbots.engine.search`, `kernelbots.api.chat`). Para logs estruturados em JSON no stdout, é possível estender `core/logging_config.py` com algo como `structlog` no mesmo ponto de configuração.
-
-## Comandos no chat
-
-- `/content …` — força uso da base local (com fallback para os primeiros chunks se não houver hit BM25).
-- `/doc …` — injeta o conteúdo de `documentation.md` quando disponível no índice.
+<div style="clear: both;"></div>
