@@ -39,4 +39,5 @@ def create_app(services: AppServices) -> FastAPI:
         app.mount("/src", StaticFiles(directory=str(src_dir)), name="src")
 
     app.include_router(router)
+
     return app

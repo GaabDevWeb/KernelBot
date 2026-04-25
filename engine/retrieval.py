@@ -17,8 +17,11 @@ Fases suportadas:
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass, field
+
+from core.structured_log import ACL_MOD_DECISION, log_event
 from typing import Iterable, Literal
 
 Mode = Literal["strict", "assistive"]
@@ -46,6 +49,8 @@ MIN_TERMS: int = 2
 CANDIDATE_K: int = 8
 TOP_K: int = 4
 MAX_CHUNKS_PER_SOURCE: int = 2
+
+_log = logging.getLogger("kernelbots.retrieval")
 
 # Stopwords PT-BR focadas em conectivos e pronomes. Mantido curto porque
 # listas grandes tendem a remover sinal útil. Não é dicionário completo.
@@ -520,11 +525,74 @@ def build_decision(
         "vague_but_high_risk": vague_high_risk,
     }
 
+    thresholds_meta = {
+        "min_score": min_score,
+        "min_score_margin": min_score_margin,
+        "min_coverage": min_coverage,
+        "min_coverage_weighted": min_coverage_weighted,
+        "min_terms": min_terms,
+        "top_k": top_k,
+        "max_per_source": max_per_source,
+    }
+
+    log_event(
+        _log,
+        logging.DEBUG,
+        ACL_MOD_DECISION,
+        "retrieval_gates_inputs",
+        "metricas antes dos cortes",
+        metadata={
+            **thresholds_meta,
+            "query": query,
+            "informative_terms": informative,
+            "informative_count": len(informative),
+            "top_score": top,
+            "second_score": second,
+            "score_margin": score_margin,
+            "coverage": coverage_value,
+            "coverage_weighted": coverage_w,
+            "vague_but_high_risk": vague_high_risk,
+            "selected_preview_count": len(selected),
+        },
+    )
+
+    def _finish(decision: RetrievalDecision) -> RetrievalDecision:
+        t = decision.trace
+        log_event(
+            _log,
+            logging.INFO,
+            ACL_MOD_DECISION,
+            "retrieval_decision_final",
+            "generation_allowed" if decision.allow_generation else f"hard_stop:{decision.reason}",
+            metadata={
+                **thresholds_meta,
+                "allow_generation": decision.allow_generation,
+                "reason": decision.reason,
+                "confidence": decision.confidence,
+                "mode": t.mode,
+                "query": t.query,
+                "normalized_query": t.normalized_query,
+                "informative_terms": list(t.informative_terms),
+                "coverage": t.coverage,
+                "coverage_weighted": coverage_w,
+                "top_score": t.top_score,
+                "second_score": t.second_score,
+                "score_margin": t.score_margin,
+                "candidate_count": len(candidates),
+                "selected_count": len(decision.selected_candidates),
+                "selected_sources": [c.source for c in decision.selected_candidates[:12]],
+                "trace_decision": t.decision,
+                "trace_reason": t.reason,
+                "debug": t.debug,
+            },
+        )
+        return decision
+
     # 1. Sem hits ou score absoluto insuficiente.
     if not selected or top < min_score:
         confidence: Confidence = "low"
         debug["confidence"] = confidence
-        return RetrievalDecision(
+        return _finish(RetrievalDecision(
             allow_generation=False,
             reason="insufficient_context",
             confidence=confidence,
@@ -533,13 +601,13 @@ def build_decision(
                 query, informative, mode, selected, coverage_value,
                 "insufficient_context", False, confidence, debug,
             ),
-        )
+        ))
 
     # 2. Query subespecificada (Fase 2, strict).
     if mode == "strict" and len(informative) < min_terms:
         confidence = "low"
         debug["confidence"] = confidence
-        return RetrievalDecision(
+        return _finish(RetrievalDecision(
             allow_generation=False,
             reason="underspecified_query",
             confidence=confidence,
@@ -548,13 +616,13 @@ def build_decision(
                 query, informative, mode, selected, coverage_value,
                 "underspecified_query", False, confidence, debug,
             ),
-        )
+        ))
 
     # 3. Vague but high risk (Fase 2, strict).
     if mode == "strict" and vague_high_risk:
         confidence = "low"
         debug["confidence"] = confidence
-        return RetrievalDecision(
+        return _finish(RetrievalDecision(
             allow_generation=False,
             reason="vague_but_high_risk",
             confidence=confidence,
@@ -563,7 +631,7 @@ def build_decision(
                 query, informative, mode, selected, coverage_value,
                 "vague_but_high_risk", False, confidence, debug,
             ),
-        )
+        ))
 
     # 4. Retrieval ambíguo por margem baixa (Fase 2, strict).
     # Só dispara quando há de fato um segundo candidato; um único hit sólido
@@ -571,7 +639,7 @@ def build_decision(
     if mode == "strict" and len(selected) > 1 and score_margin < min_score_margin:
         confidence = "low"
         debug["confidence"] = confidence
-        return RetrievalDecision(
+        return _finish(RetrievalDecision(
             allow_generation=False,
             reason="ambiguous_retrieval",
             confidence=confidence,
@@ -580,13 +648,13 @@ def build_decision(
                 query, informative, mode, selected, coverage_value,
                 "ambiguous_retrieval", False, confidence, debug,
             ),
-        )
+        ))
 
     # 5. Coverage baixa no melhor chunk (Fase 2).
     if informative and coverage_value < min_coverage:
         confidence = "low"
         debug["confidence"] = confidence
-        return RetrievalDecision(
+        return _finish(RetrievalDecision(
             allow_generation=False,
             reason="context_misaligned",
             confidence=confidence,
@@ -595,7 +663,7 @@ def build_decision(
                 query, informative, mode, selected, coverage_value,
                 "context_misaligned", False, confidence, debug,
             ),
-        )
+        ))
 
     # 6. Confidence determinística (Fase 2).
     confidence = "high"
@@ -610,7 +678,7 @@ def build_decision(
     debug["confidence"] = confidence
 
     if mode == "strict" and confidence == "low":
-        return RetrievalDecision(
+        return _finish(RetrievalDecision(
             allow_generation=False,
             reason="low_confidence",
             confidence=confidence,
@@ -619,9 +687,9 @@ def build_decision(
                 query, informative, mode, selected, coverage_value,
                 "low_confidence", False, confidence, debug,
             ),
-        )
+        ))
 
-    return RetrievalDecision(
+    return _finish(RetrievalDecision(
         allow_generation=True,
         reason="ok",
         confidence=confidence,
@@ -630,7 +698,7 @@ def build_decision(
             query, informative, mode, selected, coverage_value,
             "ok", True, confidence, debug,
         ),
-    )
+    ))
 
 
 # --- Sanity check pós-geração (Fase 3) --------------------------------------

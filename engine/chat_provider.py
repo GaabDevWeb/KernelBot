@@ -23,6 +23,7 @@ from collections.abc import AsyncGenerator
 import httpx
 
 from core.config import Settings
+from core.structured_log import ACL_MOD_PROVIDER, log_event
 from engine.context import ContextTrace, hard_stop_message
 from engine.retrieval import RetrievalDecision, post_generation_flags
 
@@ -99,9 +100,19 @@ class ChatProvider:
                 hard_text = str(messages[-1].get("content") or "")
             if not hard_text:
                 hard_text = hard_stop_message(trace.reason)
-            log.info(
-                "   🛑 Hard stop — reason=%s | confidence=%s | sem chamada ao LLM",
-                trace.reason, trace.confidence,
+            log_event(
+                log,
+                logging.INFO,
+                ACL_MOD_PROVIDER,
+                "llm_skipped_hard_stop",
+                "stream sem LLM (hard stop retrieval)",
+                metadata={
+                    "reason": trace.reason,
+                    "confidence": trace.confidence,
+                    "mode": trace.mode,
+                    "llm_called": False,
+                    "tokens_used": 0,
+                },
             )
             for piece in _sse_text_chunk(hard_text):
                 yield piece
@@ -128,7 +139,18 @@ class ChatProvider:
         async with httpx.AsyncClient(timeout=timeout) as client:
             for attempt, model in enumerate(models, start=1):
                 try:
-                    log.info(f"🤖 Tentativa {attempt}/{len(models)} — modelo: {model}")
+                    log_event(
+                        log,
+                        logging.INFO,
+                        ACL_MOD_PROVIDER,
+                        "llm_attempt",
+                        "tentativa de stream OpenRouter",
+                        metadata={
+                            "attempt": attempt,
+                            "attempts_total": len(models),
+                            "model": model,
+                        },
+                    )
                     t_start = time.perf_counter()
                     token_count = 0
 
@@ -140,18 +162,40 @@ class ChatProvider:
                     ) as response:
 
                         if response.status_code == 429:
-                            log.warning(f"   ⏳ Rate limit (429) em '{model}' — acionando fallback...")
+                            log_event(
+                                log,
+                                logging.WARNING,
+                                ACL_MOD_PROVIDER,
+                                "llm_rate_limited",
+                                "HTTP 429 — fallback para proximo modelo",
+                                metadata={"model": model, "status_code": 429},
+                            )
                             continue
 
                         if response.status_code >= 400:
                             body = await response.aread()
-                            log.error(
-                                f"   ❌ HTTP {response.status_code} em '{model}' — "
-                                f"resposta: {body[:300].decode('utf-8', errors='replace')}"
+                            log_event(
+                                log,
+                                logging.ERROR,
+                                ACL_MOD_PROVIDER,
+                                "llm_http_error",
+                                "resposta HTTP de erro do OpenRouter",
+                                metadata={
+                                    "model": model,
+                                    "status_code": response.status_code,
+                                    "body_preview": body[:300].decode("utf-8", errors="replace"),
+                                },
                             )
                             continue
 
-                        log.info(f"   ✅ Conexão estabelecida com '{model}' — iniciando stream...")
+                        log_event(
+                            log,
+                            logging.INFO,
+                            ACL_MOD_PROVIDER,
+                            "llm_stream_opened",
+                            "stream SSE iniciado",
+                            metadata={"model": model},
+                        )
 
                         async for line in response.aiter_lines():
                             if not line.startswith("data: "):
@@ -159,9 +203,17 @@ class ChatProvider:
                             raw = line[6:]
                             if raw.strip() == "[DONE]":
                                 elapsed = (time.perf_counter() - t_start) * 1000
-                                log.info(
-                                    f"   🏁 Stream finalizado — modelo: '{model}' | "
-                                    f"{token_count} token(s) | {elapsed:.0f}ms"
+                                log_event(
+                                    log,
+                                    logging.INFO,
+                                    ACL_MOD_PROVIDER,
+                                    "llm_stream_complete",
+                                    "stream finalizado ([DONE])",
+                                    metadata={
+                                        "model": model,
+                                        "tokens_used": token_count,
+                                        "elapsed_ms": round(elapsed, 1),
+                                    },
                                 )
                                 async for piece in self._maybe_override_post_generation(
                                     "".join(full_answer), trace, decision, token_count,
@@ -182,9 +234,17 @@ class ChatProvider:
                                 continue
 
                         elapsed = (time.perf_counter() - t_start) * 1000
-                        log.info(
-                            f"   🏁 Stream finalizado (EOF) — modelo: '{model}' | "
-                            f"{token_count} token(s) | {elapsed:.0f}ms"
+                        log_event(
+                            log,
+                            logging.INFO,
+                            ACL_MOD_PROVIDER,
+                            "llm_stream_complete_eof",
+                            "stream terminou sem token [DONE]",
+                            metadata={
+                                "model": model,
+                                "tokens_used": token_count,
+                                "elapsed_ms": round(elapsed, 1),
+                            },
                         )
                         async for piece in self._maybe_override_post_generation(
                             "".join(full_answer), trace, decision, token_count,
@@ -194,10 +254,25 @@ class ChatProvider:
                         return
 
                 except httpx.TimeoutException:
-                    log.warning(f"   ⏰ Timeout ({timeout:.0f}s) em '{model}' — acionando próximo fallback...")
+                    log_event(
+                        log,
+                        logging.WARNING,
+                        ACL_MOD_PROVIDER,
+                        "llm_timeout",
+                        "timeout httpx — fallback",
+                        metadata={"model": model, "timeout_s": timeout},
+                    )
                     continue
                 except Exception as e:
-                    log.exception(f"   💥 Erro inesperado em '{model}': {type(e).__name__}: {e}")
+                    log_event(
+                        log,
+                        logging.ERROR,
+                        ACL_MOD_PROVIDER,
+                        "llm_exception",
+                        f"excecao no stream: {type(e).__name__}",
+                        metadata={"model": model, "error": str(e)},
+                    )
+                    log.exception("llm_exception detail")
                     continue
 
         # Todos os modelos falharam: mantém UX amigável e separa do hard stop
@@ -206,9 +281,13 @@ class ChatProvider:
         failure_meta = _build_meta(trace, llm_called=False, tokens_used=0)
         failure_meta.update({"decision": "hard_stop", "reason": "provider_error", "confidence": "low"})
         yield _sse_meta(failure_meta)
-        log.error(
-            "🚨 Todos os modelos de fallback falharam | Modelos tentados: %s",
-            ", ".join(models),
+        log_event(
+            log,
+            logging.ERROR,
+            ACL_MOD_PROVIDER,
+            "llm_all_models_failed",
+            "todos os modelos falharam — provider_error ao cliente",
+            metadata={"models_tried": list(models)},
         )
         for piece in _sse_text_chunk(friendly):
             yield piece
@@ -244,9 +323,17 @@ class ChatProvider:
         )
         if not flags:
             return
-        log.warning(
-            "   🚨 Sanity check pós-geração: flags=%s — substituindo resposta por hard stop",
-            flags,
+        log_event(
+            log,
+            logging.WARNING,
+            ACL_MOD_PROVIDER,
+            "post_generation_override",
+            "sanity pos-geracao — resposta substituida",
+            metadata={
+                "flags": list(flags),
+                "reason": "post_generation_misalignment",
+                "tokens_used": tokens_used,
+            },
         )
         updated_meta = _build_meta(trace, llm_called=True, tokens_used=tokens_used)
         updated_meta.update(

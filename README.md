@@ -16,7 +16,29 @@ Agente de contexto local com RAG (BM25) sobre **MySQL**, interface em `templates
 pip install -r requirements.txt
 ```
 
-## Configuração do banco
+## Setup automático (recomendado)
+
+1. Copie `.env.example` → `.env` e preencha **OPENROUTER_API_KEY**, **DB_HOST**, **DB_NAME**, **DB_USER**, **DB_PASSWORD** (MySQL com permissão `CREATE DATABASE` no host indicado).
+
+2. Na raiz do repositório:
+
+```bash
+python scripts/setup_local.py
+```
+
+Isto instala dependências (`pip install -r requirements.txt`), cria a base (`DB_NAME`), aplica `SQL/schema.sql` e ingere todos os `.md` de `content/` na tabela `knowledge`.
+
+Opções: `--no-pip`, `--skip-ingest` (só base + schema), `--dry-run` (só simula contagem de ingestão), `-v`.
+
+Windows (PowerShell), a partir da raiz:
+
+```powershell
+.\scripts\setup_local.ps1
+```
+
+3. Inicie a aplicação: `python main.py`.
+
+## Configuração manual do banco (alternativa)
 
 1. Crie o banco e a tabela:
 
@@ -31,9 +53,18 @@ mysql -u root -p pybot < SQL/schema.sql
 python scripts/ingest_content.py
 ```
 
-Flags úteis: `--dry-run` (só valida, sem escrita), `--only-discipline python`, `--verbose`.
+Flags úteis: `--dry-run` (sem escrita no MySQL), `-v`.
 
-3. Configure o `.env`:
+3. Configure o `.env` na raiz (não commitar). Modelo comentado e lista completa de variáveis: **`.env.example`**.
+
+```bash
+# Windows (cmd/PowerShell)
+copy .env.example .env
+# Linux / macOS
+# cp .env.example .env
+```
+
+Valores mínimos:
 
 ```env
 OPENROUTER_API_KEY=sua_chave
@@ -44,6 +75,8 @@ DB_NAME=pybot
 DB_USER=root
 DB_PASSWORD=sua_senha
 ```
+
+Opcionais (`ACL_*`, retrieval): ver comentários em `.env.example` e tabela no README abaixo.
 
 ## Executar
 

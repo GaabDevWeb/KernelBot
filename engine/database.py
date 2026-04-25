@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import logging
 from importlib import import_module
+
+from core.structured_log import ACL_MOD_DATABASE, log_event
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -40,14 +42,28 @@ def fetch_db_chunks(settings: Settings) -> list[dict]:
     Retorna [] com warning se o DB não estiver configurado ou falhar.
     """
     if not all([settings.db_host, settings.db_name, settings.db_user]):
-        log.debug("Variáveis DB_* não configuradas — pulando fonte MySQL.")
+        log_event(
+            log,
+            logging.DEBUG,
+            ACL_MOD_DATABASE,
+            "fetch_chunks_skipped",
+            "DB_* incompleto — sem MySQL",
+            metadata={},
+        )
         return []
 
     try:
         pymysql = import_module("pymysql")
         cursors_mod = import_module("pymysql.cursors")
     except ImportError:
-        log.warning("PyMySQL não instalado — fonte MySQL desativada.")
+        log_event(
+            log,
+            logging.WARNING,
+            ACL_MOD_DATABASE,
+            "pymysql_missing",
+            "PyMySQL nao instalado",
+            metadata={},
+        )
         return []
 
     try:
@@ -76,13 +92,42 @@ def fetch_db_chunks(settings: Settings) -> list[dict]:
             source = f"db:{discipline}/{row['slug']}"
             chunks = _chunk_text(row["content"], row["title"], source, discipline)
             all_chunks.extend(chunks)
-            log.debug("   🗄  row id=%s '%s' → %s chunk(s)", row["id"], row["title"], len(chunks))
 
-        log.info("   🗄  MySQL: %s row(s) → %s chunk(s) carregados", len(rows), len(all_chunks))
+        log_event(
+            log,
+            logging.INFO,
+            ACL_MOD_DATABASE,
+            "fetch_chunks_ok",
+            "rows MySQL convertidos em chunks",
+            metadata={"row_count": len(rows), "chunk_count": len(all_chunks)},
+        )
         return all_chunks
 
-    except Exception:
-        log.warning("⚠  Falha ao conectar ao MySQL — continuando sem dados do DB.", exc_info=True)
+    except Exception as e:
+        # 2003 = can't connect (servidor parado, porta errada, firewall)
+        if getattr(e, "args", None) and e.args and e.args[0] == 2003:
+            log_event(
+                log,
+                logging.WARNING,
+                ACL_MOD_DATABASE,
+                "mysql_unreachable",
+                "MySQL inacessivel — BM25 sem dados",
+                metadata={
+                    "host": settings.db_host,
+                    "port": settings.db_port,
+                    "error": str(e.args[1] if len(e.args) > 1 else e),
+                },
+            )
+        else:
+            log_event(
+                log,
+                logging.WARNING,
+                ACL_MOD_DATABASE,
+                "fetch_chunks_error",
+                "falha ao ler knowledge",
+                metadata={"error": str(e)},
+            )
+            log.warning("fetch_db_chunks detail", exc_info=True)
         return []
 
 
@@ -111,6 +156,24 @@ def fetch_db_discipline_ids(settings: Settings) -> frozenset[str]:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT DISTINCT discipline FROM knowledge WHERE active = 1")
                 return frozenset(row["discipline"] for row in cursor.fetchall())
-    except Exception:
-        log.warning("⚠  Falha ao buscar disciplines do MySQL.", exc_info=True)
+    except Exception as e:
+        if getattr(e, "args", None) and e.args and e.args[0] == 2003:
+            log_event(
+                log,
+                logging.WARNING,
+                ACL_MOD_DATABASE,
+                "disciplines_unreachable",
+                "MySQL inacessivel ao listar disciplines",
+                metadata={"host": settings.db_host, "port": settings.db_port},
+            )
+        else:
+            log_event(
+                log,
+                logging.WARNING,
+                ACL_MOD_DATABASE,
+                "disciplines_query_error",
+                "falha SELECT DISTINCT discipline",
+                metadata={"error": str(e)},
+            )
+            log.warning("fetch_db_discipline_ids detail", exc_info=True)
         return frozenset()

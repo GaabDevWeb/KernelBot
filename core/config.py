@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,6 +11,19 @@ from typing import Literal
 from dotenv import load_dotenv
 
 GlobalContextMode = Literal["geral", "all"]
+
+_LOG = logging.getLogger("kernelbots.config")
+
+
+def _normalize_db_host(raw: str) -> str:
+    """127.0.0.0 é typo frequente; o loopback usual é 127.0.0.1."""
+    h = (raw or "").strip().strip("'\"")
+    if h == "127.0.0.0":
+        _LOG.warning(
+            "DB_HOST era '127.0.0.0'; a usar '127.0.0.1'. Corrija o .env para evitar este aviso."
+        )
+        return "127.0.0.1"
+    return h
 
 
 @dataclass(frozen=True)
@@ -149,7 +163,7 @@ class Settings:
 
         """ !Credenciais do banco! """
 
-        db_host = (os.getenv("DB_HOST") or "").strip()
+        db_host = _normalize_db_host(os.getenv("DB_HOST") or "")
 
         db_port_raw = (os.getenv("DB_PORT") or "3306").strip()
 

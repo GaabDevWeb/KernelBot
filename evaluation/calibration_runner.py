@@ -26,9 +26,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import re
 import sys
 from pathlib import Path
+
+from core.structured_log import ACL_MOD_EVALUATION, log_event
 from typing import Iterable
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -39,6 +42,8 @@ from core.config import Settings
 from core.logging_config import configure_logging
 from engine.retrieval import build_decision, select_mode
 from engine.search import SearchEngine
+
+_log_eval = logging.getLogger("kernelbots.evaluation.calibration")
 
 
 _QUESTION_LINE_RE = re.compile(r"^(/[A-Za-z][A-Za-z0-9-]*)\s+(.+?)\s*$")
@@ -171,6 +176,14 @@ def main(argv: Iterable[str] | None = None) -> int:
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     n = run(args.questions, args.out, limit=args.limit)
+    log_event(
+        _log_eval,
+        logging.INFO,
+        ACL_MOD_EVALUATION,
+        "calibration_run_complete",
+        "JSONL de calibracao escrito",
+        metadata={"lines_written": n, "out": str(args.out), "questions": str(args.questions)},
+    )
     # ASCII-safe para Windows cp1252.
     print(f"[OK] Gerados {n} traces em {args.out}")
     return 0

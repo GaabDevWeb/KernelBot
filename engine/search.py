@@ -24,12 +24,44 @@ from rank_bm25 import BM25Okapi
 
 from core.config import GlobalContextMode
 from core.config import Settings
+from core.structured_log import ACL_MOD_SEARCH, log_event
 from engine.database import fetch_db_chunks, fetch_db_discipline_ids
 from engine.retrieval import CANDIDATE_K, RetrievalCandidate, expand_query_tokens
 
 log = logging.getLogger(f"kernelbots.{__name__}")
 
 _SAFE_DISCIPLINE_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+def _log_search_candidates(
+    query: str,
+    discipline_filter: str | None,
+    cands: list[RetrievalCandidate],
+    candidate_k: int,
+) -> None:
+    base_tokens = re.findall(r"\w+", query.lower())
+    expanded = expand_query_tokens(base_tokens)
+    top = cands[0].raw_score if cands else 0.0
+    second = cands[1].raw_score if len(cands) > 1 else 0.0
+    log_event(
+        log,
+        logging.INFO,
+        ACL_MOD_SEARCH,
+        "candidates_retrieved",
+        "busca lexical concluida",
+        metadata={
+            "query": query,
+            "normalized_query_tokens": expanded,
+            "discipline_filter": discipline_filter,
+            "candidate_k_requested": candidate_k,
+            "candidate_count": len(cands),
+            "top_score": top,
+            "second_score": second,
+            "score_margin": top - second,
+            "top_sources": [c.source for c in cands[:10]],
+            "top_raw_scores": [round(c.raw_score, 4) for c in cands[:10]],
+        },
+    )
 
 
 class SearchEngine:
@@ -81,8 +113,13 @@ class SearchEngine:
             db_chunks = fetch_db_chunks(self._settings)
 
         if not db_chunks:
-            log.warning(
-                "⚠  Nenhum chunk carregado do MySQL — BM25 desativado. Modo assistente geral ativo."
+            log_event(
+                log,
+                logging.WARNING,
+                ACL_MOD_SEARCH,
+                "index_empty",
+                "nenhum chunk MySQL — BM25 sem dados",
+                metadata={"chunk_total": 0},
             )
 
         chunks_by_silo: dict[str, list[dict]] = {}
@@ -99,7 +136,14 @@ class SearchEngine:
             bm25 = BM25Okapi(tokenized) if tokenized else None
             new_silos[silo] = {"chunks": silo_chunks, "bm25": bm25}
             all_chunks.extend(silo_chunks)
-            log.info("   🗄  [%s] %s chunk(s) do MySQL", silo, len(silo_chunks))
+            log_event(
+                log,
+                logging.DEBUG,
+                ACL_MOD_SEARCH,
+                "silo_indexed",
+                f"silo {silo} indexado",
+                metadata={"silo": silo, "chunk_count": len(silo_chunks)},
+            )
 
         discipline_ids: frozenset[str] = frozenset()
         if self._settings is not None:
@@ -113,9 +157,18 @@ class SearchEngine:
             self._silos = new_silos
             self._all_chunks = all_chunks
 
-        log.info(
-            "✅ Índice BM25 por silo pronto — %s chunk(s) (MySQL) | %s silo(s) | rebuild em %.1fms",
-            len(all_chunks), len(new_silos), elapsed,
+        log_event(
+            log,
+            logging.INFO,
+            ACL_MOD_SEARCH,
+            "index_rebuilt",
+            "indice BM25 reconstruido",
+            metadata={
+                "chunk_total": len(all_chunks),
+                "silo_count": len(new_silos),
+                "silos": sorted(new_silos.keys()),
+                "rebuild_ms": round(elapsed, 2),
+            },
         )
 
     def normalize_discipline(self, raw: str | None) -> str | None:
@@ -126,12 +179,26 @@ class SearchEngine:
         if not s:
             return None
         if not _SAFE_DISCIPLINE_RE.match(s):
-            log.warning("normalize_discipline: rejeitado (formato inseguro): %r", raw)
+            log_event(
+                log,
+                logging.WARNING,
+                ACL_MOD_SEARCH,
+                "discipline_rejected",
+                "formato de disciplina inseguro",
+                metadata={"raw": raw},
+            )
             return None
         with self._lock:
             known = self._discipline_ids
         if s not in known:
-            log.warning("normalize_discipline: disciplina desconhecida (ignorada): %r", raw)
+            log_event(
+                log,
+                logging.WARNING,
+                ACL_MOD_SEARCH,
+                "discipline_unknown",
+                "disciplina fora da whitelist",
+                metadata={"raw": raw},
+            )
             return None
         return s
 
@@ -214,13 +281,16 @@ class SearchEngine:
             if nd is not None:
                 cands = self._candidates_in_silo(nd, query, candidate_k)
                 cands.sort(key=lambda c: c.raw_score, reverse=True)
+                _log_search_candidates(query, nd, cands, candidate_k)
                 return cands
 
             merged: list[RetrievalCandidate] = []
             for silo in sorted(self._silos.keys()):
                 merged.extend(self._candidates_in_silo(silo, query, candidate_k))
             merged.sort(key=lambda c: c.raw_score, reverse=True)
-            return merged[: candidate_k]
+            merged = merged[:candidate_k]
+            _log_search_candidates(query, nd, merged, candidate_k)
+            return merged
 
     # --- Compatibilidade retroativa -----------------------------------------
 

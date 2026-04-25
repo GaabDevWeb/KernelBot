@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from core.config import Settings
+from core.structured_log import ACL_MOD_CONTEXT, log_event
 from engine.pinned_store import PinnedContext, PinnedSessionStore
 from engine.retrieval import (
     RetrievalDecision,
@@ -332,12 +333,23 @@ class ContextManager:
             has_explicit_assistive_flag=False,
         )
 
-        log.info(
-            f"💬 Mensagem [{len(user_message)} chars] | mode={mode} | "
-            f"force_rag={force_rag} | force_doc={force_doc} | "
-            f"discipline={effective_discipline!r} | cmd_disc={discipline_from_command!r} | "
-            f"reset={did_reset} | pin={'sim' if pin else 'não'} | "
-            f"query='{query[:80]}{'...' if len(query) > 80 else ''}'"
+        log_event(
+            log,
+            logging.INFO,
+            ACL_MOD_CONTEXT,
+            "context_route",
+            "pedido recebido — encaminhamento RAG",
+            metadata={
+                "user_message_chars": len(user_message),
+                "query": query,
+                "mode": mode,
+                "force_rag": force_rag,
+                "force_doc": force_doc,
+                "effective_discipline": effective_discipline,
+                "discipline_from_command": discipline_from_command,
+                "did_reset": did_reset,
+                "pin_active": bool(pin),
+            },
         )
 
         # --- Caso /doc: injeção determinística do silo "doc".
@@ -347,7 +359,14 @@ class ContextManager:
         if force_doc:
             doc_chunks = [c for c in self._search_engine.chunks if c.get("discipline") == "doc"]
             if doc_chunks:
-                log.info(f"   ⚡ /doc — injetando {len(doc_chunks)} chunk(s)")
+                log_event(
+                    log,
+                    logging.INFO,
+                    ACL_MOD_CONTEXT,
+                    "doc_injection",
+                    "injecao deterministica silo doc",
+                    metadata={"chunk_count": len(doc_chunks)},
+                )
                 ctx = _join_chunks_for_prompt(
                     [{"source": str(c["source"]), "text": str(c["text"])} for c in doc_chunks]
                 )
@@ -405,8 +424,6 @@ class ContextManager:
             top_k=self._settings.retrieval_top_k,
             max_per_source=self._settings.retrieval_max_chunks_per_source,
         )
-        self._log_decision(decision, mode, effective_discipline)
-
         if decision.allow_generation:
             selected = [
                 {
@@ -451,6 +468,19 @@ class ContextManager:
                 reason=decision.reason,
                 confidence=decision.confidence,
                 retrieval_trace=decision.trace,
+            )
+            log_event(
+                log,
+                logging.INFO,
+                ACL_MOD_CONTEXT,
+                "context_prompt_ready",
+                "mensagens montadas com chunks selecionados",
+                metadata={
+                    "selected_chunk_count": len(selected),
+                    "sources": list(trace.sources),
+                    "reason": decision.reason,
+                    "confidence": decision.confidence,
+                },
             )
             return BuildMessagesResult(
                 messages=[
@@ -522,21 +552,6 @@ class ContextManager:
         if effective_discipline is not None:
             return f"discipline:{effective_discipline}"
         return "content"
-
-    def _log_decision(
-        self,
-        decision: RetrievalDecision,
-        mode: str,
-        effective_discipline: str | None,
-    ) -> None:
-        t = decision.trace
-        log.info(
-            "   🎯 retrieval decision=%s reason=%s confidence=%s mode=%s discipline=%s | "
-            "top=%.3f second=%.3f margin=%.3f coverage=%.2f terms=%s sources=%s",
-            t.decision, t.reason, decision.confidence, mode, effective_discipline,
-            t.top_score, t.second_score, t.score_margin, t.coverage,
-            list(t.informative_terms), [s["source"] for s in t.selected_sources],
-        )
 
     def _hard_stop_result(
         self,

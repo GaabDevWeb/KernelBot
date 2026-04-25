@@ -7,5 +7,6 @@ rank-bm25
 watchdog
 pytest
 PyMySQL
+cryptography
 PyYAML
 jsonschema
