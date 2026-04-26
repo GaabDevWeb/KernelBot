@@ -7,7 +7,7 @@
 <div>
   <img align="right" width="50%" src="frontend/assets/images/spiderMan.webp" alt="Work in Progress" />
   
-  <h3>🚧 Em obras (ou quase isso)</h3>
+  <strong><h3>Em obras (ou quase isso)</h3></strong>
   
   <p>O código já está performando mais que muito sênior por aí, mas a documentação ainda está sendo "indexada" pela minha produtividade.</p>
   
