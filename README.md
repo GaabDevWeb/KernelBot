@@ -5,7 +5,7 @@
 <br />
 
 <div>
-  <img align="right" width="50%" src="frontend/assets/images/spiderMan.webp" alt="Work in Progress" />
+  <img align="right" width="280" src="frontend/assets/images/spiderMan.webp" alt="Work in Progress" />
   
   <h3>🚧 Em obras (ou quase isso)</h3>
   
