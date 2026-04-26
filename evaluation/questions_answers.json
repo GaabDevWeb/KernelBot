@@ -1,0 +1,465 @@
+[
+  {
+    "discipline": "visualizacao-sql",
+    "question": "como melhorar performance",
+    "response": "## Como melhorar a performance de dashboards no Looker Studio\n\nA performance de um dashboard no Looker Studio (anteriormente Google Data Studio) depende de vários fatores que vão desde a **qualidade dos dados** até a **configuração dos gráficos**. A seguir, apresento um passo‑a‑passo didático para identificar gargalos e aplicar correções práticas, usando as boas‑práticas que aparecem nas nossas fontes de conhecimento local.\n\n---\n\n### 1️⃣ Comece com a fonte de dados\n\n| Problema comum | Como identificar | O que fazer |\n|----------------|------------------|-------------|\n| Dados importados como **texto** em vez de números/datas | Verifique a aba **Dados** na fonte e veja o ícone de cada campo (data, moeda, número). | Corrija a formatação na planilha/BD (ex.: `DATE`, `NUMBER`, `CURRENCY`). Em planilhas, alinhe a coluna à esquerda e use o formato apropriado. |\n| Campos agregados incorretamente | Na fonte, veja se a agregação padrão está `SUM`, `AVG`, `COUNT`, etc. | Defina a agregação correta para cada métrica (ex.: `Transaction Amount` → `SUM`; `Transaction Number` → `COUNT_DISTINCT`). |\n| Falta de **indexação** ou filtros de período | Se a fonte for BigQuery, SQL, etc., verifique se há índices nas colunas de data e filtro. | Adicione índices ou materialize views para colunas de filtro (ex.: `date`). |\n\n> **Fonte**: *“Refinando o relatório de conta bancária no Looker Studio”* menciona que “a configuração de tipos e agregações no Looker Studio é crucial para que scorecards e gráficos façam sentido”.\n\n---\n\n### 2️⃣ Reduza a quantidade de dados que o Looker Studio precisa processar\n\n| Estratégia | Como aplicar | Benefício |\n|------------|--------------|-----------|\n| **Filtragem pré‑processada** | Crie uma view ou consulta que já aplique o filtro de período (último mês, último ano, etc.) antes de chegar ao Looker Studio. | Menos linhas são puxadas, menos processamento no cliente. |\n| **Limite de registros** | Em consultas SQL, use `LIMIT 1000` ou similar se a visualização não precisar de todos os dados. | Evita “carga excessiva” no painel. |\n| **Agrupamento antecipado** | Se precisar de métricas agregadas (por exemplo, `SUM(total_revenue)` por mês), faça o agrupamento na origem. | O Looker Studio recebe apenas os valores já agregados. |\n\n> **Fonte**: *“Implementando o dashboard da cafeteria Herman”* destaca a importância de “adicionar um controle de período no cabeçalho” e de testar se a série temporal se adapta, implicando que a fonte deve já ter dados filtrados corretamente.\n\n---\n\n### 3️⃣ Otimize cada gráfico individualmente\n\n| Problema | Solução prática | Exemplo |\n|-----------|-----------------|---------|\n| **Muitos gráficos na mesma página** | Quebre o painel em múltiplas páginas ou use “painéis de filtro” que ocultam visualizações. | Crie uma página “Visão Geral” e outra “Detalhes de Produto”. |\n| **Gráficos que usam a mesma dimensão de filtro, mas não respondem** | Verifique se a dimensão de data usada em todos está consistente e se o controle de período está ligado a ela. | Se o controle de data usa `month_year`, certifique‑se que todos os gráficos têm `month_year` como dimensão. |\n| **Precisão decimal desnecessária** | Reduza a precisão (ex.: de 2 para 0 decimais) em scorecards que mostram valores de moeda. | Em um “Scorecard de Receita Total”, defina “Formato” → “R$” com 0 casas decimais. |\n| **Ordenação lenta em tabelas grandes** | Crie índices na coluna usada para ordenação na origem ou use `ORDER BY` na consulta. | `ORDER BY balance DESC` em uma tabela de saldos. |\n\n> **Fonte**: *“Dashboard da cafeteria Herman”* recomenda “Ajuste de precisão decimal em scorecards e gráficos” e “Ordenações em tabelas (por data ou saldo)”.\n\n---\n\n### 4️⃣ Use filtros e controles de forma inteligente\n\n| Dica | Por que funciona |\n|------|-----------------|\n| **Filtros de nível de página** | Reduz o número de gráficos que reprocessam a mesma lógica de filtro. |\n| **Controle de lista suspensa** | Permite escolher categorias/produtos sem recarregar todo o conjunto de dados. |\n| **Controle de pesquisa** | Ajuda a localizar rapidamente itens em tabelas grandes. |\n\n> **Fonte**: *“Implementando o dashboard da cafeteria Herman”* descreve a adição de “controle de lista suspensa para `category`” e “controle de pesquisa/lista para `product_name`”, garantindo que todos os gráficos respondam de forma consistente.\n\n---\n\n### 5️⃣ Teste e valide\n\n1. **Teste de intervalo**: altere o controle de período (último mês, últimos 3 meses, ano inteiro) e observe se os gráficos se atualizam rapidamente.  \n2. **Teste de filtro**: escolha diferentes categorias ou produtos e verifique se a performance permanece aceitável.  \n3. **Testes de carga**: simule múltiplos usuários (ou apenas reproduza em diferentes navegadores) para garantir que a resposta seja consistente.\n\n> **Fonte**: *“Implementando o dashboard da cafeteria Herman”* menciona “Testar o controle de período” e observar se a série temporal se adapta.\n\n---\n\n## Resumo rápido\n\n| Passo | O que fazer | Por que importa |\n|-------|-------------|-----------------|\n| 1️⃣ **Corrigir tipos e agregações** | Ajustar na fonte | Evita cálculos errôneos e recálculos desnecessários |\n| 2️⃣ **Filtrar e agrupar na origem** | Use views ou consultas otimizadas | Reduz dados que chegam ao Looker Studio |\n| 3️⃣ **Simplificar a página** | Menos gráficos, usar páginas | Melhora a percepção de velocidade |\n| 4️⃣ **Ajustar precisão e ordenação** | Reduzir casas decimais, usar índices | Menos processamento e renderização |\n| 5️⃣ **Testar controles** | Controlar período, filtros, pesquisa | Garante que a interação seja fluida |\n\n**Próximos passos**:  \n- Revise a sua fonte de dados seguindo os itens 1 e 2.  \n- Aplique as otimizações de gráfico e filtros (item 3‑4).  \n- Faça os testes de carga e ajuste conforme necessário.\n\nSe precisar de ajuda para analisar um trecho específico da sua planilha ou consulta SQL, basta me enviar o trecho e eu explicarei como ajustá‑lo!",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:31:28.366692+00:00",
+    "finished_at": "2026-04-24T18:32:15.081690+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Visualização SQL",
+      "sources": [
+        "db:visualizacao-sql/refinando-relatorio-conta-bancaria-looker",
+        "db:visualizacao-sql/implementando-dashboard-herman-looker",
+        "db:visualizacao-sql/dashboard-cafeteria-herman"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 46714,
+    "source_line": 1
+  },
+  {
+    "discipline": "projeto-bloco",
+    "question": "como definir mvp",
+    "response": null,
+    "status": "error",
+    "error": "RuntimeError: [ERROR] Todos os modelos de fallback falharam. Tente novamente mais tarde.",
+    "started_at": "2026-04-24T18:32:15.083321+00:00",
+    "finished_at": "2026-04-24T18:32:17.355547+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": null,
+    "elapsed_ms": 2272,
+    "source_line": 2
+  },
+  {
+    "discipline": "projeto-bloco",
+    "question": "dividir projeto em partes",
+    "response": null,
+    "status": "error",
+    "error": "RuntimeError: [ERROR] Todos os modelos de fallback falharam. Tente novamente mais tarde.",
+    "started_at": "2026-04-24T18:32:17.357402+00:00",
+    "finished_at": "2026-04-24T18:32:26.875663+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": null,
+    "elapsed_ms": 9518,
+    "source_line": 3
+  },
+  {
+    "discipline": "projeto-bloco",
+    "question": "como planejar features",
+    "response": null,
+    "status": "error",
+    "error": "RuntimeError: [ERROR] Todos os modelos de fallback falharam. Tente novamente mais tarde.",
+    "started_at": "2026-04-24T18:32:26.877720+00:00",
+    "finished_at": "2026-04-24T18:32:27.921617+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": null,
+    "elapsed_ms": 1043,
+    "source_line": 4
+  },
+  {
+    "discipline": "projeto-bloco",
+    "question": "o que priorizar primeiro",
+    "response": "## 1️⃣ Contexto rápido  \n\nNos materiais que você tem à disposição há duas áreas que costumam gerar dúvidas iniciais:\n\n| Área | O que o material diz | Por que isso importa |\n|------|----------------------|----------------------|\n| **Metodologias de projeto** (Metodologias‑Projeto‑de‑Dados) | Metodologias ágeis entregam **valor pequeno e frequente**, enquanto a tradicional entrega tudo só no final. | Em projetos de dados isso evita que você gast​e tempo construindo algo que o cliente nem vai usar. |\n| **Laboratório de dados** (Laboratório‑Dados‑Python‑SQL) | Comece **com uma combinação simples e estável** (um banco, uma IDE, Python) e valide tudo com scripts mínimos. | Um ambiente mal configurado trava todo o fluxo de coleta‑limpeza‑carga‑visualização. |\n\nPortanto, a primeira decisão que você precisa tomar é **onde colocar seu foco imediato** para garantir que o restante do projeto possa avançar sem bloqueios.\n\n---\n\n## 2️⃣ O que priorizar primeiro?\n\n### 🔹 1️⃣ Definir a **metodologia de trabalho** (Ágil ou Tradicional)\n\n1. **Pergunte‑se**:  \n   - O cliente/mentor espera entregas rápidas para validar hipóteses?  \n   - O escopo está bem definido ou ainda pode mudar?  \n\n2. **Se a resposta for “sim” para entregas rápidas ou escopo incerto**, escolha **ágil** (sprints, entregas parciais).  \n   - Isso lhe dá a mentalidade de “entregar algo funcional o quanto antes” (ex.: um dashboard mínimo viável).  \n   - Você pode dividir o pipeline em **mini‑projetos** (coleta → limpeza → carga → visualização) e validar cada etapa.\n\n3. **Caso o escopo esteja fechado e o cliente queira tudo pronto de uma vez**, a abordagem tradicional pode ser aceitável, mas ainda assim vale **incorporar checkpoints** para evitar surpresas (ex.: revisão de requisitos antes de cada fase).\n\n> **Resumo da fonte**: “Metodologias ágeis permitem entregas menores e frequentes, maior feedback do cliente e adaptação contínua” (Metodologias‑Projeto‑de‑Dados).\n\n### 🔹 2️⃣ Montar **um laboratório de dados mínimo e funcional**\n\nDepois de decidir como vai organizar o trabalho, o próximo passo é garantir que a **infraestrutura** está pronta:\n\n| Etapa | O que fazer | Por quê? |\n|------|-------------|----------|\n| **Instalar o banco** | Escolha **um único SGBD** (ex.: PostgreSQL ou SQLite). Instale o servidor e teste se está rodando (`pg_ctl status` ou `sqlite3`). | Evita o erro “instalar só o cliente e achar que instalou o banco”. |\n| **Configurar a IDE** | No VS Code (ou outra IDE), aponte o interpretador Python que você verificou com `python --version`. | Garante que o código que você escreve realmente usa o mesmo Python que testou no terminal. |\n| **Instalar driver Python** | `pip install psycopg2-binary` (PostgreSQL) ou `pip install sqlite3` (já vem). | Conexão Python ↔ banco. |\n| **Rodar script de teste** | ```python\nimport psycopg2\nconn = psycopg2.connect(dbname='test', user='me', password='pw')\\nprint('Conectado!')\\n``` | Valida a comunicação antes de escrever pipelines complexos. |\n| **Versionar o código** | Inicie um repositório Git (`git init`). Commit inicial com o script de teste. | Controle de mudanças desde o início. |\n\n> **Resumo da fonte**: “Começar simples (um banco, uma ferramenta cliente, uma IDE) e validar com scripts pequenos é melhor do que tentar abraçar todas as tecnologias de uma vez” (Laboratório‑Dados‑Python‑SQL).\n\n### 🔹 3️⃣ Desenhar o **pipeline de dados** em alto nível\n\nCom a metodologia escolhida e o laboratório pronto, escreva, ainda que de forma rascunho, as **etapas do seu pipeline** (ex.: 4‑5 passos). Use o esqueleto do exercício *Easy* da introdução ao projeto de bloco:\n\n```python\ndef describe_pipeline() -> list[str]:\n    steps = [\n        \"Coletar dados (CSV, API, etc.)\",\n        \"Limpar e transformar com Python\",\n        \"Carregar em tabela no banco\",\n        \"Criar queries SQL para métricas\",\n        \"Construir dashboard (ex.: PowerBI, Streamlit)\",\n    ]\n    return steps\n```\n\nEsse rascunho já serve como **backlog** inicial de um sprint ágil ou como lista de fases de um modelo tradicional.\n\n---\n\n## 3️⃣ Resumo de prioridades (passo a passo)\n\n| Ordem | Ação | Por que fazer agora |\n|------|------|---------------------|\n| **1** | **Escolher a metodologia** (ágil vs tradicional) | Define como você vai organizar entregas e lidar com mudanças. |\n| **2** | **Montar o laboratório mínimo** (um SGBD, IDE, driver, teste de conexão) | Garante que o código roda e evita bloqueios técnicos laterais. |\n| **3** | **Escrever o esqueleto do pipeline** (lista de etapas) | Cria um backlog visível que pode ser dividido em sprints ou fases. |\n| **4** | **Versionar tudo** (Git) | Permite rastrear progresso e reverter erros rapidamente. |\n| **5** | **Iniciar a primeira entrega** (ex.: script que lê CSV → limpa → grava tabela) | Primeiro valor entregue ao cliente ou ao orientador, obtendo feedback cedo. |\n\nSeguindo essa ordem, você alinha **processo** (metodologia) e **infraestrutura** (laboratório) antes de mergulhar na lógica de negócio, o que costuma ser a causa de atrasos e retrabalho em projetos de dados. Boa sorte e, se precisar de detalhes sobre algum passo, é só chamar!",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:32:27.923247+00:00",
+    "finished_at": "2026-04-24T18:33:16.054946+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Projeto bloco",
+      "sources": [
+        "db:projeto-bloco/metodologias-projeto-de-dados",
+        "db:projeto-bloco/laboratorio-dados-python-sql",
+        "db:projeto-bloco/introducao-projeto-bloco-formacao"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 48131,
+    "source_line": 5
+  },
+  {
+    "discipline": "projeto-bloco",
+    "question": "como evitar escopo gigante",
+    "response": null,
+    "status": "error",
+    "error": "RuntimeError: [ERROR] Todos os modelos de fallback falharam. Tente novamente mais tarde.",
+    "started_at": "2026-04-24T18:33:16.057046+00:00",
+    "finished_at": "2026-04-24T18:33:18.886649+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": null,
+    "elapsed_ms": 2829,
+    "source_line": 6
+  },
+  {
+    "discipline": "projeto-bloco",
+    "question": "como organizar tarefas",
+    "response": "Para organizar tarefas em um projeto de dados, o segredo está em **separar o que é decisão estratégica (Arquitetura) do que é execução técnica (Engenharia)**, além de conhecer bem os perfis envolvidos.\n\nCom base no material do seu projeto (Fonte: `db:projeto-bloco/perfis-profissionais-case-consumidores`), aqui está um guia passo a passo para organizar essas tarefas:\n\n### 1. Identifique os Perfis e Responsabilidades\nAntes de distribuir tarefas, você precisa saber quem faz o quê. O material sugere começar mapeando os perfis (Exercício Easy).\n*   **DBA:** Foca na infraestrutura e permissões do banco.\n*   **Engenheiro de Dados:** Foca no pipeline, movimentação e transformação de dados.\n*   **Analista de Dados:** Foca na extração de insights e criação de relatórios.\n*   **Arquiteto de Dados:** Foca no desenho da solução completa.\n\n### 2. Separe Decisões de Arquitetura vs. Tarefas de Engenharia\nEsta é a etapa mais importante para organizar um fluxo de trabalho complexo (Exercício Hard do material).\n\n**Decisões de Arquiteto (O \"Quê\" e \"Porquê\"):**\n*   Escolher as tecnologias (ex: usar SQL Server como destino final).\n*   Definir a estrutura de camadas (ex: criar uma camada de *staging* ou temporária antes do banco definitivo).\n*   Estabelecer padrões de segurança e governança.\n\n**Tarefas de Engenheiro (O \"Como\"):**\n*   Criar os scripts de banco de dados (como no Exercício Medium, criando as tabelas `perfil_alto_valor`, etc.).\n*   Desenvolver o código de processamento (ex: script Python para ler o Excel e carregar no SQL Server).\n*   Configurar os processos de agendamento (jobs).\n\n### 3. Estruture o Trabalho em Camadas (Pipeline)\nO material apresenta um exemplo real de pipeline: **Excel → processamento → SQL Server → dashboard**.\nPara organizar as tarefas desse fluxo, você pode dividir em etapas:\n\n1.  **Ingestão:** Tarefas de leitura do arquivo Excel e envio para uma área temporária.\n2.  **Armazenamento:** Tarefas de criação das tabelas no SQL Server (definindo colunas como `id`, `consumidor_id`, `data_classificacao`).\n3.  **Transformação:** Tarefas de limpeza e classificação dos consumidores nos perfis (alto, médio, baixo).\n4.  **Consumo:** Tarefas de criação de Views ou Dashboards para o Analista de Dados.\n\n### 4. Dica de Organização para Estudo\nSe a sua dúvida for sobre como organizar o estudo dos exercícios do projeto, o material já traz uma ordem lógica de dificuldade:\n\n*   **Easy:** Comece listando os perfis (`listar_perfis`).\n*   **Medium:** Avance para a modelagem das tabelas (`estruturas_perfis`).\n*   **Hard:** Finalize separando as decisões de arquitetura das tarefas de engenharia no pipeline.\n\nSe precisar de ajuda para preencher os códigos `TODO` de algum desses exercícios específicos, é só me dizer qual deles você quer focar!",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:33:18.888493+00:00",
+    "finished_at": "2026-04-24T18:33:50.487230+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Projeto bloco",
+      "sources": [
+        "db:projeto-bloco/perfis-profissionais-case-consumidores"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 31598,
+    "source_line": 7
+  },
+  {
+    "discipline": "projeto-bloco",
+    "question": "usar backlog como",
+    "response": null,
+    "status": "error",
+    "error": "RuntimeError: [ERROR] Todos os modelos de fallback falharam. Tente novamente mais tarde.",
+    "started_at": "2026-04-24T18:33:50.489495+00:00",
+    "finished_at": "2026-04-24T18:33:52.963479+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": null,
+    "elapsed_ms": 2473,
+    "source_line": 8
+  },
+  {
+    "discipline": "planejamento-curso-carreira",
+    "question": "erro de quem começa",
+    "response": null,
+    "status": "error",
+    "error": "RuntimeError: [ERROR] Todos os modelos de fallback falharam. Tente novamente mais tarde.",
+    "started_at": "2026-04-24T18:33:52.965446+00:00",
+    "finished_at": "2026-04-24T18:34:59.408652+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": null,
+    "elapsed_ms": 66443,
+    "source_line": 9
+  },
+  {
+    "discipline": "doc",
+    "question": "como funciona /reload",
+    "response": "## O que é o comando **/reload**?\n\nNo material de referência que temos (arquivo **`db:doc/acl-overview`**) não há uma descrição explícita do comando **/reload**. Entretanto, pelo contexto geral do ACL – um chatbot que **indexa arquivos Markdown em memória** e **reconstrói o índice** sempre que há alterações na pasta `/content` – podemos inferir como esse comando costuma ser usado em projetos semelhantes.\n\n### Possível funcionamento\n\n| Etapa | O que acontece | Por quê? |\n|------|----------------|----------|\n| 1️⃣ Recebimento do comando | O usuário envia a mensagem **`/reload`** ao chatbot. | Esse prefixo indica que o cliente (frontend ou outro consumidor da API) quer disparar uma ação de recarregamento. |\n| 2️⃣ Acionamento da rota ou função interna | O backend (FastAPI) intercepta o prefixo e chama uma rota/handler responsável por **recriar o índice BM25** a partir dos arquivos Markdown atuais. | O índice BM25 está armazenado em memória; para que novas alterações de arquivos sejam consideradas, ele precisa ser recomputado. |\n| 3️⃣ Leitura da pasta `/content` | O código varre novamente todos os arquivos `.md` dentro de `/content`. | Garantir que nenhum documento novo ou modificado fique de fora. |\n| 4️⃣ Re‑cálculo dos pesos BM25 | Para cada documento, são calculados TF (frequência de termos), IDF (inverso da frequência de documentos) e a normalização por tamanho, gerando o ranking de relevância. | O algoritmo BM25 depende desses valores para responder às próximas consultas. |\n| 5️⃣ Atualização da estrutura em memória | O índice recém‑gerado substitui o antigo. | Assim, as próximas buscas usarão o conjunto de dados atualizado. |\n| 6️⃣ Resposta ao usuário | O chatbot devolve uma mensagem de confirmação, algo como **“Índice recarregado com sucesso (X documentos, Y termos)”**. | Feedback visual de que a operação foi concluída. |\n\n### Por que pode ser útil?\n\n- **Alterações fora do watchdog**: Embora o ACL já possua um *watchdog* que reconstrói o índice automaticamente ao detectar alterações, o `/reload` permite forçar a atualização manualmente (por exemplo, se o watchdog falhar ou se quiser garantir que o índice está sincronizado antes de uma operação crítica).\n- **Depuração**: Em ambientes de desenvolvimento, é comum precisar “resetar” o estado interno sem reiniciar todo o servidor FastAPI.\n- **Mudança de configuração**: Caso algum parâmetro do algoritmo BM25 seja alterado (por exemplo, os pesos `k1` ou `b`), um reload garante que o novo parâmetro seja aplicado ao índice.\n\n### Como usar (supondo que o comando exista)\n\n```text\n/reload\n```\n\n- **Sem parâmetros adicionais**: normalmente o comando não requer argumentos; ele simplesmente recarrega tudo que está em `/content`.\n- **Resposta típica**: “✅ Índice recarregado. 12 documentos indexados, 3 842 termos únicos.”\n\n### O que fazer se o comando não funcionar?\n\n1. **Verifique o log do servidor**: erros de leitura de arquivos ou permissões aparecem no console do FastAPI.\n2. **Confirme que a pasta `/content` contém arquivos `.md` válidos**.\n3. **Cheque se o watchdog está ativo**: talvez o índice já esteja sendo atualizado automaticamente e o `/reload` seja redundante.\n4. **Consulte a documentação mais recente**: se houver outro arquivo Markdown (por exemplo, `README.md` ou `commands.md`) que descreva comandos específicos, ele pode conter a sintaxe exata.\n\n---\n\n### Resumo\n\n- Não há descrição oficial de **`/reload`** nos arquivos que analisamos.\n- Baseado no design do ACL (indexação BM25 em memória e watchdog), o comando provavelmente **reconstrói o índice** a partir dos arquivos Markdown atuais.\n- É útil para forçar a atualização, depurar ou aplicar novas configurações ao algoritmo.\n\nSe precisar de detalhes mais precisos (por exemplo, o nome da rota FastAPI ou parâmetros configuráveis), será necessário consultar o código‑fonte do projeto ou um arquivo de documentação que descreva explicitamente o comando.",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:34:59.410480+00:00",
+    "finished_at": "2026-04-24T18:35:31.746823+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Documentação (doc)",
+      "sources": [
+        "db:doc/acl-overview"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 32336,
+    "source_line": 10
+  },
+  {
+    "discipline": "doc",
+    "question": "como funciona ingestão",
+    "response": "Primeiro, uma definição rápida: em sistemas de IA que usam RAG (Recuperação Aumentada por Geração, como o ACL), **ingestão** é o processo de coletar, processar e indexar dados externos para que eles possam ser recuperados e usados como contexto nas respostas da LLM.\n\nComo o material local disponível é a documentação do ACL (Agente de Contexto Local), vou explicar o funcionamento da ingestão focado nesse sistema (Fonte: `db:doc/acl-overview`). Se a sua dúvida for sobre ingestão em outros contextos, posso complementar depois.\n\n---\n\n### Contexto do ACL\nNo ACL, a ingestão serve exclusivamente para carregar e indexar conteúdos da pasta `/content` do projeto, transformando-os em um índice pesquisável que alimenta as respostas da LLM.\n\n### Passo a passo da ingestão no ACL\n1. **O que é ingerido**\n   Apenas arquivos no formato Markdown (`.md`) salvos na pasta `/content` do projeto. Outros formatos ou fontes externas (bancos de dados, APIs, PDFs) não são mencionados na documentação atual.\n\n2. **Gatilhos da ingestão**\n   - **Inicial**: Quando o servidor do ACL é ligado, ele já indexa todos os arquivos `.md` existentes na `/content` em memória.\n   - **Tempo real**: Um monitor (Watchdog) observa a pasta `/content` continuamente. Sempre que você cria ou salva um arquivo `.md`, o índice BM25 é *reconstruído* automaticamente em background, sem precisar reiniciar o servidor.\n\n3. **Tecnologia de indexação**\n   A ingestão usa o algoritmo BM25 (Best Match 25), um método estatístico de ranking que:\n   - Não exige GPU nem embeddings (é puramente baseado em contagem de termos)\n   - Calcula relevância usando frequência do termo no documento (TF), raridade do termo na coleção (IDF) e normalização por tamanho do documento\n   - Armazena o índice final em memória, o que garante alta velocidade de consulta\n\n4. **Tempo de processamento**\n   Após salvar um novo arquivo `.md`, a reconstrução do índice leva aproximadamente 1,5 segundos.\n\n5. **Uso do conteúdo após ingestão**\n   O conteúdo indexado é usado para recuperar contexto relevante para perguntas dos usuários:\n   - Se o usuário usar o prefixo `/content`, o contexto é injetado no prompt da LLM independente do score de relevância.\n   - Sem o prefixo, o contexto só é injetado se o score BM25 do conteúdo for maior que 0,7.\n\n---\n\n### O que a documentação não detalha\nA fonte disponível não traz informações sobre:\n- Etapas de pré-processamento de texto (divisão em chunks, remoção de stopwords, normalização de caracteres)\n- Se a reconstrução do índice é incremental (apenas atualiza o novo arquivo) ou total (reprocessa todos os arquivos da pasta) — o termo usado na documentação é \"reconstruído\", o que sugere um processo total.\n\n---\n\n### Resumo\nA ingestão no ACL é um processo automatizado, focado em arquivos Markdown locais, que usa BM25 para criar um índice em memória rápido, com atualização em tempo real via monitoramento de pasta.\n\nSe quiser saber mais sobre algum ponto específico (como o funcionamento do BM25 ou como usar o prefixo `/content`), é só perguntar!",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:35:31.748795+00:00",
+    "finished_at": "2026-04-24T18:36:48.703234+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Documentação (doc)",
+      "sources": [
+        "db:doc/acl-overview"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 76954,
+    "source_line": 11
+  },
+  {
+    "discipline": "doc",
+    "question": "como funciona mysql",
+    "response": null,
+    "status": "error",
+    "error": "RuntimeError: [ERROR] Todos os modelos de fallback falharam. Tente novamente mais tarde.",
+    "started_at": "2026-04-24T18:36:48.705458+00:00",
+    "finished_at": "2026-04-24T18:36:51.799219+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": null,
+    "elapsed_ms": 3093,
+    "source_line": 12
+  },
+  {
+    "discipline": "doc",
+    "question": "como funciona payload json",
+    "response": null,
+    "status": "error",
+    "error": "RuntimeError: [ERROR] Todos os modelos de fallback falharam. Tente novamente mais tarde.",
+    "started_at": "2026-04-24T18:36:51.801089+00:00",
+    "finished_at": "2026-04-24T18:36:53.844956+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": null,
+    "elapsed_ms": 2043,
+    "source_line": 13
+  },
+  {
+    "discipline": "doc",
+    "question": "como funciona fallback de modelo",
+    "response": "## Fallback de modelo\n\nNão encontrei documentação específica sobre \"fallback de modelo\" nos ficheiros do projeto (`/content`) neste momento.\n\n### O que geralmente significa \"fallback de modelo\"\n\nEm sistemas que usam LLMs, **fallback de modelo** refere-se a um mecanismo deresiliência onde:\n\n1. **Modelo primário falha** (ex: API indisponível, timeout, erro de autenticação)\n2. **Sistema tenta outro modelo** como替代\n3. **Garante continuidade** do serviço ao utilizador\n\n### Possíveis cenários neste projeto\n\nSe o ACL tiver fallback implementado, poderia funcionar assim:\n\n- Tentar um modelo (ex: GPT-4)\n- Se falhar, tentar outro (ex: GPT-3.5, Claude, etc.)\n- Ou usar um modelo local como резервный\n\n---\n\n**Para confirmar se existe esta funcionalidade no seu projeto**, você poderia:\n\n1. Procurar nos ficheiros Python do projeto por termos como `fallback`, `retry`, `model_name`, `llm`\n2. Verificar o ficheiro de configurações (`.env`, `config.py`, etc.)\n\nSe quiser, pode partilhar o código ou indicar-me outros ficheiros do projeto para eu analisar.",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:36:53.846707+00:00",
+    "finished_at": "2026-04-24T18:37:15.603673+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Documentação (doc)",
+      "sources": [
+        "db:doc/acl-overview"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 21756,
+    "source_line": 14
+  },
+  {
+    "discipline": "python",
+    "question": "sql e python fazem a mesma coisa?",
+    "response": "### Resposta curta  \n**SQL** e **Python** não fazem a mesma coisa. Cada linguagem foi criada para um propósito diferente e, embora possam ser usadas juntas (por exemplo, dentro de um notebook Deepnote), elas operam em domínios distintos:\n\n| Característica | **SQL** (Structured Query Language) | **Python** |\n|----------------|--------------------------------------|------------|\n| **Objetivo principal** | Consultar, inserir, atualizar e excluir dados em bancos de dados relacionais. | Programação geral‑propósito: automação, cálculo, análise de dados, desenvolvimento web, ciência de dados, etc. |\n| **Paradigma** | Declarativo – você descreve *o que* quer (ex.: “trazer todas as linhas onde a idade > 30”) e o SGBD decide *como* executar. | Imperativo/Procedural e orientado a objetos – você descreve passo a passo *como* o computador deve proceder. |\n| **Escopo de uso** | Operações sobre tabelas, views, índices, transações, controle de permissões. | Manipulação de variáveis, estruturas de controle (loops, condições), funções, classes, chamadas a APIs, visualização, etc. |\n| **Ambiente típico** | SGBDs como PostgreSQL, MySQL, SQLite, Oracle, SQL Server. | Interpretedores/IDEs (Deepnote, Jupyter, VS Code, PyCharm, etc.). |\n| **Integração** | Pode ser embutido em scripts Python (via `sqlite3`, `psycopg2`, `SQLAlchemy`, etc.) para que o Python faça o “orquestramento” e o SQL trate dos dados. | Pode chamar bancos de dados usando bibliotecas específicas, mas também pode ler arquivos CSV, JSON, planilhas, etc. |\n\n---\n\n## Por que essas diferenças existem?\n\n### 1. **SQL – linguagem de consulta a bancos de dados**\n- **Declaratividade**: você especifica *qual* informação quer, não *como* o motor de banco de dados deve percorrer os índices ou fazer joins.  \n- **Operações relacionais**: `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `JOIN`, `GROUP BY`, `HAVING`, `ORDER BY` são construções que lidam diretamente com tabelas e relações entre elas.  \n- **Transações e consistência**: SQL inclui controle de atomicidade, consistência, isolamento e durabilidade (ACID).  \n\n> Exemplo típico (SQL):\n> ```sql\n> SELECT nome, salario\n> FROM funcionarios\n> WHERE salario > 5000\n> ORDER BY salario DESC;\n> ```\n\n### 2. **Python – linguagem de propósito geral**\n- **Flexibilidade**: pode ser usado para scripts rápidos, aplicações web, automação, ciência de dados, aprendizado de máquina, etc.  \n- **Estruturas de controle**: `if`, `for`, `while`, funções, classes – tudo para definir algoritmos completos.  \n- **Ecossistema rico**: bibliotecas como `pandas` (manipulação de dados), `requests` (HTTP), `matplotlib`/`seaborn` (visualização), `scikit‑learn` (ML) e, claro, conectores a bancos de dados (`sqlite3`, `SQLAlchemy`).  \n\n> Exemplo típico (Python):\n> ```python\n> import pandas as pd\n> df = pd.read_csv('vendas.csv')\n> total = df['valor'].sum()\n> print(f'Valor total das vendas: R${total:.2f}')\n> ```\n\n### 3. **Como eles se complementam?**\n- **Orquestração**: um script Python pode abrir uma conexão ao banco, enviar consultas SQL, receber resultados como *dataframes* e, em seguida, processá‑los, gerar gráficos ou salvar relatórios.  \n- **Notebooks (Deepnote, Jupyter)**: nesses ambientes, você costuma ter blocos de código Python intercalados com blocos de código SQL. Assim, a mesma “célula” pode conter:\n\n  ```python\n  # Python – conecta ao banco\n  import pandas as pd\n  import sqlite3\n\n  con = sqlite3.connect('vendas.db')\n  query = \"SELECT data, valor FROM vendas WHERE data >= '2024-01-01'\"\n  df = pd.read_sql(query, con)\n  con.close()\n\n  # Python – analisa os dados\n  total_mes = df.groupby(df['data'].dt.month)['valor'].sum()\n  total_mes.plot(kind='bar')\n  ```\n\n  O **SQL** lida com a filtragem eficiente dentro do banco, enquanto o **Python** faz a análise e a visualização.\n\n---\n\n## Resumindo\n\n- **SQL** = “**O que** quero dos meus dados?” (consulta a bancos relacionais).  \n- **Python** = “**Como** devo processar, analisar ou apresentar esses dados e outras coisas?” (programação geral).  \n\nSe o seu objetivo é **trabalhar com bancos de dados**, aprenda SQL para extrair e modificar os dados de forma otimizada.  \nSe o objetivo for **automatizar fluxos, fazer análises avançadas, criar aplicações ou protótipos**, use Python – possivelmente combinando‑o com SQL quando precisar acessar um banco relacional.\n\n---  \n\n### Próximos passos sugeridos\n1. **Pratique SQL**: crie tabelas simples, faça `SELECT`, `JOIN` e experimente filtros.  \n2. **Instale um notebook** (Deepnote ou Jupyter) e escreva um pequeno script Python que se conecte ao seu banco e execute uma consulta SQL.  \n3. **Explore bibliotecas** como `pandas.read_sql` para transformar o resultado da consulta em um DataFrame e, então, aplique funções de análise ou plotagem.  \n\nDessa forma você verá na prática como as duas linguagens se complementam, em vez de serem concorrentes. Boa prática!",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:37:15.605887+00:00",
+    "finished_at": "2026-04-24T18:37:57.428343+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Python",
+      "sources": [
+        "db:python/algoritmos-e-notebooks",
+        "db:python/variaveis-tipos-estilo-python"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 41822,
+    "source_line": 15
+  },
+  {
+    "discipline": "visualizacao-sql",
+    "question": "variável existe em sql igual python?",
+    "response": "# Variáveis em SQL vs Python\n\nNão, **não funcionam da mesma forma**. São conceitos bem diferentes.\n\n---\n\n## Python: variáveis reais\n\nEm Python, você cria variáveis que guardam valores e podem mudar ao longo do código:\n\n```python\nx = 5\nx = 10  # a variável \"x\" agora vale 10\n```\n\nVocê pode atribuir, reatribuir e usar a variável em qualquer lugar.\n\n---\n\n## SQL: conceito diferente\n\nEm SQL (especialmente em consultas `SELECT`), **não existem variáveis** no sentido tradicional. O que você faz é:\n\n1. **Consultar dados** que já existem nas tabelas\n2. **Criar expressões** que calculam valores derivados, mas apenas no resultado da consulta\n\nExemplo de \"expressão\" em SQL (não é uma variável):\n\n```sql\nSELECT price, price * 1.07 AS price_with_tax\nFROM products;\n```\n\nAqui `price * 1.07` é um cálculo feito **na hora da consulta** — não é uma variável que você armazena ou reutiliza depois.\n\n---\n\n## Exceção: SQL procedural\n\nAlguns bancos de dados (como SQL Server com T-SQL) **têm variáveis**, mas só dentro de procedimentos armazenados ou scripts:\n\n```sql\nDECLARE @total INT;\nSET @total = 100;\n-- isso é mais parecido com Python, mas é algo específico de certos bancos\n```\n\n---\n\n## Resumo\n\n| Aspecto | Python | SQL (SELECT) |\n|---------|--------|--------------|\n| Variáveis | ✅ Sim | ❌ Não |\n| Expressões calculadas | ✅ Sim | ✅ Sim (mas só no resultado) |\n| Reutilizar valor depois | ✅ Sim | ❌ Não (a menos que use procedural) |\n\nSe precisar de algo que \"guarde\" um valor em SQL, provavelmente está pensando em um uso mais avançado (procedures, funções, ou até mesmo resolver isso na aplicação que consome o SQL).",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:37:57.430808+00:00",
+    "finished_at": "2026-04-24T18:39:05.504820+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Visualização SQL",
+      "sources": [
+        "db:visualizacao-sql/sql-operadores-logicos-expressoes-select",
+        "db:visualizacao-sql/criando-tabelas-sqlite-dml-basica",
+        "db:visualizacao-sql/sql-group-by-dimensoes-ordenacao-duplicatas"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 68074,
+    "source_line": 16
+  },
+  {
+    "discipline": "python",
+    "question": "banco de dados usa variável?",
+    "response": "Vamos começar contextualizando sua pergunta: ela toca em dois conceitos de áreas diferentes da computação. Tenho material local (arquivos do projeto) sobre **variáveis em Python**, mas não sobre bancos de dados — então vou separar as explicações:\n\n---\n\n### 1. O que são variáveis (conforme nosso material local)\nConforme o arquivo `db:python/variaveis-tipos-estilo-python`, variáveis em linguagens de programação (como Python) funcionam como \"post-its\" que apontam para valores armazenados na memória RAM:\n- O nome da variável não guarda o dado em si, apenas faz referência a ele.\n- Cada valor tem um tipo associado (`int`, `float`, `str`, `bool`), que define quais operações são válidas para aquele dado.\n- Variáveis seguem regras de sintaxe (ex: case sensitive, não podem ser palavras reservadas) e boas práticas de nomenclatura (como a PEP 8, citada no material).\n\n---\n\n### 2. Bancos de dados usam variáveis? (conhecimento geral, sem material local)\nNosso projeto não inclui conteúdo sobre bancos de dados, então as informações abaixo são conhecimento geral de computação, não vindas dos arquivos do repositório:\nBancos de dados **não usam variáveis no mesmo sentido das linguagens de programação**. Eles utilizam estruturas próprias para armazenar e manipular dados:\n- Dados são organizados em tabelas, com colunas que têm tipos fixos (ex: `INT`, `VARCHAR`, `DATE`) definidos no esquema do banco. Isso é parecido com variáveis tipadas, mas as colunas são parte da estrutura persistente do banco, não nomes temporários em memória.\n- Alguns bancos suportam extensões de linguagem procedural (ex: PL/pgSQL, T-SQL) que permitem criar variáveis similares às de programação, para uso em funções ou stored procedures.\n- Consultas SQL preparadas usam marcadores de parâmetro (ex: `:id` em PostgreSQL) que são chamados informalmente de variáveis, mas servem apenas para passar valores seguros para a consulta, sem o comportamento de variáveis de memória.\n\n---\n\n### Próximos passos\nSe sua dúvida era sobre como variáveis funcionam em Python (foco do nosso material), posso detalhar mais usando os arquivos de strings ou variáveis que tenho acesso. Se era especificamente sobre bancos de dados, nosso repositório não cobre esse tema — recomendo consultar a documentação oficial do banco que você usa, ou materiais específicos de SQL.",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:39:05.506902+00:00",
+    "finished_at": "2026-04-24T18:40:05.118046+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Python",
+      "sources": [
+        "db:python/strings-indices-slice-metodos",
+        "db:python/variaveis-tipos-estilo-python"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 59611,
+    "source_line": 17
+  },
+  {
+    "discipline": "visualizacao-sql",
+    "question": "loop em sql existe tipo python?",
+    "response": "# Loops em SQL vs Python\n\n## Resposta curta\n\n**Não existe algo exatamente igual a um loop `for` ou `while` em SQL padrão.** SQL é uma linguagem **declarativa** — você diz *o que* quer obter, não *como* fazer passo a passo. O próprio SQL já processa várias linhas de uma vez, dispensando muitos loops.\n\n---\n\n## Por que não precisa de loop na maioria dos casos?\n\nEm Python, você faz:\n```python\nfor linha in dados:\n    print(linha)\n```\n\nEm SQL, você simplesmente diz:\n```sql\nSELECT * FROM tabela;\n```\nO banco processa todas as linhas de uma vez — sem precisar iterar explicitamente.\n\n---\n\n## Quando você precisa de algo \"tipo loop\"\n\nExistem alternativas em casos específicos:\n\n### 1. **CTEs Recursivas** (simula iteração)\nUsada para gerar sequências ou percorrer hierarquias:\n```sql\nWITH RECURSIVE contagem(n) AS (\n    SELECT 1          -- caso inicial\n    UNION ALL\n    SELECT n + 1 FROM contagem WHERE n < 10  -- caso recursivo\n)\nSELECT * FROM contagem;\n```\n*Disponível em PostgreSQL, SQL Server, Oracle, MySQL 8+.*\n\n---\n\n### 2. **Stored Procedures** (lógica procedural)\nAlguns SGBDs permitem loops dentro de procedimentos armazenados:\n```sql\n-- Exemplo em SQL Server\nDECLARE @i INT = 1;\nWHILE @i <= 10\nBEGIN\n    PRINT @i;\n    SET @i = @i + 1;\nEND;\n```\n*Isto já é programação procedural, não SQL puro.*\n\n---\n\n### 3. **Cursors** (iterar linha a linha)\nExiste, mas é **geralmente desencorajado** por ser lento e anti-pattern em SQL.\n\n---\n\n## Resumo\n\n| Situação | Solução em SQL |\n|----------|---------------|\n| Processar todas as linhas | Consulta simples (`SELECT`) |\n| Gerar sequência/recursão | `WITH RECURSIVE` |\n| Lógica complexa com loop | Stored procedure (PL/SQL, T-SQL, etc.) |\n\nSe descrever o que você precisa fazer, posso sugerir a abordagem mais adequada!",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:40:05.120392+00:00",
+    "finished_at": "2026-04-24T18:41:28.212020+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Visualização SQL",
+      "sources": [
+        "db:visualizacao-sql/introducao-bancos-dados-tipos-dados-sql",
+        "db:visualizacao-sql/sql-group-by-dimensoes-ordenacao-duplicatas"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 83091,
+    "source_line": 18
+  },
+  {
+    "discipline": "python",
+    "question": "como salvar dados tipo banco",
+    "response": null,
+    "status": "error",
+    "error": "RuntimeError: [ERROR] Todos os modelos de fallback falharam. Tente novamente mais tarde.",
+    "started_at": "2026-04-24T18:41:28.214221+00:00",
+    "finished_at": "2026-04-24T18:41:30.904084+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": null,
+    "elapsed_ms": 2689,
+    "source_line": 19
+  },
+  {
+    "discipline": "visualizacao-sql",
+    "question": "sql serve pra lógica tipo if?",
+    "response": "# Lógica Condicional em SQL\n\nSim! SQL tem recursos para lógica condicional. O principal é o **`CASE WHEN`**, que funciona como um \"if/else\" dentro de consultas.\n\n## CASE WHEN — o \"if\" do SQL\n\nA sintaxe básica é:\n\n```sql\nSELECT \n    nome,\n    idade,\n    CASE \n        WHEN idade < 18 THEN 'Menor de idade'\n        WHEN idade < 60 THEN 'Adulto'\n        ELSE 'Idoso'\n    END AS categoria\nFROM pessoas;\n```\n\nIsso é equivalente a:\n\n```\nif (idade < 18) {\n    return 'Menor de idade'\n} else if (idade < 60) {\n    return 'Adulto'\n} else {\n    return 'Idoso'\n}\n```\n\n## Outros recursos condicionais úteis\n\n| Recurso | Para que serve | Exemplo |\n|---------|----------------|---------|\n| `CASE WHEN` | Condições gerais | Classificar faixas etárias |\n| `COALESCE` | Substituir nulos | `COALESCE(campo, 'padrão')` — retorna o primeiro valor não-nulo |\n| `NULLIF` | Tratar divisões por zero | `NULLIF(divisor, 0)` — retorna null se divisor for zero |\n| `WHERE` | Filtrar linhas (já é condicional!) | `WHERE saldo > 1000` |\n\n## Exemplo prático com CASE em agregação\n\nVocê pode usar `CASE` dentro de funções de agregação para contar ou somar condicionalmente:\n\n```sql\nSELECT \n    COUNT(*) AS total_transacoes,\n    SUM(CASE WHEN valor > 1000 THEN 1 ELSE 0 END) AS transacoes_altas\nFROM account_transactions;\n```\n\n---\n\n**Resumo:** Sim, SQL suporta lógica condicional — principalmente através de `CASE WHEN`, que é muito usado para criar categorias, transformar dados e fazer agregações condicionais.\n\nQuer um exemplo mais específico para o contexto do seu projeto (conta bancária)?",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:41:30.906324+00:00",
+    "finished_at": "2026-04-24T18:42:47.556720+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Visualização SQL",
+      "sources": [
+        "db:visualizacao-sql/dashboard-comparacao-anos-conta-bancaria-looker",
+        "db:visualizacao-sql/sql-order-by-ordenacao-resultados"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 76650,
+    "source_line": 20
+  },
+  {
+    "discipline": "projeto-bloco",
+    "question": "projeto fica bagunçado",
+    "response": "## Por que o projeto pode parecer “bagunçado”?\n\n1. **Falta de estrutura de pastas** – Todos os arquivos (SQL, Python, notebooks, dashboards) acabam num único diretório.\n2. **Código repetido** – Funções de extração, transformação e carga são copiadas em vários scripts em vez de centralizadas.\n3. **Nomenclatura inconsistente** – Arquivos e variáveis com nomes ambíguos ou em idiomas mistos (ex.: `load_data.py`, `extrair_dados.sql`, `Dashboard.ipynb`).\n4. **Documentação dispersa** – Informações sobre o fluxo, requisitos e decisões estão espalhadas em README, comentários e e‑mails.\n5. **Backlog não estruturado** – Sem backlog ou sprint backlog, não há visão clara de prioridades e entregas.\n\n## Como organizar o projeto de forma limpa e escalável\n\n| Etapa | O que fazer | Por que ajuda |\n|-------|-------------|---------------|\n| **1. Definir a estrutura de pastas** | ```text\nprojeto‑bloco/\n│\n├── data/               # Arquivos brutos (CSV, JSON, etc.)\n├── sql/                # Scripts de consulta e transformação\n├── notebooks/          # Jupyter ou VS Code notebooks exploratórios\n├── src/                # Código Python (ETL, utilidades)\n│   ├── __init__.py\n│   ├── extract.py\n│   ├── transform.py\n│   └── load.py\n├── dashboards/         # Arquivos de visualização (PowerBI, Tableau, Streamlit)\n├── tests/              # Testes unitários e de integração\n├── docs/               # Documentação técnica (Markdown)\n├── requirements.txt    # Dependências\n└── README.md           # Visão geral\n``` | Mantém tudo organizado por responsabilidade. Facilita navegação e versionamento. |\n| **2. Centralizar o ETL** | Crie uma camada de *pipeline* em `src/` (ex.: `pipeline.py`) que chama `extract()`, `transform()` e `load()`. Cada função deve estar em um módulo separado. | Evita duplicação e permite reutilizar funções em notebooks ou scripts de teste. |\n| **3. Padronizar nomenclatura** | Use **snake_case** para arquivos e variáveis. Inclua a data ou versão quando relevante (`vendas_2024_01.csv`). | Reduz confusão e facilita a busca. |\n| **4. Documentar na raiz** | O `README.md` deve conter: <br>• Visão geral do projeto <br>• Fluxo de dados (etapas e responsáveis) <br>• Como rodar (comandos `pip install -r requirements.txt`, `python src/pipeline.py`) <br>• Como abrir dashboards | Qualquer pessoa nova no repositório tem um ponto de partida claro. |\n| **5. Usar um backlog mínimo** | Crie um arquivo `backlog.md` (ou use um issue tracker) com itens de valor de negócio: <br>• Faturamento total por mês <br>• Produtos mais vendidos <br>• Taxa de conversão <br>Defina prioridades e estimativas de esforço. | Garante que a equipe esteja focada no que realmente importa. |\n| **6. Testes automatizados** | Em `tests/` escreva testes unitários para funções de extração, transformação e carga. | Detecta regressões rapidamente e confere que a lógica não mudou inesperadamente. |\n| **7. Versão de dados e metadados** | Mantenha um arquivo `data/metadata.yaml` descrevendo esquema, origem, frequência de atualização. | Auxilia na governança e na comunicação com stakeholders. |\n| **8. Scripts de preparação** | Um script `setup_env.sh` (ou `Makefile`) que cria virtualenv, instala dependências e pré‑processa dados. | Reduz “works on my machine” e facilita onboarding. |\n\n## Checklist rápido para refatorar\n\n- [ ] Crie a estrutura de pastas sugerida.\n- [ ] Mova todos os scripts SQL para `sql/`.\n- [ ] Implemente funções `extract()`, `transform()`, `load()` em `src/`.\n- [ ] Atualize o `README.md` com instruções de execução.\n- [ ] Adicione um `backlog.md` ou use issues do GitHub.\n- [ ] Escreva pelo menos dois testes unitários.\n- [ ] Execute `make setup` (ou `setup_env.sh`) e verifique que tudo roda.\n\n---\n\n### Dica de boas práticas\n\n> **Não deixe a estrutura de pastas “vir de improviso”** – defina‑a antes de começar a codificar.  \n> **Documente tudo, mas vá de simples a complexo** – comece com a descrição de alto nível, depois afine nas notas de cada módulo.\n\nCom essa organização, o projeto deixa de ser bagunçado e passa a ser **mantível, escalável e claro para qualquer colaborador**. Se precisar de exemplos de código ou templates específicos, é só pedir!",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:42:47.558588+00:00",
+    "finished_at": "2026-04-24T18:43:16.120323+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Projeto bloco",
+      "sources": [
+        "db:projeto-bloco/metodologias-projeto-de-dados",
+        "db:projeto-bloco/introducao-projeto-bloco-formacao",
+        "db:projeto-bloco/pipeline-ferramentas-bancos-dados"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 28561,
+    "source_line": 21
+  },
+  {
+    "discipline": "planejamento-curso-carreira",
+    "question": "n sei estudar",
+    "response": "## Como “não saber estudar” pode ser resolvido passo a passo\n\n### 1. **Entenda o que significa “não saber estudar”**\n\n- **Falta de método**: Você tenta resolver tudo de uma vez, sem organizar o material.\n- **Desmotivação**: Não vê sentido no que faz, ou acha que não vai conseguir.\n- **Falta de rotina**: Não tem horários definidos, o que gera ansiedade e procrastinação.\n- **Gestão de tempo ruim**: Você fica preso em tarefas que não trazem muita produtividade.\n\nReconhecer qual desses (ou quais) se aplica a você já dá o primeiro passo.\n\n---\n\n### 2. **Defina pequenos objetivos claros**\n\n| Objetivo | Por que é importante | Como medir |\n|----------|----------------------|------------|\n| **Organizar o material** | Dá base para o estudo, evita perda de tempo | Lista de tópicos e fontes |\n| **Criar um cronograma semanal** | Mantém a disciplina | Horas de estudo por dia |\n| **Estabelecer metas diárias** | Dá sensação de progresso | Tarefas concluídas |\n\n---\n\n### 3. **Use a técnica Pomodoro**\n\n1. **25 min de foco** (estudo intenso, sem interrupções).  \n2. **5 min de pausa** (levante, estique).  \n3. Repita **4 vezes** e depois faça uma pausa maior (15–30 min).\n\n> **Dica**: Grave no celular o tempo e o que foi estudado em cada Pomodoro. Isso ajuda a perceber onde o tempo está sendo bem usado.\n\n---\n\n### 4. **Escolha o método de estudo que funciona para você**\n\n| Método | Quando usar | Como aplicar |\n|--------|-------------|--------------|\n| **Leitura ativa** | Conceitos novos | Leia, depois escreva resumidamente o que entendeu. |\n| **Mapas mentais** | Revisão e conexões | Desenhe ideias principais e sub‑ideias. |\n| **Flashcards (Anki, Quizlet)** | Memória de fatos | Crie cartões com perguntas e respostas. |\n| **Ensinar alguém** | Consolidar | Explique o tópico para um amigo ou escreva em blog. |\n\n---\n\n### 5. **Faça pausas estratégicas**\n\n- **Intervalo curto** (5 min) após 25 min de estudo.  \n- **Intervalo longo** (15–30 min) após 4 Pomodoros.  \n- **Descanso completo** (1–2 h) antes de voltar ao estudo se sentir exausto.\n\n---\n\n### 6. **Monitore seu progresso**\n\n- **Diário de estudo**: Anote o que estudou, quanto tempo gastou e como se sentiu.  \n- **Checklist de metas**: Marque as tarefas concluídas.  \n- **Revisão semanal**: Avalie o que funcionou e o que pode ser melhorado.\n\n---\n\n### 7. **Ajuste a rota se algo não estiver funcionando**\n\n- Se perceber que está se sentindo sobrecarregado, reduza a carga de horas por dia.  \n- Se não voltar a estudar, identifique a causa: distrações, falta de motivação, conteúdo muito denso?  \n- Ajuste o método: talvez o mapa mental não esteja ajudando; experimente flashcards.\n\n---\n\n### 8. **Busque apoio**\n\n- **Grupo de estudos**: Troque ideias e dúvidas.  \n- **Mentor ou tutor**: Pergunte sobre pontos críticos.  \n- **Ferramentas online**: Plataformas como Khan Academy, Coursera ou mesmo vídeos curtos no YouTube podem oferecer explicações diferentes.\n\n---\n\n## Resumo rápido\n\n1. **Diagnostique**: O que exatamente está te impedindo de estudar?  \n2. **Planeje**: Defina metas pequenas, crie um cronograma.  \n3. **Estude**: Use Pomodoro + método que se encaixe no seu estilo.  \n4. **Monitore**: Diário, checklist, revisão semanal.  \n5. **Ajuste**: Se algo não funcionar, mude o método ou a rotina.\n\nE lembre-se: **não há “um jeito certo”**. O que importa é encontrar um processo que funcione para você e o manter. Boa sorte!",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:43:16.123037+00:00",
+    "finished_at": "2026-04-24T18:43:54.439955+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Planejamento de carreira",
+      "sources": [
+        "db:planejamento-curso-carreira/bloco-entrada-estagio-atividades-complementares",
+        "db:planejamento-curso-carreira/habitos-mudanca-equipes-proatividade"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 38316,
+    "source_line": 22
+  },
+  {
+    "discipline": "planejamento-curso-carreira",
+    "question": "esqueço tudo",
+    "response": "Sem estresse! É super comum sentir que \"esquecemos tudo\" quando o conteúdo abrange várias frentes ou tem muitos detalhes práticos — isso acontece com quase todo mundo, ainda mais em temas de carreira que misturam autoconhecimento, ferramentas práticas e regras acadêmicas.\n\nPara te ajudar a recuperar o contexto rápido, separei os pontos centrais de cada material que temos disponível na base de conhecimento, de forma bem condensada:\n\n1. **[Fonte: db:planejamento-curso-carreira/privilegios-etica-diversidade-gatilhos]**  \n   Pontos-chave: Trajetórias profissionais têm pontos de partida diferentes (evite comparar só resultados finais); em TI, use as perguntas *quero? devo? posso?* para guiar decisões éticas com dados; diversidade em equipes gera soluções melhores; identificar gatilhos emocionais ajuda a reagir com maturidade em conflitos.\n\n2. **[Fonte: db:planejamento-curso-carreira/linkedin-carreira-oportunidades]**  \n   Pontos-chave: LinkedIn deve ser tratado como ferramenta profissional (evite postagens pessoais ou polêmicas); perfis funcionais têm título claro, foto, resumo e competências preenchidas (mesmo para estágio ou transição de carreira); networking ativo (interagir com posts, parabenizar conquistas de contatos) gera oportunidades.\n\n3. **[Fonte: db:planejamento-curso-carreira/bloco-entrada-estagio-atividades-complementares]**  \n   Pontos-chave: A graduação no Infinity é organizada em blocos de disciplinas com projetos integrados (não tem TCC tradicional); estágio obrigatório é carga horária de trabalho na área, enquanto atividades complementares são formações extras (cursos, palestras); planejar essas horas desde o início evita acúmulo no final do curso.\n\nSe você quiser aprofundar algum desses temas, ou esclarecer um ponto específico que ficou confuso, é só me avisar! Posso explicar com mais detalhes, trazer exemplos práticos ou montar um resumo ainda mais curto para você.",
+    "status": "ok",
+    "error": null,
+    "started_at": "2026-04-24T18:43:54.442011+00:00",
+    "finished_at": "2026-04-24T18:44:39.021535+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": {
+      "v": 1,
+      "label": "Planejamento de carreira",
+      "sources": [
+        "db:planejamento-curso-carreira/privilegios-etica-diversidade-gatilhos",
+        "db:planejamento-curso-carreira/linkedin-carreira-oportunidades",
+        "db:planejamento-curso-carreira/bloco-entrada-estagio-atividades-complementares"
+      ],
+      "pinned_active": false,
+      "pinned_display": null
+    },
+    "elapsed_ms": 44579,
+    "source_line": 23
+  },
+  {
+    "discipline": "planejamento-curso-carreira",
+    "question": "estudo e n evoluo",
+    "response": null,
+    "status": "error",
+    "error": "ReadTimeout: timed out",
+    "started_at": "2026-04-24T18:44:39.024103+00:00",
+    "finished_at": "2026-04-24T18:46:39.363427+00:00",
+    "session_id": null,
+    "base_url": "http://127.0.0.1:8001",
+    "acl_meta": null,
+    "elapsed_ms": 120339,
+    "source_line": 24
+  }
+]

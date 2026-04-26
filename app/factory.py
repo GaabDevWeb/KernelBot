@@ -24,9 +24,7 @@ def create_app(services: AppServices) -> FastAPI:
     async def lifespan(app: FastAPI):
         log.info("🚀 ACL iniciado e pronto para receber requisições.")
         yield
-        services.observer.stop()
-        services.observer.join()
-        log.info("🛑 Watchdog encerrado. Servidor finalizado.")
+        log.info("🛑 Servidor finalizado.")
 
     app = FastAPI(title="ACL — Agente de Contexto Local", lifespan=lifespan)
     app.state.services = services
@@ -41,4 +39,5 @@ def create_app(services: AppServices) -> FastAPI:
         app.mount("/src", StaticFiles(directory=str(src_dir)), name="src")
 
     app.include_router(router)
+
     return app

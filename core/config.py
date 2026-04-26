@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,6 +11,19 @@ from typing import Literal
 from dotenv import load_dotenv
 
 GlobalContextMode = Literal["geral", "all"]
+
+_LOG = logging.getLogger("kernelbots.config")
+
+
+def _normalize_db_host(raw: str) -> str:
+    """127.0.0.0 é typo frequente; o loopback usual é 127.0.0.1."""
+    h = (raw or "").strip().strip("'\"")
+    if h == "127.0.0.0":
+        _LOG.warning(
+            "DB_HOST era '127.0.0.0'; a usar '127.0.0.1'. Corrija o .env para evitar este aviso."
+        )
+        return "127.0.0.1"
+    return h
 
 
 @dataclass(frozen=True)
@@ -33,6 +47,17 @@ class Settings:
     db_name: str
     db_user: str
     db_password: str
+    # Thresholds da política de retrieval (ver engine/retrieval.py e o plano
+    # rag_acl_incremental). Todos devem ser recalibrados com amostra manual
+    # antes de serem tratados como definitivos.
+    retrieval_min_score: float
+    retrieval_min_score_margin: float
+    retrieval_min_coverage: float
+    retrieval_min_coverage_weighted: float
+    retrieval_min_terms: int
+    retrieval_candidate_k: int
+    retrieval_top_k: int
+    retrieval_max_chunks_per_source: int
 
     @property
     def openrouter_headers(self) -> dict[str, str]:
@@ -55,9 +80,9 @@ class Settings:
         content_dir.mkdir(exist_ok=True)
 
         models = (
-            "arcee-ai/trinity-large-preview:free",
-            "google/gemini-2.5-flash:free",
-            "meta-llama/llama-3.3-70b-instruct:free",
+            "openrouter/free",
+            "deepseek/deepseek-r1:free",
+            "meta-llama/llama-4-maverick:free",
         )
 
         prompts_dir = Path(__file__).resolve().parent / "systemPrompt"
@@ -107,9 +132,38 @@ class Settings:
             raise RuntimeError("ACL_PINNED_WEAK_SCORE deve ser um número.") from None
         pinned_weak_score = max(0.05, min(0.95, pinned_weak_score))
 
+        def _env_float(name: str, default: float, lo: float, hi: float) -> float:
+            raw = (os.getenv(name) or str(default)).strip()
+            try:
+                v = float(raw)
+            except ValueError:
+                raise RuntimeError(f"{name} deve ser um número.") from None
+            return max(lo, min(hi, v))
+
+        def _env_int(name: str, default: int, lo: int, hi: int) -> int:
+            raw = (os.getenv(name) or str(default)).strip()
+            try:
+                v = int(raw)
+            except ValueError:
+                raise RuntimeError(f"{name} deve ser um inteiro.") from None
+            return max(lo, min(hi, v))
+
+        retrieval_min_score = _env_float("ACL_RETRIEVAL_MIN_SCORE", 1.5, 0.0, 50.0)
+        retrieval_min_score_margin = _env_float("ACL_RETRIEVAL_MIN_SCORE_MARGIN", 0.15, 0.0, 5.0)
+        retrieval_min_coverage = _env_float("ACL_RETRIEVAL_MIN_COVERAGE", 0.34, 0.0, 1.0)
+        retrieval_min_coverage_weighted = _env_float(
+            "ACL_RETRIEVAL_MIN_COVERAGE_WEIGHTED", 0.34, 0.0, 1.0
+        )
+        retrieval_min_terms = _env_int("ACL_RETRIEVAL_MIN_TERMS", 2, 1, 10)
+        retrieval_candidate_k = _env_int("ACL_RETRIEVAL_CANDIDATE_K", 8, 1, 50)
+        retrieval_top_k = _env_int("ACL_RETRIEVAL_TOP_K", 4, 1, 20)
+        retrieval_max_chunks_per_source = _env_int(
+            "ACL_RETRIEVAL_MAX_CHUNKS_PER_SOURCE", 2, 1, 10
+        )
+
         """ !Credenciais do banco! """
 
-        db_host = (os.getenv("DB_HOST") or "").strip()
+        db_host = _normalize_db_host(os.getenv("DB_HOST") or "")
 
         db_port_raw = (os.getenv("DB_PORT") or "3306").strip()
 
@@ -143,4 +197,12 @@ class Settings:
             db_name=db_name,
             db_user=db_user,
             db_password=db_password,
+            retrieval_min_score=retrieval_min_score,
+            retrieval_min_score_margin=retrieval_min_score_margin,
+            retrieval_min_coverage=retrieval_min_coverage,
+            retrieval_min_coverage_weighted=retrieval_min_coverage_weighted,
+            retrieval_min_terms=retrieval_min_terms,
+            retrieval_candidate_k=retrieval_candidate_k,
+            retrieval_top_k=retrieval_top_k,
+            retrieval_max_chunks_per_source=retrieval_max_chunks_per_source,
         )
