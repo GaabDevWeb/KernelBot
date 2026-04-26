@@ -7,4 +7,13 @@
 *$py.class
 *.so
 
-cursor/
+content/
+.venv/
+.venv_readme_check/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+*.egg-info/
+scripts/
+
