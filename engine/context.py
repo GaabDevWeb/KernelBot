@@ -1,14 +1,38 @@
-"""Montagem de mensagens (system + user) para o chat com RAG /doc /content e contexto fixado por sessão."""
+"""Montagem de mensagens (system + user) para o chat com RAG /doc /content.
+
+Este módulo consome `engine.retrieval.build_decision` e monta o prompt
+apenas quando a decisão permitir. Hard stop é tratado diretamente como
+resposta ao usuário — não chama o LLM.
+
+Mudanças vs versão anterior (plano rag_acl_incremental):
+
+- `/content` NÃO injeta mais `scope_chunks[:5]`. Sem hit suficiente, vira
+  hard stop com UX de reformulação.
+- Pin NÃO ressuscita contexto desalinhado; se o pin existir e a decisão
+  atual for hard stop por `insufficient_context`, o pin pode entrar como
+  fonte adicional, mas apenas se a consulta tiver termos informativos
+  mínimos e o trace continua hard stop caso retrieval falhe.
+- `ContextTrace` ganha `mode`, `decision`, `reason`, `confidence` e a
+  `RetrievalTrace` completa.
+"""
 
 from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from core.config import Settings
+from core.structured_log import ACL_MOD_CONTEXT, log_event
 from engine.pinned_store import PinnedContext, PinnedSessionStore
+from engine.retrieval import (
+    RetrievalDecision,
+    RetrievalTrace,
+    build_decision,
+    extract_informative_terms,
+    select_mode,
+)
 from engine.search import SearchEngine
 
 log = logging.getLogger(f"kernelbots.{__name__}")
@@ -34,27 +58,80 @@ _SOURCES_CAP = 20
 
 _RESET_PREFIX_RE = re.compile(r"^/(?:reset|limpar)\s*", re.IGNORECASE)
 
-_STICKY_INSTRUCTION = (
-    "Você ainda está discutindo o material fixado: **{name}**. "
-    "Use o conteúdo abaixo como referência principal para a pergunta atual do utilizador; "
-    "recorra ao seu conhecimento geral só para complementar quando o texto não for suficiente.\n\n"
-)
+
+# --- Mensagens UX padronizadas (Fase 1/3) -----------------------------------
+
+_HARD_STOP_MESSAGES: dict[str, str] = {
+    "insufficient_context": (
+        "Não encontrei informação suficiente na base para responder com segurança.\n\n"
+        "Tente especificar melhor, por exemplo incluindo tecnologia, contexto ou objetivo."
+    ),
+    "context_misaligned": (
+        "Encontrei trechos na base, mas eles não cobrem bem a sua pergunta.\n\n"
+        "Reformule incluindo termos mais específicos sobre o que quer saber."
+    ),
+    "underspecified_query": (
+        "Sua pergunta está vaga para responder com segurança usando a base.\n\n"
+        "Use o formato: [tecnologia] + [problema] + [contexto].\n\n"
+        "Exemplos:\n"
+        "- SQL + performance + query lenta\n"
+        "- Docker + erro + build falhando\n"
+        "- API + timeout + chamada de autenticação"
+    ),
+    "vague_but_high_risk": (
+        "Sua pergunta pode ter várias interpretações e eu não tenho contexto suficiente "
+        "para escolher uma com segurança.\n\n"
+        "Reformule usando: [tecnologia] + [problema] + [contexto]."
+    ),
+    "ambiguous_retrieval": (
+        "Encontrei conteúdos parecidos na base e não consegui distinguir qual deles "
+        "realmente responde à sua pergunta.\n\n"
+        "Adicione detalhes que ajudem a desempatar, como nome do módulo, comando ou tecnologia."
+    ),
+    "low_confidence": (
+        "Encontrei conteúdo que lembra a sua pergunta, mas a confiança do retrieval ficou baixa "
+        "e no modo estrito prefiro não arriscar uma resposta incorreta.\n\n"
+        "Reformule com mais detalhes técnicos ou use um comando de escopo (`/doc`, `/python`, etc.)."
+    ),
+    "post_generation_misalignment": (
+        "Preparei uma resposta com base nos trechos encontrados, mas a checagem final "
+        "indicou que ela pode ter saído do escopo das fontes.\n\n"
+        "Reformule a pergunta com termos mais próximos do material ou tente novamente."
+    ),
+    "provider_error": (
+        "Tive um problema técnico ao contatar o modelo de linguagem.\n\n"
+        "Tente novamente em alguns instantes. Se persistir, avise o responsável."
+    ),
+}
+
+
+def hard_stop_message(reason: str) -> str:
+    return _HARD_STOP_MESSAGES.get(
+        reason,
+        "Não consegui responder com segurança agora. Reformule a pergunta e tente novamente.",
+    )
 
 
 @dataclass(frozen=True)
 class ContextTrace:
-    """Metadados para UI: rótulo de contexto, fontes e estado do pin."""
+    """Metadados para UI: rótulo de contexto, fontes, pin, decisão e confiança."""
 
     label: str
     sources: tuple[str, ...]
     pinned_active: bool = False
     pinned_display: str | None = None
+    mode: str = "strict"
+    decision: str = "answer"
+    reason: str = "ok"
+    confidence: str = "high"
+    retrieval_trace: RetrievalTrace | None = None
 
 
 @dataclass(frozen=True)
 class BuildMessagesResult:
     messages: list[dict]
     trace: ContextTrace
+    decision: RetrievalDecision | None = None
 
 
 def _dedupe_sources(sources: list[str], limit: int = _SOURCES_CAP) -> tuple[str, ...]:
@@ -159,17 +236,19 @@ def _trim_pin_chunks(
     return out
 
 
-def _hits_weak(hits: list[dict], weak_score: float) -> bool:
-    if not hits:
-        return True
-    mx = max(float(h["score"]) for h in hits)
-    return mx < weak_score
-
-
-def _join_pin_chunks(chunks: list[dict[str, str]]) -> str:
+def _join_chunks_for_prompt(selected: list[dict[str, str]]) -> str:
     return "\n\n---\n\n".join(
-        f"[Fonte: {c['source']}]\n{c['text']}" for c in chunks if c.get("text")
+        f"[Fonte: {c['source']}]\n{c['text']}" for c in selected if c.get("text")
     )
+
+
+_STRICT_GROUNDING_INSTRUCTION = (
+    "Você possui acesso à seguinte base de conhecimento local. "
+    "Responda APENAS com base nos trechos fornecidos. "
+    "Se a resposta exigir qualquer informação que não esteja explicitamente nos trechos, "
+    "responda que não há informação suficiente na base. "
+    "Não faça suposições. Não complete lacunas com conhecimento geral.\n\n"
+)
 
 
 class ContextManager:
@@ -245,28 +324,163 @@ class ContextManager:
         else:
             effective_discipline = None
 
-        log.info(
-            f"💬 Mensagem [{len(user_message)} chars] | force_rag={force_rag} | "
-            f"force_doc={force_doc} | discipline={effective_discipline!r} | "
-            f"cmd_disc={discipline_from_command!r} | reset={did_reset} | "
-            f"pin={'sim' if pin else 'não'} | "
-            f"query='{query[:80]}{'...' if len(query) > 80 else ''}'"
+        # Sempre `strict` nesta mitigação. `assistive` viria via flag
+        # explícita de produto, que hoje não existe — fica como hook.
+        mode = select_mode(
+            force_doc=force_doc,
+            force_rag=force_rag,
+            discipline_from_command=discipline_from_command,
+            has_explicit_assistive_flag=False,
         )
 
-        trace_label = "Assistente geral"
-        trace_sources: list[str] = []
-        used_sticky = False
-        system_content = sp
+        log_event(
+            log,
+            logging.INFO,
+            ACL_MOD_CONTEXT,
+            "context_route",
+            "pedido recebido — encaminhamento RAG",
+            metadata={
+                "user_message_chars": len(user_message),
+                "query": query,
+                "mode": mode,
+                "force_rag": force_rag,
+                "force_doc": force_doc,
+                "effective_discipline": effective_discipline,
+                "discipline_from_command": discipline_from_command,
+                "did_reset": did_reset,
+                "pin_active": bool(pin),
+            },
+        )
 
-        def finalize_trace() -> BuildMessagesResult:
-            final_pin = store.get(session_id) if store and session_id else None
-            pd = final_pin.display_name if final_pin else None
-            pa = bool(final_pin)
+        # --- Caso /doc: injeção determinística do silo "doc".
+        # Esse fluxo preserva o comportamento do comando `/doc` — ele já é
+        # um "pin explícito" da documentação; a decisão de retrieval não se
+        # aplica aqui porque a fonte é fixa.
+        if force_doc:
+            doc_chunks = [c for c in self._search_engine.chunks if c.get("discipline") == "doc"]
+            if doc_chunks:
+                log_event(
+                    log,
+                    logging.INFO,
+                    ACL_MOD_CONTEXT,
+                    "doc_injection",
+                    "injecao deterministica silo doc",
+                    metadata={"chunk_count": len(doc_chunks)},
+                )
+                ctx = _join_chunks_for_prompt(
+                    [{"source": str(c["source"]), "text": str(c["text"])} for c in doc_chunks]
+                )
+                system_content = (
+                    f"{sp}\n\n"
+                    f"{_STRICT_GROUNDING_INSTRUCTION}"
+                    f"{ctx}"
+                )
+                trace_sources = [str(c["source"]) for c in doc_chunks]
+                pin_chunks = [{"source": str(c["source"]), "text": str(c["text"])} for c in doc_chunks]
+                self._save_pin(session_id, "doc", pin_chunks, trace_sources)
+                trace = ContextTrace(
+                    label="Documentação (doc)",
+                    sources=_dedupe_sources(trace_sources),
+                    pinned_active=self._pin_active(session_id),
+                    pinned_display=self._pin_display(session_id),
+                    mode=mode,
+                    decision="answer",
+                    reason="ok",
+                    confidence="high",
+                )
+                return BuildMessagesResult(
+                    messages=[
+                        {"role": "system", "content": system_content},
+                        {"role": "user", "content": query},
+                    ],
+                    trace=trace,
+                )
+            # Sem silo doc: hard stop explícito; não tenta LLM sem base.
+            return self._hard_stop_result(
+                query=query or user_message,
+                reason="insufficient_context",
+                mode=mode,
+                discipline=effective_discipline,
+                pin=pin,
+                trace_retrieval=None,
+            )
+
+        # --- Retrieval bruto + política de decisão --------------------------
+
+        candidates = self._search_engine.search_candidates(
+            query,
+            candidate_k=self._settings.retrieval_candidate_k,
+            discipline_filter=effective_discipline,
+        )
+        decision = build_decision(
+            query=query,
+            candidates=candidates,
+            mode=mode,
+            min_score=self._settings.retrieval_min_score,
+            min_score_margin=self._settings.retrieval_min_score_margin,
+            min_coverage=self._settings.retrieval_min_coverage,
+            min_coverage_weighted=self._settings.retrieval_min_coverage_weighted,
+            min_terms=self._settings.retrieval_min_terms,
+            top_k=self._settings.retrieval_top_k,
+            max_per_source=self._settings.retrieval_max_chunks_per_source,
+        )
+        if decision.allow_generation:
+            selected = [
+                {
+                    "source": c.source,
+                    "text": c.text,
+                    "score": c.raw_score,
+                    "normalized_score": c.normalized_score,
+                }
+                for c in decision.selected_candidates
+            ]
+            ctx = "\n\n---\n\n".join(
+                f"[Fonte: {s['source']} | Score: {s['normalized_score']:.2f}]\n{s['text']}"
+                for s in selected
+            )
+            system_content = f"{sp}\n\n{_STRICT_GROUNDING_INSTRUCTION}{ctx}"
+
+            if effective_discipline is not None:
+                label = _trace_label_for_discipline(effective_discipline)
+            elif force_rag:
+                label = _global_scope_label(self._settings)
+            else:
+                label = _global_scope_label(self._settings)
+
+            trace_sources = [s["source"] for s in selected]
+            scope_key = self._scope_key_for_hit(
+                force_rag, discipline_from_command, effective_discipline
+            )
+            self._save_pin(
+                session_id,
+                scope_key,
+                [{"source": s["source"], "text": s["text"]} for s in selected],
+                trace_sources,
+            )
+
             trace = ContextTrace(
-                label=trace_label,
+                label=label,
                 sources=_dedupe_sources(trace_sources),
-                pinned_active=pa,
-                pinned_display=pd,
+                pinned_active=self._pin_active(session_id),
+                pinned_display=self._pin_display(session_id),
+                mode=mode,
+                decision="answer",
+                reason=decision.reason,
+                confidence=decision.confidence,
+                retrieval_trace=decision.trace,
+            )
+            log_event(
+                log,
+                logging.INFO,
+                ACL_MOD_CONTEXT,
+                "context_prompt_ready",
+                "mensagens montadas com chunks selecionados",
+                metadata={
+                    "selected_chunk_count": len(selected),
+                    "sources": list(trace.sources),
+                    "reason": decision.reason,
+                    "confidence": decision.confidence,
+                },
             )
             return BuildMessagesResult(
                 messages=[
@@ -274,167 +488,110 @@ class ContextManager:
                     {"role": "user", "content": query},
                 ],
                 trace=trace,
+                decision=decision,
             )
 
-        def apply_sticky(p: PinnedContext) -> None:
-            nonlocal system_content, trace_label, trace_sources, used_sticky
-            used_sticky = True
-            body = _join_pin_chunks(p.chunks)
-            intro = _STICKY_INSTRUCTION.format(name=p.display_name or "material fixado")
-            system_content = (
-                f"{sp}\n\n{intro}"
-                "Você possui acesso à seguinte base de conhecimento local (contexto fixado).\n\n"
-                f"{body}"
-            )
-            trace_sources = [str(c["source"]) for c in p.chunks if c.get("source")]
-            if p.scope_key == "doc":
-                trace_label = "Documentação (doc) · fixado"
-            elif p.scope_key == "content":
-                trace_label = f"{_global_scope_label(self._settings)} · fixado"
-            elif p.scope_key.startswith("discipline:"):
-                d = p.scope_key.split(":", 1)[1]
-                trace_label = f"{_trace_label_for_discipline(d)} · fixado"
-            else:
-                trace_label = "Contexto fixado"
+        # --- Hard stop ------------------------------------------------------
+        # Pin NÃO ressuscita contexto: no modo strict, se a decisão atual
+        # bloqueou, pin só serve como histórico de UI (mostrar o badge).
+        return self._hard_stop_result(
+            query=query or user_message,
+            reason=decision.reason,
+            mode=mode,
+            discipline=effective_discipline,
+            pin=pin,
+            trace_retrieval=decision.trace,
+            decision=decision,
+        )
 
-        def save_pin(scope_key: str, chunk_dicts: list[dict[str, str]], sources_for_display: list[str]) -> None:
-            if not (store and session_id):
-                return
-            trimmed = _trim_pin_chunks(chunk_dicts, self._settings.pinned_max_chars)
-            if not trimmed:
-                return
-            disp = _display_name_from_source(sources_for_display[0]) if sources_for_display else "material"
-            store.set_pinned(
-                session_id,
-                scope_key,
-                trimmed,
-                disp,
-                self._settings.pinned_max_turns,
-            )
+    # --- Helpers internos ---------------------------------------------------
 
-        if force_doc:
-            doc_chunks = [c for c in self._search_engine.chunks if c.get("discipline") == "doc"]
-            if doc_chunks:
-                log.info(f"   ⚡ /doc — injetando {len(doc_chunks)} chunk(s)")
-                ctx = "\n\n---\n\n".join(
-                    f"[Fonte: {c['source']}]\n{c['text']}" for c in doc_chunks
-                )
-                system_content = (
-                    f"{sp}\n\n"
-                    "Você possui acesso à documentação em content/doc/. "
-                    "Utilize-a como referência rígida para responder:\n\n"
-                    f"{ctx}"
-                )
-                trace_label = "Documentação (doc)"
-                trace_sources = [str(c["source"]) for c in doc_chunks]
-                pin_chunks = [{"source": str(c["source"]), "text": str(c["text"])} for c in doc_chunks]
-                save_pin("doc", pin_chunks, trace_sources)
-            else:
-                log.warning("   ⚠ /doc sem chunks no silo 'doc'")
-                system_content = sp
-                trace_label = "Assistente geral"
-                if pin:
-                    apply_sticky(pin)
-            return finalize_trace()
+    def _pin_active(self, session_id: str | None) -> bool:
+        if not (self._pinned_store and session_id):
+            return False
+        return bool(self._pinned_store.get(session_id))
 
-        hits = self._search_engine.search(query, discipline_filter=effective_discipline)
-        weak = _hits_weak(hits, self._settings.pinned_weak_score)
+    def _pin_display(self, session_id: str | None) -> str | None:
+        if not (self._pinned_store and session_id):
+            return None
+        p = self._pinned_store.get(session_id)
+        return p.display_name if p else None
 
-        if hits and not weak:
-            for h in hits:
-                log.info(
-                    f"   🎯 BM25 hit → '{h['source']}' | score={h['score']:.3f} | "
-                    f"chunk='{h['text'][:60].strip()}...'"
-                )
-            ctx = "\n\n---\n\n".join(
-                f"[Fonte: {h['source']} | Score: {h['score']:.2f}]\n{h['text']}"
-                for h in hits
-            )
-            system_content = (
-                f"{sp}\n\n"
-                "Você possui acesso à seguinte base de conhecimento local. "
-                "Use-a como referência primária para responder:\n\n"
-                f"{ctx}"
-            )
-            if effective_discipline is not None:
-                trace_label = _trace_label_for_discipline(effective_discipline)
-            else:
-                trace_label = _global_scope_label(self._settings)
-            trace_sources = [str(h["source"]) for h in hits]
-            if force_rag and discipline_from_command is None:
-                sk = "content"
-            elif discipline_from_command is not None:
-                sk = f"discipline:{discipline_from_command}"
-            elif effective_discipline is not None:
-                sk = f"discipline:{effective_discipline}"
-            else:
-                sk = "content"
-            save_pin(
-                sk,
-                [{"source": str(h["source"]), "text": str(h["text"])} for h in hits],
-                trace_sources,
-            )
-        elif pin and (not hits or weak):
-            log.info("   📌 BM25 fraco ou vazio — usando contexto fixado da sessão")
-            apply_sticky(pin)
-        elif hits:
-            for h in hits:
-                log.info(
-                    f"   🎯 BM25 (fraco) → '{h['source']}' | score={h['score']:.3f} | "
-                    f"chunk='{h['text'][:60].strip()}...'"
-                )
-            ctx = "\n\n---\n\n".join(
-                f"[Fonte: {h['source']} | Score: {h['score']:.2f}]\n{h['text']}"
-                for h in hits
-            )
-            system_content = (
-                f"{sp}\n\n"
-                "Você possui acesso à seguinte base de conhecimento local. "
-                "Use-a como referência primária para responder:\n\n"
-                f"{ctx}"
-            )
-            if effective_discipline is not None:
-                trace_label = _trace_label_for_discipline(effective_discipline)
-            else:
-                trace_label = _global_scope_label(self._settings)
-            trace_sources = [str(h["source"]) for h in hits]
-        elif force_rag:
-            scope_chunks = self._search_engine.chunks_for_scope(effective_discipline)
-            log.info(
-                "   ⚡ /content (ou RAG forçado) sem hits — top-5 do escopo "
-                f"({len(scope_chunks)} chunk(s) disponíveis))"
-            )
-            ctx = "\n\n---\n\n".join(
-                f"[Fonte: {c['source']}]\n{c['text']}" for c in scope_chunks[:5]
-            )
-            system_content = (
-                f"{sp}\n\n"
-                "Você possui acesso à seguinte base de conhecimento local. "
-                "Use-a como referência primária para responder:\n\n"
-                f"{ctx}"
-            )
-            if effective_discipline is not None:
-                trace_label = _trace_label_for_discipline(effective_discipline)
-            else:
-                trace_label = _global_scope_label(self._settings)
-            trace_sources = [str(c["source"]) for c in scope_chunks[:5]]
-            sk = (
-                "content"
-                if discipline_from_command is None
-                else f"discipline:{discipline_from_command}"
-            )
-            save_pin(
-                sk,
-                [{"source": str(c["source"]), "text": str(c["text"])} for c in scope_chunks[:5]],
-                trace_sources,
-            )
-        elif pin:
-            log.info("   📌 Modo geral sem BM25 — usando contexto fixado")
-            apply_sticky(pin)
-        else:
-            log.info("   🤖 Modo assistente geral (sem hits nem pin)")
-            trace_label = "Assistente geral"
-            trace_sources = []
+    def _save_pin(
+        self,
+        session_id: str | None,
+        scope_key: str,
+        chunk_dicts: list[dict[str, str]],
+        sources_for_display: list[str],
+    ) -> None:
+        store = self._pinned_store
+        if not (store and session_id):
+            return
+        trimmed = _trim_pin_chunks(chunk_dicts, self._settings.pinned_max_chars)
+        if not trimmed:
+            return
+        disp = _display_name_from_source(sources_for_display[0]) if sources_for_display else "material"
+        store.set_pinned(
+            session_id,
+            scope_key,
+            trimmed,
+            disp,
+            self._settings.pinned_max_turns,
+        )
 
-        log.info(f"   🔑 System prompt ~{len(system_content)} chars | sticky={used_sticky}")
-        return finalize_trace()
+    def _scope_key_for_hit(
+        self,
+        force_rag: bool,
+        discipline_from_command: str | None,
+        effective_discipline: str | None,
+    ) -> str:
+        if force_rag and discipline_from_command is None:
+            return "content"
+        if discipline_from_command is not None:
+            return f"discipline:{discipline_from_command}"
+        if effective_discipline is not None:
+            return f"discipline:{effective_discipline}"
+        return "content"
+
+    def _hard_stop_result(
+        self,
+        query: str,
+        reason: str,
+        mode: str,
+        discipline: str | None,
+        pin: PinnedContext | None,
+        trace_retrieval: RetrievalTrace | None,
+        decision: RetrievalDecision | None = None,
+    ) -> BuildMessagesResult:
+        message = hard_stop_message(reason)
+        label = (
+            _trace_label_for_discipline(discipline)
+            if discipline
+            else _global_scope_label(self._settings)
+        )
+        trace_sources: list[str] = []
+        if trace_retrieval is not None:
+            trace_sources = [s["source"] for s in trace_retrieval.selected_sources]
+        trace = ContextTrace(
+            label=label,
+            sources=_dedupe_sources(trace_sources),
+            pinned_active=bool(pin),
+            pinned_display=pin.display_name if pin else None,
+            mode=mode,
+            decision="hard_stop",
+            reason=reason,
+            confidence="low",
+            retrieval_trace=trace_retrieval,
+        )
+        # Passamos uma sentinela no último user message; o ChatProvider
+        # detecta decision.is_hard_stop via BuildMessagesResult.decision
+        # e entrega `hard_stop_message` direto, sem chamar LLM.
+        return BuildMessagesResult(
+            messages=[
+                {"role": "system", "content": self._settings.system_prompt_geral},
+                {"role": "user", "content": query or ""},
+                {"role": "assistant", "content": message},
+            ],
+            trace=trace,
+            decision=decision,
+        )

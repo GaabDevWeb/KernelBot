@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <div align="center">
   <img src="frontend/assets/images/KernelBanner.webp" alt="Banner" width="100%" />
 </div>
@@ -18,3 +19,5 @@
   
   <br clear="all" />
 </div>
+=======
+>>>>>>> 124ae17972dd35902cec901ff1819bd5be55891f
