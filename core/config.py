@@ -33,6 +33,7 @@ class Settings:
     db_name: str
     db_user: str
     db_password: str
+    ingest_secret: str
 
     @property
     def openrouter_headers(self) -> dict[str, str]:
@@ -124,6 +125,8 @@ class Settings:
 
         db_password = (os.getenv("DB_PASSWORD") or "").strip()
 
+        ingest_secret = (os.getenv("INGEST_SECRET") or "").strip()
+
         return cls(
             openrouter_api_key=key,
             project_root=project_root,
@@ -143,4 +146,5 @@ class Settings:
             db_name=db_name,
             db_user=db_user,
             db_password=db_password,
+            ingest_secret=ingest_secret,
         )

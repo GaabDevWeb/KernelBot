@@ -7,3 +7,4 @@ rank-bm25
 watchdog
 pytest
 PyMySQL
+playwright

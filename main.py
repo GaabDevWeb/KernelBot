@@ -33,6 +33,7 @@ context_manager = ContextManager(settings, search_engine, pinned_store=pinned_st
 chat_provider = ChatProvider(settings)
 
 services = AppServices(
+    settings=settings,
     search_engine=search_engine,
     context_manager=context_manager,
     chat_provider=chat_provider,

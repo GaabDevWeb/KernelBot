@@ -1,4 +1,4 @@
-"""Rotas GET / e POST /chat."""
+"""Rotas GET /, POST /chat e POST /ingest."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import logging
 import re
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 
 from collections.abc import AsyncGenerator
 
@@ -23,6 +23,69 @@ async def home(request: Request) -> HTMLResponse:
     log.info(f"🌐 Interface carregada — cliente: {client_ip}")
     templates = request.app.state.templates
     return templates.TemplateResponse(request=request, name="index.html")
+
+
+@router.post("/ingest")
+async def ingest(request: Request) -> JSONResponse:
+    """Recebe conhecimento processado e insere na tabela knowledge."""
+    from engine.database import insert_knowledge
+
+    client_ip = request.client.host if request.client else "desconhecido"
+    services = request.app.state.services
+    settings = services.settings
+
+    # Valida Bearer token
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        log.warning("⚠  /ingest de %s — Authorization header ausente ou inválido", client_ip)
+        raise HTTPException(status_code=401, detail="Authorization header ausente ou inválido.")
+    token = auth_header[len("Bearer "):]
+    if not settings.ingest_secret or token != settings.ingest_secret:
+        log.warning("⚠  /ingest de %s — token inválido", client_ip)
+        raise HTTPException(status_code=403, detail="Token inválido.")
+
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="JSON inválido no corpo da requisição.")
+
+    # Valida campos obrigatórios
+    slug: str = (data.get("slug") or "").strip()
+    discipline: str = (data.get("discipline") or "").strip()
+    title: str = (data.get("title") or "").strip()
+    content: str = (data.get("content") or "").strip()
+    source_checksum: str = (data.get("source_checksum") or "").strip()
+    order: int = int(data.get("order") or 0)
+    payload: dict = data.get("payload") or {}
+
+    missing = [f for f, v in [("slug", slug), ("discipline", discipline), ("title", title), ("content", content), ("source_checksum", source_checksum)] if not v]
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Campos obrigatórios ausentes: {', '.join(missing)}")
+
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Campo 'payload' deve ser um objeto JSON.")
+
+    try:
+        row_id, changed = insert_knowledge(
+            settings,
+            slug=slug,
+            discipline=discipline,
+            title=title,
+            order=order,
+            content=content,
+            payload=payload,
+            source_checksum=source_checksum,
+        )
+    except RuntimeError as exc:
+        log.error("❌  /ingest — erro ao inserir: %s", exc)
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    if changed:
+        log.info("🔄 /ingest — rebuild do índice BM25 após inserção de slug=%r", slug)
+        services.search_engine.rebuild()
+        return JSONResponse({"id": row_id, "status": "ok"})
+
+    return JSONResponse({"id": row_id, "status": "unchanged"})
 
 
 @router.post("/chat")
