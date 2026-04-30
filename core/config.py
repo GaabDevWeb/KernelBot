@@ -56,9 +56,15 @@ class Settings:
         content_dir.mkdir(exist_ok=True)
 
         models = (
-            "arcee-ai/trinity-large-preview:free",
-            "google/gemini-2.5-flash:free",
-            "meta-llama/llama-3.3-70b-instruct:free",
+            "nvidia/nemotron-3-super-120b-a12b:free",
+            "google/gemma-4-31b-it:free",
+            "minimax/minimax-m2.5:free",
+            # "deepseek/deepseek-chat-v3-0324:free",  # 404
+            # "deepseek/deepseek-r1-0528:free",       # 404
+            # "qwen/qwen3-235b-a22b:free",            # 404
+            # "arcee-ai/trinity-large-preview:free",  # 404 removido do OpenRouter
+            # "google/gemini-2.5-flash:free",         # 404 endpoint inexistente
+            # "meta-llama/llama-3.3-70b-instruct:free",  # 402 limite de gasto (Venice)
         )
 
         prompts_dir = Path(__file__).resolve().parent / "systemPrompt"

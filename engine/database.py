@@ -1,7 +1,6 @@
 """Fonte de dados MySQL para o índice BM25."""
 from __future__ import annotations
 
-import json
 import logging
 from importlib import import_module
 from typing import TYPE_CHECKING
@@ -92,6 +91,60 @@ def fetch_db_chunks(settings: Settings) -> list[dict]:
         return []
 
 
+def get_all_existing_orders(settings: Settings) -> dict[str, set[int]]:
+    """
+    Retorna {discipline: {order, ...}} para todas as rows ativas.
+    Retorna {} se o DB não estiver configurado ou falhar.
+    """
+    if not all([settings.db_host, settings.db_name, settings.db_user]):
+        return {}
+    try:
+        import_module("pymysql")
+    except ImportError:
+        return {}
+    try:
+        conn = _get_connection(settings)
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "SELECT discipline, `order` FROM knowledge WHERE active = 1",
+                )
+                rows = cursor.fetchall()
+        result: dict[str, set[int]] = {}
+        for row in rows:
+            result.setdefault(row["discipline"], set()).add(row["order"])
+        return result
+    except Exception:
+        log.warning("⚠  Falha ao consultar orders existentes — continuando sem filtro.", exc_info=True)
+        return {}
+
+
+def get_existing_orders(settings: Settings, discipline: str) -> set[int]:
+    """
+    Retorna os valores de `order` já cadastrados para a disciplina informada.
+    Retorna set vazio se o DB não estiver configurado ou falhar.
+    """
+    if not all([settings.db_host, settings.db_name, settings.db_user]):
+        return set()
+    try:
+        import_module("pymysql")
+    except ImportError:
+        return set()
+    try:
+        conn = _get_connection(settings)
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "SELECT `order` FROM knowledge WHERE discipline = %s AND active = 1",
+                    (discipline,),
+                )
+                rows = cursor.fetchall()
+        return {row["order"] for row in rows}
+    except Exception:
+        log.warning("⚠  Falha ao consultar orders existentes — continuando sem filtro.", exc_info=True)
+        return set()
+
+
 def insert_knowledge(
     settings: Settings,
     *,
@@ -99,16 +152,18 @@ def insert_knowledge(
     discipline: str,
     title: str,
     order: int,
+    description: str,
     content: str,
-    payload: dict,
-    source_checksum: str,
-) -> tuple[int, bool]:
+    keywords: str | None = None,
+    learning_objectives: str | None = None,
+    concepts: str | None = None,
+) -> tuple[int, str]:
     """
-    Insere ou atualiza um registro na tabela knowledge (upsert por slug).
+    Insere ou atualiza um registro na tabela knowledge (upsert por slug+discipline).
 
-    Retorna (id, changed):
-    - changed=True  → inserido ou atualizado (checksum diferente)
-    - changed=False → ignorado (checksum idêntico, sem mudança)
+    Sem UNIQUE em slug, a deduplicação é feita por SELECT prévio:
+    - Se existe row com (slug, discipline) → UPDATE → status="updated"
+    - Caso contrário → INSERT → status="inserted"
     """
     if not all([settings.db_host, settings.db_name, settings.db_user]):
         raise RuntimeError("Variáveis DB_* não configuradas — impossível inserir.")
@@ -118,49 +173,47 @@ def insert_knowledge(
     except ImportError:
         raise RuntimeError("PyMySQL não instalado.") from None
 
-    payload_json = json.dumps(payload, ensure_ascii=False)
-
     conn = _get_connection(settings)
     with conn:
         with conn.cursor() as cursor:
             cursor.execute(
-                "SELECT id, source_checksum FROM knowledge WHERE slug = %s",
-                (slug,),
+                "SELECT id FROM knowledge WHERE slug = %s AND discipline = %s LIMIT 1",
+                (slug, discipline),
             )
             existing = cursor.fetchone()
 
             if existing:
-                if existing["source_checksum"] == source_checksum:
-                    log.debug("⏭  slug=%r já existe com mesmo checksum — ignorado.", slug)
-                    return existing["id"], False
-
                 cursor.execute(
                     """
                     UPDATE knowledge
-                       SET discipline       = %s,
-                           title           = %s,
-                           `order`         = %s,
-                           content         = %s,
-                           payload         = %s,
-                           source_checksum = %s,
-                           active          = 1
-                     WHERE slug = %s
+                       SET title               = %s,
+                           description         = %s,
+                           `order`             = %s,
+                           keywords            = %s,
+                           learning_objectives = %s,
+                           content             = %s,
+                           concepts            = %s,
+                           active              = 1
+                     WHERE id = %s
                     """,
-                    (discipline, title, order, content, payload_json, source_checksum, slug),
+                    (title, description, order, keywords, learning_objectives,
+                     content, concepts, existing["id"]),
                 )
                 conn.commit()
                 log.info("✏️  Atualizado slug=%r id=%s", slug, existing["id"])
-                return existing["id"], True
+                return existing["id"], "updated"
 
             cursor.execute(
                 """
                 INSERT INTO knowledge
-                    (slug, discipline, title, `order`, content, payload, payload_version, source_checksum)
-                VALUES (%s, %s, %s, %s, %s, %s, 1, %s)
+                    (slug, discipline, title, description, `order`,
+                     keywords, learning_objectives, content, concepts)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
-                (slug, discipline, title, order, content, payload_json, source_checksum),
+                (slug, discipline, title, description, order,
+                 keywords, learning_objectives, content, concepts),
             )
             conn.commit()
             new_id = cursor.lastrowid
             log.info("✅  Inserido slug=%r id=%s", slug, new_id)
-            return new_id, True
+            return new_id, "inserted"

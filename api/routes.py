@@ -53,39 +53,40 @@ async def ingest(request: Request) -> JSONResponse:
     slug: str = (data.get("slug") or "").strip()
     discipline: str = (data.get("discipline") or "").strip()
     title: str = (data.get("title") or "").strip()
+    description: str = (data.get("description") or "").strip()
     content: str = (data.get("content") or "").strip()
-    source_checksum: str = (data.get("source_checksum") or "").strip()
     order: int = int(data.get("order") or 0)
-    payload: dict = data.get("payload") or {}
+    keywords: str | None = (data.get("keywords") or "").strip() or None
+    learning_objectives: str | None = (data.get("learning_objectives") or "").strip() or None
+    concepts: str | None = (data.get("concepts") or "").strip() or None
 
-    missing = [f for f, v in [("slug", slug), ("discipline", discipline), ("title", title), ("content", content), ("source_checksum", source_checksum)] if not v]
+    missing = [f for f, v in [("slug", slug), ("discipline", discipline), ("title", title), ("description", description), ("content", content)] if not v]
     if missing:
         raise HTTPException(status_code=400, detail=f"Campos obrigatórios ausentes: {', '.join(missing)}")
 
-    if not isinstance(payload, dict):
-        raise HTTPException(status_code=400, detail="Campo 'payload' deve ser um objeto JSON.")
-
     try:
-        row_id, changed = insert_knowledge(
+        row_id, status = insert_knowledge(
             settings,
             slug=slug,
             discipline=discipline,
             title=title,
             order=order,
+            description=description,
             content=content,
-            payload=payload,
-            source_checksum=source_checksum,
+            keywords=keywords,
+            learning_objectives=learning_objectives,
+            concepts=concepts,
         )
-    except RuntimeError as exc:
-        log.error("❌  /ingest — erro ao inserir: %s", exc)
-        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception as exc:
+        log.error("❌  /ingest — erro ao inserir slug=%r: %s", slug, exc, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"{type(exc).__name__}: {exc}",
+        )
 
-    if changed:
-        log.info("🔄 /ingest — rebuild do índice BM25 após inserção de slug=%r", slug)
-        services.search_engine.rebuild()
-        return JSONResponse({"id": row_id, "status": "ok"})
-
-    return JSONResponse({"id": row_id, "status": "unchanged"})
+    log.info("🔄 /ingest — rebuild do índice BM25 após inserção de slug=%r (%s)", slug, status)
+    services.search_engine.rebuild()
+    return JSONResponse({"id": row_id, "status": status})
 
 
 @router.post("/chat")
