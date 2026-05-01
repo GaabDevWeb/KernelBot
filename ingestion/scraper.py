@@ -223,29 +223,27 @@ async def scrape(
             await btn.scroll_into_view_if_needed()
             await btn.click()
 
-            # Aguarda pelo menos um item de aula ficar visível neste accordion
+            # Escopa ao section pai do botão — evita itens de accordions fechados
+            section = btn.locator("xpath=..")
+            lesson_items_locator = section.locator("div.infnetci-recordings-section > div")
+
             try:
-                await page.wait_for_selector(
-                    SELECTORS["lesson_items"],
-                    state="visible",
-                    timeout=8_000,
-                )
+                await lesson_items_locator.first.wait_for(state="visible", timeout=8_000)
             except Exception:
                 print(f"   ⚠  Nenhum item visível no accordion {acc_i + 1} — pulando.")
                 continue
 
             await page.wait_for_timeout(300)  # estabiliza animação
 
-            all_items = await page.query_selector_all(SELECTORS["lesson_items"])
-            lesson_items = [item for item in all_items if await item.is_visible()]
-            print(f"   📚  {len(lesson_items)} aula(s) visível(is) neste accordion")
+            lesson_items = await lesson_items_locator.all()
+            print(f"   📚  {len(lesson_items)} aula(s) neste accordion")
 
             for item in lesson_items:
                 if limit and len(lessons) >= limit:
                     break
 
-                title_el = await item.query_selector(SELECTORS["lesson_title"])
-                title = (await title_el.inner_text()).strip() if title_el else f"Aula {global_index + 1}"
+                title_loc = item.locator(SELECTORS["lesson_title"]).first
+                title = (await title_loc.inner_text()).strip() if await title_loc.count() > 0 else f"Aula {global_index + 1}"
                 order = _extract_order(title, global_index)
 
                 if skip_orders and order in skip_orders.get(discipline, set()):
@@ -253,25 +251,20 @@ async def scrape(
                     global_index += 1
                     continue
 
-                transcript_btn = await item.query_selector(SELECTORS["transcript_button"])
-                if not transcript_btn:
+                transcript_btn = item.locator(SELECTORS["transcript_button"]).first
+                if await transcript_btn.count() == 0:
                     print(f"   ⚠  Botão de transcrição não encontrado: {title!r}")
                     global_index += 1
                     continue
 
                 print(f"\n   📥  Baixando transcrição: {title!r}...")
 
-                # Garante visibilidade antes de clicar
-                await transcript_btn.scroll_into_view_if_needed()
-
-                # ── Passo 7: Clica e captura nova aba do Google Drive ──────
-                async with context.expect_page() as new_page_info:
-                    await transcript_btn.click(force=True)
-
-                drive_page = await new_page_info.value
-                await drive_page.wait_for_load_state("domcontentloaded")
-                drive_url = drive_page.url
-                await drive_page.close()
+                # ── Passo 7: Lê href diretamente — evita abrir nova aba ────
+                drive_url = await transcript_btn.get_attribute("href") or ""
+                if not drive_url:
+                    print(f"   ⚠  href não encontrado no botão: {title!r}")
+                    global_index += 1
+                    continue
 
                 print(f"   🔗  Drive URL: {drive_url}")
 
