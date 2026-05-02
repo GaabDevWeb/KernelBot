@@ -13,8 +13,8 @@
   
   <p>
     <strong>Se você é um recrutador:</strong> O código fala mais que mil palavras. Olhe a pasta <code>engine/</code>.<br />
-    <strong>Se você é um curioso:</strong> Comece pelo arquivo de documentação: <a href="./documentation.md"><code>documentation.md</code></a>.
-  </p>
+    <strong>Se você é um curioso:</strong> Volte em breve. Ou dê um <code>python main.py</code> e descubra.
+
   
   <br clear="all" />
 </div>
