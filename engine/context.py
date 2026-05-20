@@ -25,6 +25,7 @@ from pathlib import Path
 
 from core.config import Settings
 from core.structured_log import ACL_MOD_CONTEXT, log_event
+from engine.lesson_catalog import CatalogMatchResult, LessonCatalog
 from engine.pinned_store import PinnedContext, PinnedSessionStore
 from engine.retrieval import (
     RetrievalDecision,
@@ -34,6 +35,8 @@ from engine.retrieval import (
     select_mode,
 )
 from engine.search import SearchEngine
+
+_CATALOG_RESCUE_REASONS: frozenset[str] = frozenset({"ambiguous_retrieval"})
 
 log = logging.getLogger(f"kernelbots.{__name__}")
 
@@ -251,16 +254,150 @@ _STRICT_GROUNDING_INSTRUCTION = (
 )
 
 
+def _assemble_system_content(
+    base_prompt: str,
+    catalog_router: str,
+    catalog_section: str,
+    grounding: str,
+    chunk_context: str,
+) -> str:
+    parts = [base_prompt]
+    if catalog_section:
+        parts.append(catalog_router)
+        parts.append(catalog_section)
+    parts.append(grounding)
+    if chunk_context:
+        parts.append(chunk_context)
+    return "\n\n".join(parts)
+
+
+def _enrich_hard_stop_with_catalog(
+    reason: str,
+    catalog_result: CatalogMatchResult | None,
+) -> str:
+    message = hard_stop_message(reason)
+    if catalog_result is None or not catalog_result.matches:
+        return message
+    if reason not in _CATALOG_RESCUE_REASONS:
+        return message
+    lines = [
+        message,
+        "",
+        "Com base no catálogo de aulas, estas opções podem corresponder melhor:",
+    ]
+    for m in catalog_result.matches[:3]:
+        les = m.lesson
+        lines.append(f"- **{les.name}** (`{les.discipline}/{les.slug}`)")
+    lines.append(
+        "\nReformule citando módulo, comando ou tecnologia para desempatar, "
+        "ou use um prefixo de escopo (ex.: `/python`, `/visualizacao-sql`)."
+    )
+    return "\n".join(lines)
+
+
 class ContextManager:
     def __init__(
         self,
         settings: Settings,
         search_engine: SearchEngine,
         pinned_store: PinnedSessionStore | None = None,
+        lesson_catalog: LessonCatalog | None = None,
+        indexed_lesson_keys: frozenset[str] | None = None,
     ) -> None:
         self._settings = settings
         self._search_engine = search_engine
         self._pinned_store = pinned_store
+        self._lesson_catalog = lesson_catalog
+        self._indexed_lesson_keys = indexed_lesson_keys or frozenset()
+
+    def _catalog_match(self, query: str) -> CatalogMatchResult | None:
+        if not self._lesson_catalog or not query.strip():
+            return None
+        return self._lesson_catalog.match(query)
+
+    def _try_catalog_rescue(
+        self,
+        query: str,
+        decision: RetrievalDecision,
+        mode: str,
+        catalog_result: CatalogMatchResult,
+    ) -> RetrievalDecision:
+        if decision.allow_generation:
+            return decision
+        if decision.reason not in _CATALOG_RESCUE_REASONS:
+            return decision
+        if not self._lesson_catalog or not self._lesson_catalog.is_confident(catalog_result):
+            return decision
+
+        lesson = self._lesson_catalog.top_lesson(catalog_result)
+        if lesson is None:
+            return decision
+
+        narrowed_discipline = self._sanitize_discipline(lesson.discipline)
+        candidates = self._search_engine.search_candidates(
+            query,
+            candidate_k=self._settings.retrieval_candidate_k,
+            discipline_filter=narrowed_discipline,
+        )
+        candidates = self._lesson_catalog.filter_candidates_to_lesson(candidates, lesson)
+
+        rescued = build_decision(
+            query=query,
+            candidates=candidates,
+            mode=mode,  # type: ignore[arg-type]
+            min_score=self._settings.retrieval_min_score,
+            min_score_margin=self._settings.retrieval_min_score_margin,
+            min_coverage=self._settings.retrieval_min_coverage,
+            min_coverage_weighted=self._settings.retrieval_min_coverage_weighted,
+            min_terms=self._settings.retrieval_min_terms,
+            top_k=self._settings.retrieval_top_k,
+            max_per_source=self._settings.retrieval_max_chunks_per_source,
+        )
+        if not rescued.allow_generation:
+            return decision
+
+        log_event(
+            log,
+            logging.INFO,
+            ACL_MOD_CONTEXT,
+            "catalog_rescue_ok",
+            "BM25 restrito pela aula do catalogo",
+            metadata={
+                "original_reason": decision.reason,
+                "lesson_slug": lesson.slug,
+                "lesson_discipline": lesson.discipline,
+                "catalog_top_score": catalog_result.top_score,
+            },
+        )
+        debug = dict(rescued.trace.debug)
+        debug["catalog_rescue"] = {
+            "lesson_id": lesson.lesson_id,
+            "slug": lesson.slug,
+            "discipline": lesson.discipline,
+        }
+        return RetrievalDecision(
+            allow_generation=rescued.allow_generation,
+            reason=rescued.reason,
+            confidence=rescued.confidence,
+            selected_candidates=rescued.selected_candidates,
+            trace=RetrievalTrace(
+                query=rescued.trace.query,
+                normalized_query=rescued.trace.normalized_query,
+                informative_terms=rescued.trace.informative_terms,
+                mode=rescued.trace.mode,
+                retrieval_mode="bm25_lexical+catalog_rescue",
+                top_score=rescued.trace.top_score,
+                second_score=rescued.trace.second_score,
+                score_margin=rescued.trace.score_margin,
+                coverage=rescued.trace.coverage,
+                selected_sources=rescued.trace.selected_sources,
+                decision=rescued.trace.decision,
+                reason=rescued.trace.reason,
+                llm_called=rescued.trace.llm_called,
+                tokens_used=rescued.trace.tokens_used,
+                debug=debug,
+            ),
+        )
 
     def _sanitize_discipline(self, raw: str | None) -> str | None:
         return self._search_engine.normalize_discipline(raw)
@@ -370,10 +507,18 @@ class ContextManager:
                 ctx = _join_chunks_for_prompt(
                     [{"source": str(c["source"]), "text": str(c["text"])} for c in doc_chunks]
                 )
-                system_content = (
-                    f"{sp}\n\n"
-                    f"{_STRICT_GROUNDING_INSTRUCTION}"
-                    f"{ctx}"
+                catalog_result = self._catalog_match(query)
+                catalog_section = (
+                    self._lesson_catalog.build_prompt_section(catalog_result)
+                    if self._lesson_catalog and catalog_result
+                    else ""
+                )
+                system_content = _assemble_system_content(
+                    sp,
+                    self._settings.catalog_router_prompt,
+                    catalog_section,
+                    _STRICT_GROUNDING_INSTRUCTION,
+                    ctx,
                 )
                 trace_sources = [str(c["source"]) for c in doc_chunks]
                 pin_chunks = [{"source": str(c["source"]), "text": str(c["text"])} for c in doc_chunks]
@@ -403,9 +548,17 @@ class ContextManager:
                 discipline=effective_discipline,
                 pin=pin,
                 trace_retrieval=None,
+                catalog_result=self._catalog_match(query),
             )
 
         # --- Retrieval bruto + política de decisão --------------------------
+
+        catalog_result = self._catalog_match(query)
+        catalog_section = (
+            self._lesson_catalog.build_prompt_section(catalog_result)
+            if self._lesson_catalog and catalog_result
+            else ""
+        )
 
         candidates = self._search_engine.search_candidates(
             query,
@@ -424,6 +577,8 @@ class ContextManager:
             top_k=self._settings.retrieval_top_k,
             max_per_source=self._settings.retrieval_max_chunks_per_source,
         )
+        if catalog_result and self._lesson_catalog:
+            decision = self._try_catalog_rescue(query, decision, mode, catalog_result)
         if decision.allow_generation:
             selected = [
                 {
@@ -438,7 +593,13 @@ class ContextManager:
                 f"[Fonte: {s['source']} | Score: {s['normalized_score']:.2f}]\n{s['text']}"
                 for s in selected
             )
-            system_content = f"{sp}\n\n{_STRICT_GROUNDING_INSTRUCTION}{ctx}"
+            system_content = _assemble_system_content(
+                sp,
+                self._settings.catalog_router_prompt,
+                catalog_section,
+                _STRICT_GROUNDING_INSTRUCTION,
+                ctx,
+            )
 
             if effective_discipline is not None:
                 label = _trace_label_for_discipline(effective_discipline)
@@ -502,6 +663,7 @@ class ContextManager:
             pin=pin,
             trace_retrieval=decision.trace,
             decision=decision,
+            catalog_result=catalog_result,
         )
 
     # --- Helpers internos ---------------------------------------------------
@@ -562,8 +724,9 @@ class ContextManager:
         pin: PinnedContext | None,
         trace_retrieval: RetrievalTrace | None,
         decision: RetrievalDecision | None = None,
+        catalog_result: CatalogMatchResult | None = None,
     ) -> BuildMessagesResult:
-        message = hard_stop_message(reason)
+        message = _enrich_hard_stop_with_catalog(reason, catalog_result)
         label = (
             _trace_label_for_discipline(discipline)
             if discipline

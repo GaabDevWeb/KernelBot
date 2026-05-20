@@ -58,6 +58,15 @@ class Settings:
     retrieval_candidate_k: int
     retrieval_top_k: int
     retrieval_max_chunks_per_source: int
+    # Catálogo lexical de aulas (ISS JSON) — ver engine/lesson_catalog.py
+    catalog_enabled: bool
+    catalog_json_dir: Path | None
+    catalog_min_score: float
+    catalog_min_margin: float
+    # Limiar alto para pré-escopo BM25 (Fase futura); não relaxar retrieval BM25.
+    catalog_strict_threshold: float
+    catalog_prompt_top_k: int
+    catalog_router_prompt: str
 
     @property
     def openrouter_headers(self) -> dict[str, str]:
@@ -88,6 +97,7 @@ class Settings:
         prompts_dir = Path(__file__).resolve().parent / "systemPrompt"
         system_prompt_file = prompts_dir / "system_prompt.txt"
         sticky_instruction_file = prompts_dir / "sticky_instruction.txt"
+        catalog_router_file = prompts_dir / "catalog_router.txt"
 
         if not system_prompt_file.exists():
             raise RuntimeError(
@@ -99,9 +109,15 @@ class Settings:
                 f"Arquivo de instrução sticky não encontrado: {sticky_instruction_file}. "
                 "Crie o arquivo core/systemPrompt/sticky_instruction.txt com o template de contexto fixado."
             )
+        if not catalog_router_file.exists():
+            raise RuntimeError(
+                f"Arquivo de prompt do catálogo não encontrado: {catalog_router_file}. "
+                "Crie o arquivo core/systemPrompt/catalog_router.txt com as instruções de contexto do catálogo."
+            )
 
         system_prompt = system_prompt_file.read_text(encoding="utf-8").strip()
         sticky_instruction = sticky_instruction_file.read_text(encoding="utf-8").strip()
+        catalog_router_prompt = catalog_router_file.read_text(encoding="utf-8").strip()
 
         raw_global = (os.getenv("ACL_GLOBAL_CONTEXT") or "geral").strip().lower()
         if raw_global == "geral":
@@ -161,6 +177,30 @@ class Settings:
             "ACL_RETRIEVAL_MAX_CHUNKS_PER_SOURCE", 2, 1, 10
         )
 
+        raw_catalog_enabled = (os.getenv("ACL_CATALOG_ENABLED") or "false").strip().lower()
+        catalog_enabled = raw_catalog_enabled in ("1", "true", "yes", "on")
+
+        catalog_json_dir: Path | None = None
+        raw_catalog_dir = (os.getenv("ACL_CATALOG_JSON_DIR") or "").strip()
+        if raw_catalog_dir:
+            raw_path = Path(raw_catalog_dir).expanduser()
+            catalog_json_dir = (
+                raw_path.resolve()
+                if raw_path.is_absolute()
+                else (project_root / raw_path).resolve()
+            )
+        else:
+            iss_fallback = project_root.parent / "ISS" / "content"
+            if iss_fallback.is_dir():
+                catalog_json_dir = iss_fallback.resolve()
+
+        catalog_min_score = _env_float("ACL_CATALOG_MIN_SCORE", 2.0, 0.0, 100.0)
+        catalog_min_margin = _env_float("ACL_CATALOG_MIN_MARGIN", 0.35, 0.0, 50.0)
+        catalog_strict_threshold = _env_float(
+            "ACL_CATALOG_STRICT_THRESHOLD", 4.0, 0.0, 100.0
+        )
+        catalog_prompt_top_k = _env_int("ACL_CATALOG_PROMPT_TOP_K", 5, 1, 20)
+
         """ !Credenciais do banco! """
 
         db_host = _normalize_db_host(os.getenv("DB_HOST") or "")
@@ -205,4 +245,11 @@ class Settings:
             retrieval_candidate_k=retrieval_candidate_k,
             retrieval_top_k=retrieval_top_k,
             retrieval_max_chunks_per_source=retrieval_max_chunks_per_source,
+            catalog_enabled=catalog_enabled,
+            catalog_json_dir=catalog_json_dir,
+            catalog_min_score=catalog_min_score,
+            catalog_min_margin=catalog_min_margin,
+            catalog_strict_threshold=catalog_strict_threshold,
+            catalog_prompt_top_k=catalog_prompt_top_k,
+            catalog_router_prompt=catalog_router_prompt,
         )
