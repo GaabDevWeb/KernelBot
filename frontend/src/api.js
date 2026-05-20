@@ -1,5 +1,7 @@
 /**
  * Cliente HTTP para POST /chat com corpo SSE (linhas `data: `, [DONE], [ERROR], [ACL_META]).
+ *
+ * Falha de parse em `[ACL_META]`: `console.error` e o stream de texto continua em modo markdown.
  */
 export class ChatService {
     constructor(chatPath = "/chat") {
@@ -70,7 +72,7 @@ export class ChatService {
                             const meta = JSON.parse(jsonPart);
                             onMeta?.(meta);
                         } catch (e) {
-                            console.warn("[ACL] ACL_META inválido:", e);
+                            console.error("ACL_META Parse failed", e);
                         }
                         continue;
                     }

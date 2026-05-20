@@ -16,21 +16,70 @@ log = logging.getLogger(f"kernelbots.{__name__}")
 DB_CHUNK_WORDS   = 500
 DB_CHUNK_OVERLAP = 50
 
+META_START_MARKER = "[CONCEITOS E KEYWORDS DA AULA PARA INDEXAÇÃO LÉXICA]"
+META_END_MARKER = "====== FIM DOS METADADOS ======"
+
+
+def _split_meta_block(text: str) -> tuple[str | None, str]:
+    """
+    Separa bloco de metadados léxicos (Opção B) do body markdown.
+    Retorna (meta_header, clean_body) ou (None, text) para rows legacy.
+
+    Marcadores incompletos (só START ou só END) → log crítico e legacy:
+    o texto integral é chunkado como body, sem injeção de meta_header.
+    Boot/reload não falham; o índice BM25 continua com o conteúdo disponível.
+    """
+    has_start = META_START_MARKER in text
+    has_end = META_END_MARKER in text
+    if has_start and has_end:
+        before, after = text.split(META_END_MARKER, 1)
+        meta_header = before + META_END_MARKER + "\n\n"
+        return meta_header, after.lstrip("\n")
+    if has_start or has_end:
+        log_event(
+            log,
+            logging.ERROR,
+            ACL_MOD_DATABASE,
+            "meta_block_malformed",
+            "marcadores de meta incompletos — chunking legacy sem injecao",
+            metadata={
+                "has_start": has_start,
+                "has_end": has_end,
+                "content_chars": len(text),
+            },
+        )
+    return None, text
+
 
 def _chunk_text(text: str, title: str, source: str, discipline: str) -> list[dict]:
-    """Divide texto em janelas de ~500 palavras com overlap de 50."""
-    words = text.split()
+    """
+    Divide clean_body em janelas de ~500 palavras (overlap 50).
+    Opção B2: meta_header léxico só no chunk_index == 0; demais chunks têm título + body.
+    Rows legacy (sem bloco): prefixo `{title}\\n` por chunk (comportamento anterior).
+    """
+    meta_header, clean_body = _split_meta_block(text)
+    words = clean_body.split()
     if not words:
         return []
     chunks: list[dict] = []
     start = 0
+    chunk_index = 0
     while start < len(words):
         end = min(start + DB_CHUNK_WORDS, len(words))
+        chunk_body_text = " ".join(words[start:end])
+        if meta_header:
+            if chunk_index == 0:
+                chunk_text = f"Título: {title}\n{meta_header}{chunk_body_text}"
+            else:
+                chunk_text = f"Título: {title}\n{chunk_body_text}"
+        else:
+            chunk_text = f"{title}\n{chunk_body_text}"
         chunks.append({
-            "text": f"{title}\n" + " ".join(words[start:end]),
+            "text": chunk_text,
             "source": source,
             "discipline": discipline,
         })
+        chunk_index += 1
         if end == len(words):
             break
         start += DB_CHUNK_WORDS - DB_CHUNK_OVERLAP
@@ -251,20 +300,20 @@ def fetch_indexed_lesson_keys(settings: "Settings") -> frozenset[str]:
         if getattr(e, "args", None) and e.args and e.args[0] == 2003:
             log_event(
                 log,
-                logging.WARNING,
+                logging.ERROR,
                 ACL_MOD_DATABASE,
                 "indexed_keys_unreachable",
-                "MySQL inacessivel — boot sem chaves indexadas",
+                "MySQL inacessivel ao listar chaves indexadas",
                 metadata={"host": settings.db_host, "port": settings.db_port},
             )
         else:
             log_event(
                 log,
-                logging.WARNING,
+                logging.ERROR,
                 ACL_MOD_DATABASE,
                 "indexed_keys_error",
                 "falha ao listar discipline/slug",
                 metadata={"error": str(e)},
             )
-            log.warning("fetch_indexed_lesson_keys detail", exc_info=True)
-        return frozenset()
+            log.error("fetch_indexed_lesson_keys detail", exc_info=True)
+        raise

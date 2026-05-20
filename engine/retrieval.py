@@ -13,6 +13,9 @@ Fases suportadas:
 - Fase 2: coverage, MIN_TERMS, margem entre candidatos, vague_but_high_risk,
   coverage ponderada por termos centrais, `confidence == "low"`.
 - Fase 3: sanity check pós-geração (override para `post_generation_misalignment`).
+- `index_gap` em `DecisionReason` apenas para contrato tipado e ACL_META; a
+  decisão é emitida em `engine.context` (catálogo confiante + chave fora do
+  índice), nunca em `build_decision()`.
 """
 
 from __future__ import annotations
@@ -36,6 +39,7 @@ DecisionReason = Literal[
     "vague_but_high_risk",
     "post_generation_misalignment",
     "provider_error",
+    "index_gap",
 ]
 
 # Thresholds deliberadamente conservadores. O plano exige que eles sejam

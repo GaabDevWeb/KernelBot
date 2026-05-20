@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+import secrets
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -15,6 +16,41 @@ log = logging.getLogger("kernelbots.api.chat")
 router = APIRouter()
 
 _SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
+
+
+def _verify_reload_bearer(request: Request) -> None:
+    """Exige Authorization: Bearer igual a ACL_RELOAD_BEARER_TOKEN (CI / operadores)."""
+    settings = request.app.state.services.context_manager.settings
+    expected = settings.reload_bearer_token
+    if not expected:
+        log.warning(
+            "ACL_RELOAD_BEARER_TOKEN não configurado — /reload e /health/catalog rejeitados"
+        )
+        raise HTTPException(status_code=503, detail="reload token not configured")
+
+    auth = request.headers.get("Authorization") or ""
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authorization Bearer token required")
+    token = auth[7:].strip()
+    if not token or not secrets.compare_digest(token, expected):
+        raise HTTPException(status_code=401, detail="Invalid reload bearer token")
+
+
+@router.get("/health/catalog")
+async def health_catalog(request: Request) -> dict:
+    """Snapshot de catálogo vs índice (protegido; Job 4 CI)."""
+    _verify_reload_bearer(request)
+    services = request.app.state.services
+    settings = services.context_manager.settings
+    drift = services.catalog_drift_report or {}
+    catalog_only = list(drift.get("catalog_only") or [])
+    return {
+        "catalog_enabled": settings.catalog_enabled,
+        "indexed_lesson_keys_count": len(services.indexed_lesson_keys),
+        "catalog_lesson_keys_count": int(drift.get("catalog_count") or 0),
+        "catalog_only_count": int(drift.get("catalog_only_count") or len(catalog_only)),
+        "catalog_only_sample": catalog_only[:10],
+    }
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -78,14 +114,29 @@ async def chat(request: Request) -> StreamingResponse:
         )
 
     if user_message.strip().lower() == "/reload":
+        _verify_reload_bearer(request)
+
+        from engine.catalog_sync import refresh_indexed_lesson_keys_state
+
         log.info("🔄 Comando /reload recebido — reconstruindo índice BM25...")
         services.search_engine.rebuild()
+        _keys, keys_refreshed = refresh_indexed_lesson_keys_state(services)
         chunk_count = len(services.search_engine.chunks)
         silo_count = len(services.search_engine.discipline_ids)
         status = (
             f"Índice reconstruído: {chunk_count} chunk(s) total "
             f"({silo_count} silo(s) do MySQL)."
         )
+        if not keys_refreshed:
+            log.warning(
+                "⚠ /reload: BM25 reconstruído, mas chaves de catálogo (indexed_lesson_keys) "
+                "NÃO foram atualizadas — usando snapshot anterior (%d chave(s))",
+                len(_keys),
+            )
+            status += (
+                f" Aviso: chaves de catálogo não atualizadas (MySQL indisponível); "
+                f"continuando com {len(_keys)} chave(s) em cache."
+            )
         log.info("✅ /reload concluído — %s", status)
 
         async def _reload_stream() -> AsyncGenerator[str, None]:

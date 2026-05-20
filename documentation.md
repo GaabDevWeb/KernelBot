@@ -4,7 +4,9 @@ O **ACL (KernelBot)** é um chatbot com **RAG lexical (BM25)** que responde via 
 
 Na prática, o sistema transforma o conteúdo de uma tabela MySQL chamada **`knowledge`** (aulas por disciplina) em um índice BM25 **em memória**, particionado por **silos** (disciplinas). A cada pergunta, ele escolhe um escopo (global, disciplina, `/doc`) e só gera resposta quando os gates de retrieval (score, coverage, ambiguidade) permitem.
 
-Fora de escopo (neste repo, no estado atual): pipeline de ingestão, schema SQL versionado e suíte de testes automatizados. Este `documentation.md` documenta **o que está implementado no código hoje**, sem inferir arquivos/pastas inexistentes.
+**Sincronização de dados (Fase 5b):** o pipeline de ingestão vive no repositório **ISS** — workflow `sync-kernelbot-knowledge.yml`, scripts em `.github/scripts/`, SSOT `content/lessons.json`. Este repo expõe `/reload` e `/health/catalog` para a CI; ver secção [Integração com o pipeline ISS](#integração-com-o-pipeline-iss-fase-5b).
+
+Fora de escopo (neste repo): schema SQL versionado no git e suíte de testes automatizados. Este `documentation.md` documenta **o que está implementado no código hoje**, sem inferir arquivos/pastas inexistentes.
 
 ## Arquitetura
 
@@ -49,7 +51,7 @@ KernelBot/
 │   └── systemPrompt/       # system_prompt.txt + sticky_instruction.txt (obrigatórios)
 ├── engine/
 │   ├── search.py           # SearchEngine: rebuild, silos BM25, candidatos (raw_score) + whitelist de discipline
-│   ├── database.py         # SELECT no MySQL e chunking por janela de palavras
+│   ├── database.py         # SELECT MySQL; chunking RAM (Opção B2: meta léxico só no chunk 0)
 │   ├── retrieval.py        # gates/decisão (hard stop vs allow_generation) + sanity pós-geração
 │   ├── context.py          # roteamento (/doc, /content, /python...) + pin por sessão + hard stop
 │   ├── chat_provider.py    # streaming OpenRouter com fallback + ACL_META + override pós-geração
@@ -91,6 +93,7 @@ Sem autenticação.
 |---|---|---|
 | `GET` | `/` | Serve a UI (`templates/index.html`) |
 | `POST` | `/chat` | Recebe mensagem e retorna SSE (`text/event-stream`) |
+| `GET` | `/health/catalog` | Snapshot catálogo vs índice (Bearer; CI Job 4) |
 
 ### `POST /chat`
 
@@ -117,17 +120,20 @@ Notas:
 - `data: [DONE]\n\n` — fim
 - `data: [ERROR] ...\n\n` — erro amigável de provider (quando todos os modelos falham)
 
-**Campos relevantes em `ACL_META` (v=2)** (emitidos por `engine/chat_provider.py`):
+**Campos relevantes em `ACL_META` (v=3)** (emitidos por `engine/chat_provider.py`):
 
-- `label`: rótulo de escopo (ex.: “Python”, “Base geral”, “Documentação (doc)”)
-- `sources`: lista de fontes (ex.: `db:python/slug-da-aula`)
-- `pinned_active` / `pinned_display`: status do pin da sessão
-- `mode`: `strict` (no estado atual)
-- `decision`: `answer` ou `hard_stop`
-- `reason`: motivo (ex.: `ok`, `insufficient_context`, `context_misaligned`, `provider_error`, `post_generation_misalignment`)
-- `confidence`: `high|medium|low`
-- `llm_called`: boolean
-- `tokens_used`: contador aproximado (incrementa por delta recebido)
+- `v`: `3`
+- `label`, `sources`, `pinned_active`, `pinned_display`, `mode`, `decision`, `reason`, `confidence`, `llm_called`, `tokens_used` (como em v=2)
+- Em `decision === "hard_stop"`: `catalog_match` (boolean) e `payload` normalizado:
+  - `index_gap`: `expected_lesson` `{ title, discipline, slug }`, `suggested_candidates: []`
+  - `ambiguous_retrieval`: `expected_lesson: null`, `suggested_candidates: [{ title, discipline, slug }, ...]`
+
+**Consumidor frontend (Fase 5 — `frontend/src/ui.js`)**:
+
+- Parse em `api.js`: linha `data: [ACL_META]{json}`; falha de JSON → `console.error('ACL_META Parse failed')` e fallback para markdown.
+- `turnMode`: `structured` para `reason` em `index_gap` | `ambiguous_retrieval` (usa `reason` + payload, não só `catalog_match`); `onDelta` ignora texto.
+- Outros `hard_stop` (`insufficient_context`, `context_misaligned`, …): `turnMode = markdown` e texto pedagógico em streaming.
+- UI: `IndexGapAlert` (`expected_lesson`), `DisambiguationChips` (só se `suggested_candidates.length > 0`); chips antigos removidos no início de cada `sendMessage`.
 
 ## Fluxos
 
@@ -170,16 +176,59 @@ UI (frontend/src/ui.js) → POST /chat { message, session_id } → SSE stream
 
 ### Fluxo 4 — Rebuild manual do índice (`/reload`)
 
-1. Usuário envia `/reload`.
+1. Cliente envia `POST /chat` com `message: "/reload"` e cabeçalho `Authorization: Bearer <ACL_RELOAD_BEARER_TOKEN>`. Sem token válido: HTTP 401; sem variável no `.env`: HTTP 503 (`reload token not configured`). O chat normal da UI **não** envia Bearer — `/reload` fica reservado a CI/operadores.
 2. `api/routes.py` chama `services.search_engine.rebuild()`.
-3. O endpoint retorna um stream curto com:
+3. Após o rebuild bem-sucedido, `refresh_indexed_lesson_keys_state` reconsulta o MySQL (`fetch_indexed_lesson_keys`), atualiza `AppServices.indexed_lesson_keys`, o `ContextManager` e, se o catálogo estiver ativo, reexecuta `audit_drift` (WARNING em `catalog_only`). Assim o snapshot de chaves indexadas não fica congelado desde o boot.
+4. O endpoint retorna um stream curto com:
    - `data: Índice reconstruído: ...\n\n`
    - `data: [DONE]\n\n`
+
+### Fluxo 5 — Verificação pós-sync (CI ISS Job 4)
+
+1. O workflow ISS `sync-kernelbot-knowledge` (Job 3) chama `/reload` via `reload-kernelbot.mjs` e falha se o stream indicar chaves de catálogo não atualizadas.
+2. Job 4 (`verify-kernelbot-sync.mjs`) faz `GET /health/catalog` com o mesmo Bearer e compara contagens com `validate-report.json` e MySQL.
+
+## Integração com o pipeline ISS (Fase 5b)
+
+Documentação completa do pipeline (Jobs 1–5, secrets, rede, limitações BM25): repositório **ISS** — `documentation.md` → [Pipeline de Sincronização e Ingestão Automática (Fase 5b)](https://github.com/GaabDevWeb/ISS/blob/main/documentation.md#pipeline-de-sincronização-e-ingestão-automática-fase-5b).
+
+Resumo do contrato **neste** serviço:
+
+| Endpoint | Auth | Uso CI |
+|----------|------|--------|
+| `POST /chat` com `message: "/reload"` | `Authorization: Bearer <ACL_RELOAD_BEARER_TOKEN>` | Job 3 — rebuild BM25 + `refresh_indexed_lesson_keys_state` |
+| `GET /health/catalog` | Mesmo Bearer | Job 4 — gates RAM vs SSOT |
+
+**Variável:** `ACL_RELOAD_BEARER_TOKEN` no `.env` (alias aceito: `KERNELBOT_RELOAD_TOKEN`). O secret GitHub `KERNELBOT_RELOAD_TOKEN` no ISS deve ser o mesmo valor. Sem token: HTTP **503** em ambos os endpoints; token inválido: **401**.
+
+### `GET /health/catalog` — contrato da resposta
+
+Corpo JSON (implementado em `api/routes.py`):
+
+| Campo | Tipo | Significado |
+|-------|------|-------------|
+| `catalog_enabled` | boolean | Se o catálogo lexical ISS está ativo (`ACL_CATALOG_ENABLED` / settings) |
+| `indexed_lesson_keys_count` | number | Chaves `discipline:slug` presentes no índice BM25 em RAM |
+| `catalog_lesson_keys_count` | number | Total de chaves no catálogo carregado de `lessons.json` |
+| `catalog_only_count` | number | Chaves no catálogo **sem** correspondente no índice (drift) |
+| `catalog_only_sample` | string[] | Até 10 chaves `discipline:slug` de exemplo com drift |
+
+A CI falha se `indexed_lesson_keys_count` ≠ `lesson_count` do validate-report ou se `catalog_only_count > 0`.
+
+### RAM — sem auto-heal em background
+
+Não há timer que reconstrua o índice periodicamente (`engine/watcher.py` é legado, não integrado). A RAM só reflete MySQL após boot, **`/reload`** (pipeline ou manual com Bearer) ou reinício do processo. A UI de chat **não** envia Bearer — operadores e GitHub Actions usam o token.
+
+### Hard stop e limitações BM25 (lexical)
+
+- **Hard stop:** com `allow_generation=False`, o backend não chama o LLM; responde via SSE com `ACL_META` (`insufficient_context`, `index_gap`, `ambiguous_retrieval`, etc.).
+- **BM25:** matching por termos na query vs chunks tokenizados; sinónimos, paráfrases e perguntas vagas costumam falhar nos gates mesmo com conteúdo relevante no MySQL.
+- **Catálogo lexical** (`engine/lesson_catalog.py`): roteamento por título/resumo; não substitui embeddings nem garante recall semântico no silo BM25.
 
 ## Glossário e referências (opcional)
 
 - **Silo**: partição lógica do índice por `discipline` (ex.: `python`).
-- **Chunk**: janela de ~500 palavras com overlap de 50 (ver `engine/database.py`).
+- **Chunk**: janela de ~500 palavras de `clean_body` com overlap de 50; bloco de metadados léxicos (Opção B do ingest ISS) só no **chunk 0** por aula (Opção B2 — ver `engine/database.py`).
 - **Retrieval candidate**: item retornado por `SearchEngine.search_candidates()` com `raw_score` (BM25 cru).
 - **Hard stop**: decisão de não chamar o LLM e responder com uma mensagem de reformulação (modo `strict`).
 - **Pin**: contexto fixado por sessão em memória (`PinnedSessionStore`).

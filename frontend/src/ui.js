@@ -1,6 +1,15 @@
 import { ChatService } from "./api.js";
+import {
+    buildDisambiguationFollowUp,
+    isStructuredHardStop,
+    normalizeHardStopPayload,
+    shouldMountDisambiguationChips,
+    shouldMountIndexGap,
+} from "./acl/parseAclMeta.js";
 import { createComposer } from "./components/Composer.js";
 import { createChatView } from "./components/ChatView.js";
+import { mountDisambiguationChips } from "./components/DisambiguationChips.js";
+import { mountIndexGapAlert } from "./components/IndexGapAlert.js";
 import { createStatusBadge } from "./components/StatusBadge.js";
 import { setBreadcrumbsContent } from "./components/MessageRow.js";
 import { siloClassSuffix, siloDisplayName, immediateContextLabel } from "./utils/contextLabel.js";
@@ -29,10 +38,17 @@ export function init() {
     const chatView = createChatView({ chatBox, emptyState, renderMarkdown });
 
     let sending = false;
+    /** @type {string | null} */
+    let pendingChipFollowUp = null;
     /** @type {ReturnType<typeof createComposer>} */
     let composer;
 
     const SILO_CLASS_PREFIX = "input-area--silo-";
+
+    function clearStructuredUiArtifacts() {
+        document.querySelectorAll(".disambiguation-chips").forEach((el) => el.remove());
+        document.querySelectorAll(".index-gap-alert").forEach((el) => el.remove());
+    }
 
     function refreshPinBadge(meta) {
         if (!pinBadge) return;
@@ -66,13 +82,21 @@ export function init() {
         }
     }
 
-    async function sendMessage() {
+    /**
+     * @param {string} [overrideText] — usado por chips de desambiguação (evita double-send via input)
+     */
+    async function sendMessage(overrideText) {
         if (sending) return;
-        const text = input.value.trim();
+        const text =
+            typeof overrideText === "string" ? overrideText.trim() : input.value.trim();
         if (!text) return;
 
+        clearStructuredUiArtifacts();
+
         sending = true;
-        composer.clear();
+        if (typeof overrideText !== "string") {
+            composer.clear();
+        }
         composer.setEnabled(false);
         status.setProcessing();
 
@@ -90,10 +114,48 @@ export function init() {
         const { bubble, breadcrumbs } = chatView.startBotStream();
 
         let streamSources = [];
+        /** @type {'markdown' | 'structured'} */
+        let turnMode = "markdown";
+        let structuredHistoryLabel = "";
 
         const result = await chatService.sendStream(text, {
             sessionId,
             onMeta(meta) {
+                const reason = String(meta?.reason || "");
+                const payload = normalizeHardStopPayload(
+                    reason,
+                    /** @type {Record<string, unknown> | undefined} */ (meta?.payload),
+                );
+
+                if (isStructuredHardStop(meta)) {
+                    turnMode = "structured";
+                    bubble.innerHTML = "";
+                    statusEl.classList.add("context-search-status--hidden");
+
+                    if (shouldMountIndexGap(reason, payload)) {
+                        mountIndexGapAlert(bubble, payload);
+                        const lesson = /** @type {{ title?: string }} */ (payload?.expected_lesson);
+                        structuredHistoryLabel = `[Index gap] ${lesson?.title || "aula"}`;
+                    } else if (shouldMountDisambiguationChips(reason, payload)) {
+                        mountDisambiguationChips(bubble, payload, {
+                            onSelect(candidate) {
+                                const followUp = buildDisambiguationFollowUp(candidate);
+                                input.value = followUp;
+                                input.dispatchEvent(new Event("input"));
+                                refreshSiloUi();
+                                if (sending) {
+                                    pendingChipFollowUp = followUp;
+                                    return;
+                                }
+                                void sendMessage(followUp);
+                            },
+                        });
+                        structuredHistoryLabel = "[Desambiguação — escolha uma aula]";
+                    }
+                    return;
+                }
+
+                turnMode = "markdown";
                 refreshPinBadge(meta);
                 if (meta && typeof meta.label === "string" && meta.label) {
                     statusEl.textContent = `Analisando resumos de ${meta.label}...`;
@@ -105,6 +167,10 @@ export function init() {
                 statusEl.classList.add("context-search-status--hidden");
             },
             onDelta: (fullText) => {
+                if (turnMode === "structured") {
+                    console.debug("[ACL] onDelta ignorado (turnMode=structured)", fullText.length);
+                    return;
+                }
                 bubble.innerHTML = renderMarkdown(fullText);
                 chatView.scrollBottom();
             },
@@ -124,6 +190,11 @@ export function init() {
             bubble.classList.add("error");
             bubble.textContent = result.fullText;
             history.push({ role: "bot", text: result.fullText });
+        } else if (turnMode === "structured") {
+            history.push({
+                role: "bot",
+                text: structuredHistoryLabel || "[Resposta estruturada]",
+            });
         } else {
             bubble.innerHTML = renderMarkdown(result.fullText);
             highlightCodeBlocks(bubble);
@@ -138,9 +209,16 @@ export function init() {
 
         composer.setEnabled(true);
         status.setOnline();
-        composer.focus();
         chatView.scrollBottom();
         sending = false;
+
+        const deferred = pendingChipFollowUp;
+        pendingChipFollowUp = null;
+        if (deferred) {
+            void sendMessage(deferred);
+        } else {
+            composer.focus();
+        }
     }
 
     composer = createComposer({

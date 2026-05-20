@@ -25,7 +25,7 @@ from pathlib import Path
 
 from core.config import Settings
 from core.structured_log import ACL_MOD_CONTEXT, log_event
-from engine.lesson_catalog import CatalogMatchResult, LessonCatalog
+from engine.lesson_catalog import CatalogMatchResult, LessonCatalog, LessonEntry
 from engine.pinned_store import PinnedContext, PinnedSessionStore
 from engine.retrieval import (
     RetrievalDecision,
@@ -101,6 +101,12 @@ _HARD_STOP_MESSAGES: dict[str, str] = {
         "indicou que ela pode ter saído do escopo das fontes.\n\n"
         "Reformule a pergunta com termos mais próximos do material ou tente novamente."
     ),
+    "index_gap": (
+        "Identifiquei no catálogo uma aula que corresponde à sua pergunta, mas o conteúdo "
+        "ainda não está disponível no índice de busca local.\n\n"
+        "O tópico consta no currículo e a indexação deve ser atualizada em breve. "
+        "Tente novamente após `/reload` ou avise o responsável."
+    ),
     "provider_error": (
         "Tive um problema técnico ao contatar o modelo de linguagem.\n\n"
         "Tente novamente em alguns instantes. Se persistir, avise o responsável."
@@ -128,6 +134,8 @@ class ContextTrace:
     reason: str = "ok"
     confidence: str = "high"
     retrieval_trace: RetrievalTrace | None = None
+    catalog_match: bool = False
+    hard_stop_payload: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -271,6 +279,18 @@ def _assemble_system_content(
     return "\n\n".join(parts)
 
 
+def _lesson_dict_from_entry(lesson: LessonEntry) -> dict[str, str]:
+    return {
+        "title": lesson.title,
+        "discipline": lesson.discipline,
+        "slug": lesson.slug,
+    }
+
+
+def _catalog_suggested_candidates(catalog_result: CatalogMatchResult) -> list[dict[str, str]]:
+    return [_lesson_dict_from_entry(m.lesson) for m in catalog_result.matches[:3]]
+
+
 def _enrich_hard_stop_with_catalog(
     reason: str,
     catalog_result: CatalogMatchResult | None,
@@ -310,6 +330,13 @@ class ContextManager:
         self._lesson_catalog = lesson_catalog
         self._indexed_lesson_keys = indexed_lesson_keys or frozenset()
 
+    @property
+    def settings(self) -> Settings:
+        return self._settings
+
+    def refresh_indexed_lesson_keys(self, keys: frozenset[str]) -> None:
+        self._indexed_lesson_keys = keys
+
     def _catalog_match(self, query: str) -> CatalogMatchResult | None:
         if not self._lesson_catalog or not query.strip():
             return None
@@ -340,6 +367,9 @@ class ContextManager:
             discipline_filter=narrowed_discipline,
         )
         candidates = self._lesson_catalog.filter_candidates_to_lesson(candidates, lesson)
+        if not candidates:
+            log.debug("catalog_rescue_aborted_empty_candidates")
+            return decision
 
         rescued = build_decision(
             query=query,
@@ -554,11 +584,44 @@ class ContextManager:
         # --- Retrieval bruto + política de decisão --------------------------
 
         catalog_result = self._catalog_match(query)
-        catalog_section = (
-            self._lesson_catalog.build_prompt_section(catalog_result)
-            if self._lesson_catalog and catalog_result
-            else ""
-        )
+
+        if (
+            self._lesson_catalog
+            and catalog_result
+            and self._lesson_catalog.is_confident(catalog_result)
+            and self._indexed_lesson_keys is not None
+        ):
+            top = self._lesson_catalog.top_lesson(catalog_result)
+            if top is not None:
+                lesson_key = self._lesson_catalog.lesson_key(top)
+                if lesson_key not in self._indexed_lesson_keys:
+                    return self._hard_stop_result(
+                        query=query or user_message,
+                        reason="index_gap",
+                        mode=mode,
+                        discipline=effective_discipline,
+                        pin=pin,
+                        trace_retrieval=None,
+                        catalog_result=catalog_result,
+                        catalog_match=True,
+                        hard_stop_payload={
+                            "expected_lesson": _lesson_dict_from_entry(top),
+                            "suggested_candidates": [],
+                        },
+                    )
+
+        if (
+            self._lesson_catalog
+            and catalog_result
+            and self._lesson_catalog.is_strict_confident(catalog_result)
+        ):
+            top_lesson = self._lesson_catalog.top_lesson(catalog_result)
+            if top_lesson is not None:
+                lesson_key = self._lesson_catalog.lesson_key(top_lesson)
+                if lesson_key in self._indexed_lesson_keys:
+                    narrowed = self._sanitize_discipline(top_lesson.discipline)
+                    if narrowed is not None:
+                        effective_discipline = narrowed
 
         candidates = self._search_engine.search_candidates(
             query,
@@ -580,6 +643,11 @@ class ContextManager:
         if catalog_result and self._lesson_catalog:
             decision = self._try_catalog_rescue(query, decision, mode, catalog_result)
         if decision.allow_generation:
+            catalog_section = (
+                self._lesson_catalog.build_prompt_section(catalog_result)
+                if self._lesson_catalog and catalog_result
+                else ""
+            )
             selected = [
                 {
                     "source": c.source,
@@ -725,8 +793,23 @@ class ContextManager:
         trace_retrieval: RetrievalTrace | None,
         decision: RetrievalDecision | None = None,
         catalog_result: CatalogMatchResult | None = None,
+        catalog_match: bool = False,
+        hard_stop_payload: dict | None = None,
     ) -> BuildMessagesResult:
-        message = _enrich_hard_stop_with_catalog(reason, catalog_result)
+        if reason == "index_gap":
+            message = hard_stop_message(reason)
+            if hard_stop_payload is None:
+                hard_stop_payload = {"suggested_candidates": []}
+        elif reason in _CATALOG_RESCUE_REASONS and catalog_result is not None:
+            message = _enrich_hard_stop_with_catalog(reason, catalog_result)
+            # Desambiguação via catálogo — nunca a aula-alvo do rescue abortado.
+            hard_stop_payload = {
+                "expected_lesson": None,
+                "suggested_candidates": _catalog_suggested_candidates(catalog_result),
+            }
+        else:
+            message = hard_stop_message(reason)
+
         label = (
             _trace_label_for_discipline(discipline)
             if discipline
@@ -745,6 +828,8 @@ class ContextManager:
             reason=reason,
             confidence="low",
             retrieval_trace=trace_retrieval,
+            catalog_match=catalog_match,
+            hard_stop_payload=hard_stop_payload,
         )
         # Passamos uma sentinela no último user message; o ChatProvider
         # detecta decision.is_hard_stop via BuildMessagesResult.decision

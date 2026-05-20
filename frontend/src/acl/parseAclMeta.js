@@ -1,0 +1,90 @@
+/** Razões de hard_stop que usam UI estruturada (sem markdown streaming). */
+export const STRUCTURED_HARD_STOP_REASONS = ["index_gap", "ambiguous_retrieval"];
+
+/** Mapa discipline → prefixo de comando (espelha `engine/context.py`). */
+const DISCIPLINE_TO_COMMAND = {
+    python: "/python",
+    "visualizacao-sql": "/visualizacao-sql",
+    "projeto-bloco": "/projeto-bloco",
+    "planejamento-curso-carreira": "/planejamento-curso-carreira",
+};
+
+/**
+ * @param {string | undefined} discipline
+ * @returns {string} ex.: `/python `
+ */
+export function scopePrefixForDiscipline(discipline) {
+    const key = (discipline || "").trim().toLowerCase();
+    const cmd = DISCIPLINE_TO_COMMAND[key];
+    return cmd ? `${cmd} ` : "";
+}
+
+/**
+ * Mensagem de follow-up após escolha de candidato (desambiguação).
+ * @param {{ discipline?: string, slug?: string, title?: string }} candidate
+ * @returns {string}
+ */
+export function buildDisambiguationFollowUp(candidate) {
+    const prefix = scopePrefixForDiscipline(candidate?.discipline);
+    const slug = (candidate?.slug || "").trim();
+    if (prefix && slug) {
+        return `${prefix}Conteúdo da aula ${slug}: `;
+    }
+    const title = (candidate?.title || slug || "aula").trim();
+    return `Conteúdo da aula ${title}: `;
+}
+
+/**
+ * Normaliza payload de hard_stop (espelha `_normalize_hard_stop_payload` no backend).
+ * @param {string} reason
+ * @param {Record<string, unknown> | null | undefined} payload
+ * @returns {Record<string, unknown> | null}
+ */
+export function normalizeHardStopPayload(reason, payload) {
+    if (!payload || typeof payload !== "object") return null;
+    const out = { ...payload };
+    if (reason === "index_gap") {
+        out.suggested_candidates = Array.isArray(out.suggested_candidates)
+            ? out.suggested_candidates
+            : [];
+    } else if (reason === "ambiguous_retrieval") {
+        out.expected_lesson = null;
+        out.suggested_candidates = Array.isArray(out.suggested_candidates)
+            ? [...out.suggested_candidates]
+            : [];
+    }
+    return out;
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} meta
+ * @returns {boolean}
+ */
+export function isStructuredHardStop(meta) {
+    return (
+        meta?.decision === "hard_stop" &&
+        STRUCTURED_HARD_STOP_REASONS.includes(String(meta?.reason || ""))
+    );
+}
+
+/**
+ * @param {string} reason
+ * @param {Record<string, unknown> | null} payload
+ * @returns {boolean}
+ */
+export function shouldMountIndexGap(reason, payload) {
+    return reason === "index_gap" && payload?.expected_lesson != null;
+}
+
+/**
+ * @param {string} reason
+ * @param {Record<string, unknown> | null} payload
+ * @returns {boolean}
+ */
+export function shouldMountDisambiguationChips(reason, payload) {
+    return (
+        reason === "ambiguous_retrieval" &&
+        Array.isArray(payload?.suggested_candidates) &&
+        payload.suggested_candidates.length > 0
+    );
+}

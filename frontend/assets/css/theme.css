@@ -418,6 +418,112 @@ body {
     color: var(--accent);
 }
 
+/* ===== ACL hard_stop estruturado (Fase 5) ===== */
+.index-gap-alert {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 0;
+}
+
+.index-gap-alert__title {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 14px;
+}
+
+.index-gap-alert__body {
+    color: var(--text-muted);
+    font-size: 13.5px;
+}
+
+.index-gap-alert__meta {
+    display: grid;
+    gap: 6px;
+    font-size: 13px;
+    margin: 0;
+}
+
+.index-gap-alert__row {
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    gap: 8px;
+}
+
+.index-gap-alert__row dt {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.index-gap-alert__row dd {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    word-break: break-word;
+}
+
+.index-gap-alert__hint {
+    font-size: 12px;
+    color: var(--accent);
+    border-left: 3px solid var(--accent);
+    padding-left: 10px;
+}
+
+.disambiguation-chips {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.disambiguation-chips__lead {
+    font-size: 13.5px;
+    color: var(--text-muted);
+}
+
+.disambiguation-chips__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+}
+
+.disambiguation-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    text-align: left;
+    padding: 10px 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    border-radius: var(--radius);
+    transition:
+        border-color 0.15s ease,
+        opacity 0.15s ease;
+}
+
+.disambiguation-chip:hover:not(:disabled) {
+    border-color: var(--accent);
+}
+
+.disambiguation-chip__title {
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.disambiguation-chip__meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.disambiguation-chips--frozen {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 /* ===== Responsividade ===== */
 @media (max-width: 600px) {
     .app {

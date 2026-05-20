@@ -67,6 +67,8 @@ class Settings:
     catalog_strict_threshold: float
     catalog_prompt_top_k: int
     catalog_router_prompt: str
+    # Token Bearer para /reload e GET /health/catalog (CI, operadores).
+    reload_bearer_token: str | None
 
     @property
     def openrouter_headers(self) -> dict[str, str]:
@@ -201,6 +203,12 @@ class Settings:
         )
         catalog_prompt_top_k = _env_int("ACL_CATALOG_PROMPT_TOP_K", 5, 1, 20)
 
+        reload_bearer_token = (
+            (os.getenv("ACL_RELOAD_BEARER_TOKEN") or os.getenv("KERNELBOT_RELOAD_TOKEN") or "")
+            .strip()
+            or None
+        )
+
         """ !Credenciais do banco! """
 
         db_host = _normalize_db_host(os.getenv("DB_HOST") or "")
@@ -252,4 +260,5 @@ class Settings:
             catalog_strict_threshold=catalog_strict_threshold,
             catalog_prompt_top_k=catalog_prompt_top_k,
             catalog_router_prompt=catalog_router_prompt,
+            reload_bearer_token=reload_bearer_token,
         )

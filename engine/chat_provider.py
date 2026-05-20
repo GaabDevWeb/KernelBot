@@ -30,8 +30,29 @@ from engine.retrieval import RetrievalDecision, post_generation_flags
 log = logging.getLogger(f"kernelbots.{__name__}")
 
 
+def _normalize_hard_stop_payload(reason: str, payload: dict | None) -> dict | None:
+    """Garante payload ACL_META completo para hard stops estruturados."""
+    if not isinstance(payload, dict):
+        return None
+    out = dict(payload)
+    if reason == "index_gap":
+        out["suggested_candidates"] = (
+            list(out["suggested_candidates"])
+            if isinstance(out.get("suggested_candidates"), list)
+            else []
+        )
+    elif reason == "ambiguous_retrieval":
+        out["expected_lesson"] = None
+        out["suggested_candidates"] = (
+            list(out["suggested_candidates"])
+            if isinstance(out.get("suggested_candidates"), list)
+            else []
+        )
+    return out
+
+
 def _build_meta(trace: ContextTrace | None, llm_called: bool, tokens_used: int) -> dict:
-    meta: dict = {"v": 2}
+    meta: dict = {"v": 3}
     if trace is None:
         meta.update(
             {
@@ -62,6 +83,11 @@ def _build_meta(trace: ContextTrace | None, llm_called: bool, tokens_used: int) 
             "tokens_used": tokens_used,
         }
     )
+    if trace.decision == "hard_stop":
+        meta["catalog_match"] = bool(trace.catalog_match)
+        payload = _normalize_hard_stop_payload(trace.reason, trace.hard_stop_payload)
+        if payload is not None:
+            meta["payload"] = payload
     return meta
 
 

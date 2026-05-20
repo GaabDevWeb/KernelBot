@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 .env
 
 .pytest_cache/
@@ -37,5 +36,4 @@ build/
 *.egg-info/
 scripts/
 
->>>>>>> 124ae17972dd35902cec901ff1819bd5be55891f
 .agent_history.md
