@@ -81,7 +81,13 @@ class Settings:
 
     @classmethod
     def load(cls) -> Settings:
+        project_root = Path(__file__).resolve().parent.parent
+        staging_env = project_root / ".env.staging.local"
+        if os.getenv("KERNELBOT_ENV", "").strip().lower() == "staging" and staging_env.is_file():
+            load_dotenv(staging_env, override=True)
         load_dotenv()
+        if os.getenv("KERNELBOT_ENV", "").strip().lower() == "staging" and staging_env.is_file():
+            load_dotenv(staging_env, override=True)
         key = os.getenv("OPENROUTER_API_KEY")
         if not key:
             raise RuntimeError("OPENROUTER_API_KEY ausente no .env — impossível iniciar.")

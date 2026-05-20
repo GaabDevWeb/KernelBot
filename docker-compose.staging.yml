@@ -1,0 +1,45 @@
+# Staging local 100% offline — MySQL 8 (dev only).
+# Credenciais abaixo são só para máquina local; NÃO usar em produção/Aiven.
+#
+#   docker compose -f docker-compose.staging.yml up -d
+#   docker compose -f docker-compose.staging.yml ps
+#
+# Porta host 3307 evita conflito com MySQL/MariaDB em 3306.
+# Utilizador: kb_staging / kb_staging_pw
+# Base: kernelbot_staging
+# Root (init): staging_root
+
+services:
+  mysql-staging:
+    image: mysql:8.4
+    container_name: kernelbot-mysql-staging
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: staging_root
+      MYSQL_DATABASE: kernelbot_staging
+      MYSQL_USER: kb_staging
+      MYSQL_PASSWORD: kb_staging_pw
+    volumes:
+      - mysql_staging_data:/var/lib/mysql
+      - ./scripts/staging/init-knowledge.sql:/docker-entrypoint-initdb.d/01-init-knowledge.sql:ro
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "127.0.0.1",
+          "-u",
+          "root",
+          "-pstaging_root",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  mysql_staging_data:

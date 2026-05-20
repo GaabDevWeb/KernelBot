@@ -354,26 +354,26 @@ def fetch_indexed_lesson_keys(settings: "Settings") -> frozenset[str]:
         if getattr(e, "args", None) and e.args and e.args[0] == 2003:
             log_event(
                 log,
-                logging.ERROR,
+                logging.WARNING,
                 ACL_MOD_DATABASE,
                 "indexed_keys_unreachable",
                 "MySQL inacessivel ao listar chaves indexadas",
                 metadata={"host": settings.db_host, "port": settings.db_port},
             )
-        else:
-            log_event(
-                log,
-                logging.ERROR,
-                ACL_MOD_DATABASE,
-                "indexed_keys_error",
-                "falha ao listar discipline/slug",
-                metadata={
-                    "host": settings.db_host,
-                    "port": settings.db_port,
-                    **_db_error_metadata(e),
-                },
-                exc_info=True,
-            )
+            return frozenset()
+        log_event(
+            log,
+            logging.ERROR,
+            ACL_MOD_DATABASE,
+            "indexed_keys_error",
+            "falha ao listar discipline/slug",
+            metadata={
+                "host": settings.db_host,
+                "port": settings.db_port,
+                **_db_error_metadata(e),
+            },
+            exc_info=True,
+        )
         raise
 
 
