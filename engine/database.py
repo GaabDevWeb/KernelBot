@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from importlib import import_module
 
-from core.structured_log import ACL_MOD_DATABASE, log_event
+from core.structured_log import ACL_MOD_DATABASE, log_event, redact_secrets
 from engine.lesson_catalog import normalize_lesson_key
 from typing import TYPE_CHECKING
 
@@ -15,9 +15,20 @@ log = logging.getLogger(f"kernelbots.{__name__}")
 
 DB_CHUNK_WORDS   = 500
 DB_CHUNK_OVERLAP = 50
+# ~4M chars — evita split/load OOM em rows anómalas (sem delimitador de chunking).
+MAX_CONTENT_CHARS = 4_000_000
 
 META_START_MARKER = "[CONCEITOS E KEYWORDS DA AULA PARA INDEXAÇÃO LÉXICA]"
 META_END_MARKER = "====== FIM DOS METADADOS ======"
+
+
+def _db_error_metadata(exc: BaseException) -> dict[str, object]:
+    """Campos estáveis para logs de erro MySQL (sem credenciais)."""
+    msg = str(exc.args[1] if getattr(exc, "args", None) and len(exc.args) > 1 else exc)
+    return {
+        "error_type": type(exc).__name__,
+        "message_redacted": redact_secrets(msg),
+    }
 
 
 def _split_meta_block(text: str) -> tuple[str | None, str]:
@@ -29,26 +40,44 @@ def _split_meta_block(text: str) -> tuple[str | None, str]:
     o texto integral é chunkado como body, sem injeção de meta_header.
     Boot/reload não falham; o índice BM25 continua com o conteúdo disponível.
     """
-    has_start = META_START_MARKER in text
-    has_end = META_END_MARKER in text
-    if has_start and has_end:
-        before, after = text.split(META_END_MARKER, 1)
-        meta_header = before + META_END_MARKER + "\n\n"
-        return meta_header, after.lstrip("\n")
-    if has_start or has_end:
+    try:
+        has_start = META_START_MARKER in text
+        has_end = META_END_MARKER in text
+        if has_start and has_end:
+            parts = text.split(META_END_MARKER, 1)
+            if len(parts) != 2:
+                raise ValueError(f"meta split part count={len(parts)}")
+            before, after = parts
+            meta_header = before + META_END_MARKER + "\n\n"
+            return meta_header, after.lstrip("\n")
+        if has_start or has_end:
+            log_event(
+                log,
+                logging.ERROR,
+                ACL_MOD_DATABASE,
+                "meta_block_malformed",
+                "marcadores de meta incompletos — chunking legacy sem injecao",
+                metadata={
+                    "has_start": has_start,
+                    "has_end": has_end,
+                    "content_chars": len(text),
+                },
+            )
+        return None, text
+    except (ValueError, IndexError) as exc:
         log_event(
             log,
             logging.ERROR,
             ACL_MOD_DATABASE,
-            "meta_block_malformed",
-            "marcadores de meta incompletos — chunking legacy sem injecao",
+            "meta_block_parse_error",
+            "falha ao separar meta — chunking legacy",
             metadata={
-                "has_start": has_start,
-                "has_end": has_end,
+                "error_type": type(exc).__name__,
+                "message_redacted": redact_secrets(str(exc)),
                 "content_chars": len(text),
             },
         )
-    return None, text
+        return None, text
 
 
 def _chunk_text(text: str, title: str, source: str, discipline: str) -> list[dict]:
@@ -140,7 +169,22 @@ def fetch_db_chunks(settings: Settings) -> list[dict]:
         for row in rows:
             discipline = row["discipline"]
             source = f"db:{discipline}/{row['slug']}"
-            chunks = _chunk_text(row["content"], row["title"], source, discipline)
+            content = row["content"] or ""
+            if len(content) > MAX_CONTENT_CHARS:
+                log_event(
+                    log,
+                    logging.ERROR,
+                    ACL_MOD_DATABASE,
+                    "content_oversize",
+                    "row ignorada — content excede limite",
+                    metadata={
+                        "source": source,
+                        "content_chars": len(content),
+                        "max_chars": MAX_CONTENT_CHARS,
+                    },
+                )
+                continue
+            chunks = _chunk_text(content, row["title"], source, discipline)
             all_chunks.extend(chunks)
 
         log_event(
@@ -165,7 +209,9 @@ def fetch_db_chunks(settings: Settings) -> list[dict]:
                 metadata={
                     "host": settings.db_host,
                     "port": settings.db_port,
-                    "error": str(e.args[1] if len(e.args) > 1 else e),
+                    "message_redacted": redact_secrets(
+                        str(e.args[1] if len(e.args) > 1 else e)
+                    ),
                 },
             )
         else:
@@ -175,9 +221,13 @@ def fetch_db_chunks(settings: Settings) -> list[dict]:
                 ACL_MOD_DATABASE,
                 "fetch_chunks_error",
                 "falha ao ler knowledge",
-                metadata={"error": str(e)},
+                metadata={
+                    "host": settings.db_host,
+                    "port": settings.db_port,
+                    **_db_error_metadata(e),
+                },
+                exc_info=True,
             )
-            log.warning("fetch_db_chunks detail", exc_info=True)
         return []
 
 
@@ -223,9 +273,13 @@ def fetch_db_discipline_ids(settings: Settings) -> frozenset[str]:
                 ACL_MOD_DATABASE,
                 "disciplines_query_error",
                 "falha SELECT DISTINCT discipline",
-                metadata={"error": str(e)},
+                metadata={
+                    "host": settings.db_host,
+                    "port": settings.db_port,
+                    **_db_error_metadata(e),
+                },
+                exc_info=True,
             )
-            log.warning("fetch_db_discipline_ids detail", exc_info=True)
         return frozenset()
 
 
@@ -313,7 +367,44 @@ def fetch_indexed_lesson_keys(settings: "Settings") -> frozenset[str]:
                 ACL_MOD_DATABASE,
                 "indexed_keys_error",
                 "falha ao listar discipline/slug",
-                metadata={"error": str(e)},
+                metadata={
+                    "host": settings.db_host,
+                    "port": settings.db_port,
+                    **_db_error_metadata(e),
+                },
+                exc_info=True,
             )
-            log.error("fetch_indexed_lesson_keys detail", exc_info=True)
         raise
+
+
+def _inline_self_test() -> None:
+    """Validação local: meta malformado → legacy; content > limite → skip."""
+    legacy = "Titulo\nCorpo sem meta."
+    meta, body = _split_meta_block(legacy)
+    assert meta is None and body == legacy
+
+    only_start = f"{META_START_MARKER}\nfoo\nbar"
+    meta, body = _split_meta_block(only_start)
+    assert meta is None and body == only_start
+
+    only_end = f"body\n{META_END_MARKER}\n"
+    meta, body = _split_meta_block(only_end)
+    assert meta is None and body == only_end
+
+    ok = (
+        f"{META_START_MARKER}\nDisciplina: x\n{META_END_MARKER}\n\n"
+        "palavra " * 600
+    )
+    meta, body = _split_meta_block(ok)
+    assert meta is not None and META_END_MARKER in meta
+    chunks = _chunk_text(ok, "T", "db:x/y", "x")
+    assert len(chunks) >= 2
+    assert META_START_MARKER in chunks[0]["text"]
+
+    huge = "x" * (MAX_CONTENT_CHARS + 1)
+    assert len(huge) > MAX_CONTENT_CHARS
+
+
+if __name__ == "__main__":
+    _inline_self_test()
+    print("database._inline_self_test OK")

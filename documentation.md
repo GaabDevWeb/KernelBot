@@ -225,6 +225,13 @@ Não há timer que reconstrua o índice periodicamente (`engine/watcher.py` é l
 - **BM25:** matching por termos na query vs chunks tokenizados; sinónimos, paráfrases e perguntas vagas costumam falhar nos gates mesmo com conteúdo relevante no MySQL.
 - **Catálogo lexical** (`engine/lesson_catalog.py`): roteamento por título/resumo; não substitui embeddings nem garante recall semântico no silo BM25.
 
+### Opção B2 — chunking RAM e observabilidade (release 2026-05-20)
+
+- **Chunking:** `engine/database.py` — meta léxico só no `chunk_index == 0`; fallback legacy (marcadores incompletos) com `meta_block_malformed` / `meta_block_parse_error`.
+- **OOM:** rows com `content` > `MAX_CONTENT_CHARS` (4M) ignoradas no fetch (`content_oversize`); ingest ISS rejeita antes do UPSERT.
+- **Logs DB:** `log_event(..., exc_info=True)` + `redact_secrets` / `SecretRedactingFilter` (`core/structured_log.py`) — traceback preservado, credenciais redigidas.
+- **Backlog pós-deploy:** substituir validação OOM pós-fetch por `LIMIT` SQL / validação Job 2 ISS; expandir sensitive log sanitizer.
+
 ## Glossário e referências (opcional)
 
 - **Silo**: partição lógica do índice por `discipline` (ex.: `python`).

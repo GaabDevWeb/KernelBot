@@ -6,7 +6,7 @@ import logging
 
 from app.state import AppServices
 from core.config import Settings
-from core.structured_log import ACL_MOD_CONTEXT, log_event
+from core.structured_log import ACL_MOD_CONTEXT, log_event, redact_secrets
 from engine.database import fetch_indexed_lesson_keys
 from engine.lesson_catalog import LessonCatalog
 
@@ -57,11 +57,12 @@ def refresh_indexed_lesson_keys_state(services: AppServices) -> tuple[frozenset[
             "indexed_lesson_keys_refresh_failed",
             "falha ao atualizar chaves indexadas — mantendo snapshot anterior",
             metadata={
-                "error": str(e),
+                "error_type": type(e).__name__,
+                "message_redacted": redact_secrets(str(e)),
                 "previous_key_count": len(previous),
             },
+            exc_info=True,
         )
-        log.error("refresh_indexed_lesson_keys_state detail", exc_info=True)
         return previous, False
 
     services.indexed_lesson_keys = new_keys
