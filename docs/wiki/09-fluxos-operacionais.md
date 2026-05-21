@@ -1,0 +1,82 @@
+# Fluxos operacionais
+
+[← Índice](README.md)
+
+## 1. Boot do servidor
+
+```mermaid
+sequenceDiagram
+  participant M as main.py
+  participant S as Settings
+  participant SE as SearchEngine
+  participant DB as MySQL
+  M->>S: load()
+  M->>SE: rebuild()
+  SE->>DB: fetch_db_chunks
+  SE->>SE: BM25 por silo
+  M->>M: bootstrap_catalog_state
+  M->>M: uvicorn :8001
+```
+
+**Importante:** `rebuild()` corre no **import** de `main.py` — primeiro request já tem índice (se MySQL acessível).
+
+## 2. Fluxo de chat (happy path)
+
+1. UI `POST /chat` com `message` + `session_id`.
+2. `ContextManager` resolve escopo (global, discipline, comandos).
+3. `SearchEngine.search_candidates()`.
+4. `build_decision()` → `ok`.
+5. Monta mensagens (system + chunks + histórico + pin).
+6. `ChatProvider` stream OpenRouter.
+7. `post_generation_flags()` — pode override.
+8. SSE completo → UI renderiza.
+
+## 3. Fluxo hard stop
+
+1. Passos 1–4 até `build_decision()`.
+2. `allow_generation=false`.
+3. `hard_stop_message(reason)` — **sem** OpenRouter.
+4. SSE com `ACL_META` + texto pedagógico.
+
+## 4. Pin de contexto
+
+| Evento | Acção |
+|--------|-------|
+| Decisão `ok` com chunks | `PinnedSessionStore.save(session_id, chunks)` |
+| Turnos seguintes | Chunks pinados prepended ao contexto |
+| TTL expirado | Pin descartado após N turnos |
+
+## 5. Reload de índice
+
+| Origem | Mecanismo |
+|--------|-----------|
+| Manual | `POST /reload` + token |
+| CI ISS Job 3 | `reload-kernelbot.mjs` após ingest |
+| Restart processo | `rebuild()` no boot |
+
+**Não há** reload automático por filesystem (`watcher.py` inactivo).
+
+## 6. Pipeline ISS → KernelBot (produção)
+
+```text
+Push ISS (content/ + jsons/)
+  → GHA sync-kernelbot-knowledge.yml
+    → Job 1 validate catalog
+    → Job 2 ingest-knowledge.py → MySQL UPSERT
+    → Job 3 verify + POST /reload
+  → KernelBot índice RAM actualizado
+```
+
+Detalhe: [10-integracao-iss-fase5b.md](10-integracao-iss-fase5b.md).
+
+## 7. Staging local (resumo)
+
+```text
+staging-setup.sh → staging-serve.sh → browser :8001
+```
+
+Detalhe: [13-staging-testes.md](13-staging-testes.md).
+
+## Ver também
+
+- [02-arquitetura.md](02-arquitetura.md)
