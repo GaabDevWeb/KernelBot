@@ -28,6 +28,7 @@ from core.structured_log import ACL_MOD_DECISION, log_event
 from typing import Iterable, Literal
 
 Mode = Literal["strict", "assistive"]
+AclRetrievalPolicyMode = Literal["strict", "fallback"]
 Confidence = Literal["high", "medium", "low"]
 DecisionReason = Literal[
     "ok",
@@ -489,6 +490,8 @@ def build_decision(
     min_terms: int = MIN_TERMS,
     top_k: int = TOP_K,
     max_per_source: int = MAX_CHUNKS_PER_SOURCE,
+    acl_retrieval_mode: AclRetrievalPolicyMode = "strict",
+    disambiguation_enabled: bool = False,
 ) -> RetrievalDecision:
     """Aplica as Fases 1 e 2 sobre candidatos já recuperados.
 
@@ -537,6 +540,8 @@ def build_decision(
         "min_terms": min_terms,
         "top_k": top_k,
         "max_per_source": max_per_source,
+        "acl_retrieval_mode": acl_retrieval_mode,
+        "disambiguation_enabled": disambiguation_enabled,
     }
 
     log_event(
@@ -596,6 +601,18 @@ def build_decision(
     if not selected or top < min_score:
         confidence: Confidence = "low"
         debug["confidence"] = confidence
+        if acl_retrieval_mode == "fallback":
+            debug["fallback_generation"] = True
+            return _finish(RetrievalDecision(
+                allow_generation=True,
+                reason="insufficient_context",
+                confidence=confidence,
+                selected_candidates=(),
+                trace=_build_trace(
+                    query, informative, mode, selected, coverage_value,
+                    "insufficient_context", True, confidence, debug,
+                ),
+            ))
         return _finish(RetrievalDecision(
             allow_generation=False,
             reason="insufficient_context",
@@ -641,6 +658,22 @@ def build_decision(
     # Só dispara quando há de fato um segundo candidato; um único hit sólido
     # não é ambíguo por margem.
     if mode == "strict" and len(selected) > 1 and score_margin < min_score_margin:
+        qualified = [c for c in selected if c.raw_score >= min_score]
+        if disambiguation_enabled and len(qualified) >= 2:
+            disambig_selected = tuple(qualified[:top_k])
+            confidence = "medium"
+            debug["confidence"] = confidence
+            debug["disambiguation_generation"] = True
+            return _finish(RetrievalDecision(
+                allow_generation=True,
+                reason="ambiguous_retrieval",
+                confidence=confidence,
+                selected_candidates=disambig_selected,
+                trace=_build_trace(
+                    query, informative, mode, list(disambig_selected), coverage_value,
+                    "ambiguous_retrieval", True, confidence, debug,
+                ),
+            ))
         confidence = "low"
         debug["confidence"] = confidence
         return _finish(RetrievalDecision(

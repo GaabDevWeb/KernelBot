@@ -26,6 +26,7 @@ Documentação técnica em formato wiki. Cada página cobre um domínio do siste
 | 14 | [Segurança e logs](14-seguranca-observabilidade.md) | Redacção, OOM, fallbacks |
 | 15 | [Glossário](15-glossario.md) | Termos do domínio |
 | 16 | [Backlog](16-backlog.md) | Débitos e próximos passos |
+| 17 | [Prompts — referência](17-prompts-referencia.md) | Arquitetura ACL, inventário CL4R1T4S, padrões |
 
 ---
 
@@ -45,5 +46,5 @@ Documentação técnica em formato wiki. Cada página cobre um domínio do siste
 |--------|-------|
 | **Novo no projeto** | 1 → 2 → 3 → 9 → 7 |
 | **Operador / deploy** | 10 → 15 → 13 → 12 |
-| **RAG / retrieval** | 5 → 6 → 11 |
+| **RAG / retrieval** | 5 → 6 → 17 → 11 |
 | **Debug hard stop** | 6 → 13 → 11 (testes chat) |

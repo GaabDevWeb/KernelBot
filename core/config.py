@@ -11,6 +11,7 @@ from typing import Literal
 from dotenv import load_dotenv
 
 GlobalContextMode = Literal["geral", "all"]
+RetrievalPolicyMode = Literal["strict", "fallback"]
 
 _LOG = logging.getLogger("kernelbots.config")
 
@@ -36,7 +37,12 @@ class Settings:
     openrouter_base: str
     models: tuple[str, ...]
     system_prompt_geral: str
+    grounding_strict: str
+    grounding_permissive: str
+    grounding_disambiguation: str
     sticky_instruction: str
+    retrieval_mode: RetrievalPolicyMode
+    disambiguation_enabled: bool
     http_timeout: float
     # Contexto fixado (sessão): ver `documentation.md`
     pinned_max_turns: int
@@ -104,6 +110,9 @@ class Settings:
 
         prompts_dir = Path(__file__).resolve().parent / "systemPrompt"
         system_prompt_file = prompts_dir / "system_prompt.txt"
+        grounding_strict_file = prompts_dir / "grounding_strict.txt"
+        grounding_permissive_file = prompts_dir / "grounding_permissive.txt"
+        grounding_disambiguation_file = prompts_dir / "grounding_disambiguation.txt"
         sticky_instruction_file = prompts_dir / "sticky_instruction.txt"
         catalog_router_file = prompts_dir / "catalog_router.txt"
 
@@ -111,6 +120,21 @@ class Settings:
             raise RuntimeError(
                 f"Arquivo de system prompt não encontrado: {system_prompt_file}. "
                 "Crie o arquivo core/systemPrompt/system_prompt.txt com o texto do assistente."
+            )
+        if not grounding_strict_file.exists():
+            raise RuntimeError(
+                f"Arquivo de grounding não encontrado: {grounding_strict_file}. "
+                "Crie o arquivo core/systemPrompt/grounding_strict.txt com o contrato anti-alucinação."
+            )
+        if not grounding_permissive_file.exists():
+            raise RuntimeError(
+                f"Arquivo de grounding permissivo não encontrado: {grounding_permissive_file}. "
+                "Crie o arquivo core/systemPrompt/grounding_permissive.txt."
+            )
+        if not grounding_disambiguation_file.exists():
+            raise RuntimeError(
+                f"Arquivo de grounding de desambiguação não encontrado: {grounding_disambiguation_file}. "
+                "Crie o arquivo core/systemPrompt/grounding_disambiguation.txt."
             )
         if not sticky_instruction_file.exists():
             raise RuntimeError(
@@ -124,6 +148,9 @@ class Settings:
             )
 
         system_prompt = system_prompt_file.read_text(encoding="utf-8").strip()
+        grounding_strict = grounding_strict_file.read_text(encoding="utf-8").strip()
+        grounding_permissive = grounding_permissive_file.read_text(encoding="utf-8").strip()
+        grounding_disambiguation = grounding_disambiguation_file.read_text(encoding="utf-8").strip()
         sticky_instruction = sticky_instruction_file.read_text(encoding="utf-8").strip()
         catalog_router_prompt = catalog_router_file.read_text(encoding="utf-8").strip()
 
@@ -185,6 +212,20 @@ class Settings:
             "ACL_RETRIEVAL_MAX_CHUNKS_PER_SOURCE", 2, 1, 10
         )
 
+        raw_retrieval_mode = (os.getenv("ACL_RETRIEVAL_MODE") or "strict").strip().lower()
+        if raw_retrieval_mode == "strict":
+            retrieval_mode: RetrievalPolicyMode = "strict"
+        elif raw_retrieval_mode == "fallback":
+            retrieval_mode = "fallback"
+        else:
+            raise RuntimeError(
+                "ACL_RETRIEVAL_MODE deve ser 'strict' ou 'fallback' "
+                f"(recebido: {raw_retrieval_mode!r})."
+            )
+
+        raw_disambiguation = (os.getenv("ACL_DISAMBIGUATION_ENABLED") or "false").strip().lower()
+        disambiguation_enabled = raw_disambiguation in ("1", "true", "yes", "on")
+
         raw_catalog_enabled = (os.getenv("ACL_CATALOG_ENABLED") or "false").strip().lower()
         catalog_enabled = raw_catalog_enabled in ("1", "true", "yes", "on")
 
@@ -241,7 +282,12 @@ class Settings:
             openrouter_base="https://openrouter.ai/api/v1/chat/completions",
             models=models,
             system_prompt_geral=system_prompt,
+            grounding_strict=grounding_strict,
+            grounding_permissive=grounding_permissive,
+            grounding_disambiguation=grounding_disambiguation,
             sticky_instruction=sticky_instruction,
+            retrieval_mode=retrieval_mode,
+            disambiguation_enabled=disambiguation_enabled,
             http_timeout=60.0,
             pinned_max_turns=pinned_max_turns,
             pinned_max_chars=pinned_max_chars,

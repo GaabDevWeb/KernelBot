@@ -16,7 +16,7 @@ KernelBot/
 │   ├── config.py                # Settings.load(), env ACL_*
 │   ├── logging_config.py        # Text/JSON formatters, SecretRedactingFilter
 │   ├── structured_log.py        # log_event(), redact_secrets()
-│   └── systemPrompt/            # system_prompt.txt, sticky_instruction.txt (obrigatórios)
+│   └── systemPrompt/            # system_prompt, grounding_strict, catalog_router, sticky (ver wiki §17)
 ├── engine/
 │   ├── search.py                # SearchEngine, silos BM25
 │   ├── database.py              # fetch_db_chunks, _chunk_text, _split_meta_block

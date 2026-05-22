@@ -39,9 +39,9 @@ flowchart TD
 | `reason` | Quando | LLM chamado? |
 |----------|--------|--------------|
 | `ok` | Passou todos os gates | Sim |
-| `insufficient_context` | Sem hits ou `top_score < MIN_SCORE` | Não |
+| `insufficient_context` | Sem hits ou `top_score < MIN_SCORE` | Não (sim se `ACL_RETRIEVAL_MODE=fallback` — sem chunks, `grounding_permissive`) |
 | `underspecified_query` | Menos de `MIN_TERMS` termos informativos | Não |
-| `ambiguous_retrieval` | 2+ candidatos, margem < 0.15 | Não |
+| `ambiguous_retrieval` | 2+ candidatos, margem < 0.15 | Não (sim se `ACL_DISAMBIGUATION_ENABLED=true` e ≥2 scores ≥ `MIN_SCORE`) |
 | `context_misaligned` | Coverage baixa no melhor chunk | Não |
 | `vague_but_high_risk` | Query estruturalmente vaga (ex.: performance + banco) | Não |
 | `low_confidence` | Confiança agregada baixa | Não |
@@ -87,9 +87,21 @@ indicou que ela pode ter saído do escopo das fontes.
 
 **Não confundir** com falha do Opção B2 no BM25 — são camadas diferentes.
 
+## Contratos de grounding condicionais
+
+`engine/context.py` escolhe o bloco injectado via `_select_grounding()`:
+
+| `decision.reason` | Condição extra | Ficheiro | Chunks no prompt |
+|-------------------|----------------|----------|------------------|
+| (qualquer com geração OK) | default | `grounding_strict.txt` | `[Fonte: path \| Score: …]` |
+| `insufficient_context` | `ACL_RETRIEVAL_MODE=fallback` | `grounding_permissive.txt` | vazio |
+| `ambiguous_retrieval` | `ACL_DISAMBIGUATION_ENABLED=true` | `grounding_disambiguation.txt` | `[Fonte 1: …]`, `[Fonte 2: …]` |
+
+Hard stops continuam a usar `hard_stop_message()` — textos em `_HARD_STOP_MESSAGES` não mudam quando `allow_generation=false`.
+
 ## Ordem dos gates em `build_decision()` (simplificado)
 
-1. Sem candidatos ou top score baixo → `insufficient_context`
+1. Sem candidatos ou top score baixo → `insufficient_context` (ou geração em `fallback`)
 2. Poucos termos informativos → `underspecified_query`
 3. Margem entre top2 → `ambiguous_retrieval`
 4. Coverage / weighted coverage → `context_misaligned`

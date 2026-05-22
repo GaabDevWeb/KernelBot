@@ -253,13 +253,44 @@ def _join_chunks_for_prompt(selected: list[dict[str, str]]) -> str:
     )
 
 
-_STRICT_GROUNDING_INSTRUCTION = (
-    "Você possui acesso à seguinte base de conhecimento local. "
-    "Responda APENAS com base nos trechos fornecidos. "
-    "Se a resposta exigir qualquer informação que não esteja explicitamente nos trechos, "
-    "responda que não há informação suficiente na base. "
-    "Não faça suposições. Não complete lacunas com conhecimento geral.\n\n"
-)
+def _select_grounding(decision: RetrievalDecision, settings: Settings) -> str:
+    """Escolhe o contrato de grounding conforme decisão e flags de produto."""
+    if decision.reason == "insufficient_context" and settings.retrieval_mode == "fallback":
+        return settings.grounding_permissive
+    if decision.reason == "ambiguous_retrieval" and settings.disambiguation_enabled:
+        return settings.grounding_disambiguation
+    return settings.grounding_strict
+
+
+def _format_chunks_for_prompt(
+    selected: list[dict[str, str | float]],
+    decision: RetrievalDecision,
+    settings: Settings,
+) -> str:
+    """Formata trechos RAG; numera fontes em modo desambiguação."""
+    if not selected:
+        return ""
+    use_numbered = (
+        decision.reason == "ambiguous_retrieval" and settings.disambiguation_enabled
+    )
+    parts: list[str] = []
+    for i, s in enumerate(selected, start=1):
+        text = s.get("text") or ""
+        if not text:
+            continue
+        src = s.get("source") or ""
+        score = s.get("normalized_score")
+        if use_numbered:
+            if score is not None:
+                header = f"[Fonte {i}: {src} | Score: {float(score):.2f}]"
+            else:
+                header = f"[Fonte {i}: {src}]"
+        elif score is not None:
+            header = f"[Fonte: {src} | Score: {float(score):.2f}]"
+        else:
+            header = f"[Fonte: {src}]"
+        parts.append(f"{header}\n{text}")
+    return "\n\n---\n\n".join(parts)
 
 
 def _assemble_system_content(
@@ -382,6 +413,8 @@ class ContextManager:
             min_terms=self._settings.retrieval_min_terms,
             top_k=self._settings.retrieval_top_k,
             max_per_source=self._settings.retrieval_max_chunks_per_source,
+            acl_retrieval_mode=self._settings.retrieval_mode,
+            disambiguation_enabled=self._settings.disambiguation_enabled,
         )
         if not rescued.allow_generation:
             return decision
@@ -547,7 +580,7 @@ class ContextManager:
                     sp,
                     self._settings.catalog_router_prompt,
                     catalog_section,
-                    _STRICT_GROUNDING_INSTRUCTION,
+                    self._settings.grounding_strict,
                     ctx,
                 )
                 trace_sources = [str(c["source"]) for c in doc_chunks]
@@ -639,6 +672,8 @@ class ContextManager:
             min_terms=self._settings.retrieval_min_terms,
             top_k=self._settings.retrieval_top_k,
             max_per_source=self._settings.retrieval_max_chunks_per_source,
+            acl_retrieval_mode=self._settings.retrieval_mode,
+            disambiguation_enabled=self._settings.disambiguation_enabled,
         )
         if catalog_result and self._lesson_catalog:
             decision = self._try_catalog_rescue(query, decision, mode, catalog_result)
@@ -657,15 +692,13 @@ class ContextManager:
                 }
                 for c in decision.selected_candidates
             ]
-            ctx = "\n\n---\n\n".join(
-                f"[Fonte: {s['source']} | Score: {s['normalized_score']:.2f}]\n{s['text']}"
-                for s in selected
-            )
+            grounding = _select_grounding(decision, self._settings)
+            ctx = _format_chunks_for_prompt(selected, decision, self._settings)
             system_content = _assemble_system_content(
                 sp,
                 self._settings.catalog_router_prompt,
                 catalog_section,
-                _STRICT_GROUNDING_INSTRUCTION,
+                grounding,
                 ctx,
             )
 

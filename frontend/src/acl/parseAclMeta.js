@@ -1,6 +1,30 @@
 /** Razões de hard_stop que usam UI estruturada (sem markdown streaming). */
 export const STRUCTURED_HARD_STOP_REASONS = ["index_gap", "ambiguous_retrieval"];
 
+/**
+ * Geração permitida neste turno (contrato ACL_META v=3).
+ * Fallback legado: `decision === "answer"` quando `allow_generation` ausente.
+ * @param {Record<string, unknown> | null | undefined} meta
+ * @returns {boolean}
+ */
+export function allowsGeneration(meta) {
+    if (meta && typeof meta.allow_generation === "boolean") {
+        return meta.allow_generation;
+    }
+    if (meta?.decision === "answer") return true;
+    if (meta?.decision === "hard_stop") return false;
+    return true;
+}
+
+/**
+ * Desambiguação com LLM (`ACL_DISAMBIGUATION_ENABLED`) — stream markdown, sem chips.
+ * @param {Record<string, unknown> | null | undefined} meta
+ * @returns {boolean}
+ */
+export function isDisambiguationGeneration(meta) {
+    return allowsGeneration(meta) && String(meta?.reason || "") === "ambiguous_retrieval";
+}
+
 /** Mapa discipline → prefixo de comando (espelha `engine/context.py`). */
 const DISCIPLINE_TO_COMMAND = {
     python: "/python",
@@ -61,9 +85,20 @@ export function normalizeHardStopPayload(reason, payload) {
  * @returns {boolean}
  */
 export function isStructuredHardStop(meta) {
+    if (allowsGeneration(meta)) return false;
+    return STRUCTURED_HARD_STOP_REASONS.includes(String(meta?.reason || ""));
+}
+
+/**
+ * @param {string} reason
+ * @param {Record<string, unknown> | null} payload
+ * @returns {boolean}
+ */
+export function shouldMountIndexGap(reason, payload, meta) {
     return (
-        meta?.decision === "hard_stop" &&
-        STRUCTURED_HARD_STOP_REASONS.includes(String(meta?.reason || ""))
+        !allowsGeneration(meta) &&
+        reason === "index_gap" &&
+        payload?.expected_lesson != null
     );
 }
 
@@ -72,17 +107,9 @@ export function isStructuredHardStop(meta) {
  * @param {Record<string, unknown> | null} payload
  * @returns {boolean}
  */
-export function shouldMountIndexGap(reason, payload) {
-    return reason === "index_gap" && payload?.expected_lesson != null;
-}
-
-/**
- * @param {string} reason
- * @param {Record<string, unknown> | null} payload
- * @returns {boolean}
- */
-export function shouldMountDisambiguationChips(reason, payload) {
+export function shouldMountDisambiguationChips(reason, payload, meta) {
     return (
+        !allowsGeneration(meta) &&
         reason === "ambiguous_retrieval" &&
         Array.isArray(payload?.suggested_candidates) &&
         payload.suggested_candidates.length > 0

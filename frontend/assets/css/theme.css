@@ -286,6 +286,15 @@ body {
 }
 
 /* ===== Breadcrumbs nas respostas ===== */
+.message-hint-badge {
+    font-size: 0.75rem;
+    color: var(--text-muted, #8b949e);
+    margin-bottom: 0.35rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    background: rgba(110, 118, 129, 0.12);
+}
+
 .message-breadcrumbs {
     font-size: 11px;
     color: var(--text-muted);

@@ -16,7 +16,7 @@ O conteúdo técnico completo está na **wiki** em [`docs/wiki/`](docs/wiki/READ
 
 Chatbot educacional com **BM25** sobre aulas em MySQL: só chama o LLM quando os **gates** de retrieval passam; caso contrário, **hard stop** sem alucinar.
 
-## Índice da wiki (16 secções)
+## Índice da wiki (17 secções)
 
 1. [Visão geral](docs/wiki/01-visao-geral.md)
 2. [Arquitetura](docs/wiki/02-arquitetura.md)
@@ -34,6 +34,7 @@ Chatbot educacional com **BM25** sobre aulas em MySQL: só chama o LLM quando os
 14. [Segurança e logs](docs/wiki/14-seguranca-observabilidade.md)
 15. [Glossário](docs/wiki/15-glossario.md)
 16. [Backlog](docs/wiki/16-backlog.md)
+17. [Prompts — referência](docs/wiki/17-prompts-referencia.md)
 
 ## Repositório ISS
 

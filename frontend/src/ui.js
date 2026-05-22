@@ -1,6 +1,7 @@
 import { ChatService } from "./api.js";
 import {
     buildDisambiguationFollowUp,
+    isDisambiguationGeneration,
     isStructuredHardStop,
     normalizeHardStopPayload,
     shouldMountDisambiguationChips,
@@ -11,7 +12,7 @@ import { createChatView } from "./components/ChatView.js";
 import { mountDisambiguationChips } from "./components/DisambiguationChips.js";
 import { mountIndexGapAlert } from "./components/IndexGapAlert.js";
 import { createStatusBadge } from "./components/StatusBadge.js";
-import { setBreadcrumbsContent } from "./components/MessageRow.js";
+import { setBreadcrumbsContent, setDisambiguationHint } from "./components/MessageRow.js";
 import { siloClassSuffix, siloDisplayName, immediateContextLabel } from "./utils/contextLabel.js";
 import { loadHistory, saveHistory } from "./utils/history.js";
 import { getOrCreateSessionId } from "./utils/sessionId.js";
@@ -132,11 +133,11 @@ export function init() {
                     bubble.innerHTML = "";
                     statusEl.classList.add("context-search-status--hidden");
 
-                    if (shouldMountIndexGap(reason, payload)) {
+                    if (shouldMountIndexGap(reason, payload, meta)) {
                         mountIndexGapAlert(bubble, payload);
                         const lesson = /** @type {{ title?: string }} */ (payload?.expected_lesson);
                         structuredHistoryLabel = `[Index gap] ${lesson?.title || "aula"}`;
-                    } else if (shouldMountDisambiguationChips(reason, payload)) {
+                    } else if (shouldMountDisambiguationChips(reason, payload, meta)) {
                         mountDisambiguationChips(bubble, payload, {
                             onSelect(candidate) {
                                 const followUp = buildDisambiguationFollowUp(candidate);
@@ -162,6 +163,7 @@ export function init() {
                 }
                 streamSources = Array.isArray(meta?.sources) ? meta.sources : [];
                 setBreadcrumbsContent(breadcrumbs, streamSources);
+                setDisambiguationHint(breadcrumbs, isDisambiguationGeneration(meta));
             },
             onFirstToken() {
                 statusEl.classList.add("context-search-status--hidden");

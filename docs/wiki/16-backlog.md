@@ -25,6 +25,7 @@
 | B7 | Testes automatizados BM25 B2 | Casos chunk0 vs body-only |
 | B8 | Remover ou documentar `engine/watcher.py` | Legado |
 | B9 | Ingest staging completo (todas as aulas) | Melhor representatividade nos testes |
+| B10 | Injectar `sticky_instruction` no pin | Template `{name}` já alinhado ao strict — ver [17-prompts-referencia.md](17-prompts-referencia.md) |
 
 ## Push / release (bloqueado pelo utilizador)
 

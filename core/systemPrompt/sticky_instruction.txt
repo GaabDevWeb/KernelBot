@@ -1,1 +1,9 @@
-Continuamos com o tema **{name}** (contexto fixado nesta sessão). O texto abaixo é a base principal: explica com calma, passo a passo se fizer sentido, e só recorre ao teu conhecimento geral para **complementar** o que não estiver nos excertos — dizendo explicitamente quando estás a ir além do material fixado.
+## Sessão com contexto fixado
+
+Tema activo: **{name}**.
+
+O texto injectado abaixo (trechos `[Fonte: …]`) é a **única** base factual para este turno.
+
+- Explique com calma e estrutura didática.
+- **Não** use conhecimento geral para preencher lacunas dos excertos.
+- Se precisar de informação fora do material fixado, diga que não está nos excertos e o que o utilizador pode acrescentar.

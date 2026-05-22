@@ -24,7 +24,7 @@ Scripts `bin/staging-*.sh` exportam `KERNELBOT_ENV=staging`.
 | Variável | Descrição |
 |----------|-----------|
 | `OPENROUTER_API_KEY` | API OpenRouter |
-| Prompts | `core/systemPrompt/system_prompt.txt` e `sticky_instruction.txt` |
+| Prompts | `core/systemPrompt/` — ver [17-prompts-referencia.md](17-prompts-referencia.md) |
 
 ## MySQL
 
@@ -48,7 +48,8 @@ Scripts `bin/staging-*.sh` exportam `KERNELBOT_ENV=staging`.
 | `ACL_RETRIEVAL_CANDIDATE_K` | 8 |
 | `ACL_RETRIEVAL_TOP_K` | 4 |
 | `ACL_RETRIEVAL_MAX_CHUNKS_PER_SOURCE` | 2 |
-| `ACL_RETRIEVAL_MODE` | strict |
+| `ACL_RETRIEVAL_MODE` | strict | `strict` = hard stop sem chunks; `fallback` = LLM com `grounding_permissive.txt` |
+| `ACL_DISAMBIGUATION_ENABLED` | false | `true` = `ambiguous_retrieval` pode gerar com `grounding_disambiguation.txt` |
 
 ## ACL — operação
 
@@ -76,6 +77,18 @@ Scripts `bin/staging-*.sh` exportam `KERNELBOT_ENV=staging`.
 
 `SecretRedactingFilter` em `core/logging_config.py` — ver [14-seguranca-observabilidade.md](14-seguranca-observabilidade.md).
 
+## Ficheiros de prompt (`core/systemPrompt/`)
+
+| Ficheiro | Boot obrigatório |
+|----------|------------------|
+| `system_prompt.txt` | Sim |
+| `grounding_strict.txt` | Sim |
+| `grounding_permissive.txt` | Sim | Modo `ACL_RETRIEVAL_MODE=fallback` sem chunks |
+| `grounding_disambiguation.txt` | Sim | `ACL_DISAMBIGUATION_ENABLED=true` + `ambiguous_retrieval` |
+| `catalog_router.txt` | Sim |
+| `sticky_instruction.txt` | Sim (carregado; inject no chat pendente — ver wiki §17) |
+
 ## Ver também
 
+- [17-prompts-referencia.md](17-prompts-referencia.md)
 - [13-staging-testes.md](13-staging-testes.md)

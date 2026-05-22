@@ -6,6 +6,29 @@ const MAX_BREADCRUMB_LINES = 5;
  * @param {HTMLElement} breadcrumbsEl
  * @param {string[] | undefined} sources
  */
+const HINT_CLASS = "message-hint-badge";
+
+/**
+ * Badge informativo (ex.: desambiguação com geração) — não bloqueia o stream.
+ * @param {HTMLElement | null | undefined} breadcrumbsEl
+ * @param {boolean} show
+ */
+export function setDisambiguationHint(breadcrumbsEl, show) {
+    if (!breadcrumbsEl) return;
+    const existing = breadcrumbsEl.querySelector(`.${HINT_CLASS}`);
+    if (!show) {
+        existing?.remove();
+        if (!breadcrumbsEl.childElementCount) breadcrumbsEl.hidden = true;
+        return;
+    }
+    breadcrumbsEl.hidden = false;
+    if (existing) return;
+    const hint = document.createElement("div");
+    hint.className = HINT_CLASS;
+    hint.textContent = "Várias fontes próximas — o modelo desempata com base no material.";
+    breadcrumbsEl.prepend(hint);
+}
+
 export function setBreadcrumbsContent(breadcrumbsEl, sources) {
     if (!breadcrumbsEl) return;
     if (!sources?.length) {

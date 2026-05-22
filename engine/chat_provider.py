@@ -69,6 +69,7 @@ def _build_meta(trace: ContextTrace | None, llm_called: bool, tokens_used: int) 
             }
         )
         return meta
+    allow_generation = trace.decision == "answer"
     meta.update(
         {
             "label": trace.label,
@@ -79,6 +80,7 @@ def _build_meta(trace: ContextTrace | None, llm_called: bool, tokens_used: int) 
             "decision": trace.decision,
             "reason": trace.reason,
             "confidence": trace.confidence,
+            "allow_generation": allow_generation,
             "llm_called": llm_called,
             "tokens_used": tokens_used,
         }
