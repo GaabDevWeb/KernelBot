@@ -103,8 +103,8 @@ class Settings:
         content_dir.mkdir(exist_ok=True)
 
         models = (
+            "deepseek/deepseek-v4-flash:free ",
             "openrouter/free",
-            "deepseek/deepseek-r1:free",
             "meta-llama/llama-4-maverick:free",
         )
 
@@ -213,15 +213,18 @@ class Settings:
         )
 
         raw_retrieval_mode = (os.getenv("ACL_RETRIEVAL_MODE") or "strict").strip().lower()
-        if raw_retrieval_mode == "strict":
-            retrieval_mode: RetrievalPolicyMode = "strict"
-        elif raw_retrieval_mode == "fallback":
-            retrieval_mode = "fallback"
-        else:
+        if raw_retrieval_mode not in ("strict", "fallback"):
             raise RuntimeError(
-                "ACL_RETRIEVAL_MODE deve ser 'strict' ou 'fallback' "
+                "ACL_RETRIEVAL_MODE deve ser 'strict' ou 'fallback' (legado) "
                 f"(recebido: {raw_retrieval_mode!r})."
             )
+        if raw_retrieval_mode == "fallback":
+            import logging
+
+            logging.getLogger("kernelbots.config").warning(
+                "ACL_RETRIEVAL_MODE=fallback ignorado; gates são só classificação — sempre LLM + grounding_strict"
+            )
+        retrieval_mode: RetrievalPolicyMode = "strict"
 
         raw_disambiguation = (os.getenv("ACL_DISAMBIGUATION_ENABLED") or "false").strip().lower()
         disambiguation_enabled = raw_disambiguation in ("1", "true", "yes", "on")

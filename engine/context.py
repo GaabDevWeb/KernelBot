@@ -255,8 +255,6 @@ def _join_chunks_for_prompt(selected: list[dict[str, str]]) -> str:
 
 def _select_grounding(decision: RetrievalDecision, settings: Settings) -> str:
     """Escolhe o contrato de grounding conforme decisão e flags de produto."""
-    if decision.reason == "insufficient_context" and settings.retrieval_mode == "fallback":
-        return settings.grounding_permissive
     if decision.reason == "ambiguous_retrieval" and settings.disambiguation_enabled:
         return settings.grounding_disambiguation
     return settings.grounding_strict
@@ -380,8 +378,6 @@ class ContextManager:
         mode: str,
         catalog_result: CatalogMatchResult,
     ) -> RetrievalDecision:
-        if decision.allow_generation:
-            return decision
         if decision.reason not in _CATALOG_RESCUE_REASONS:
             return decision
         if not self._lesson_catalog or not self._lesson_catalog.is_confident(catalog_result):
@@ -416,7 +412,7 @@ class ContextManager:
             acl_retrieval_mode=self._settings.retrieval_mode,
             disambiguation_enabled=self._settings.disambiguation_enabled,
         )
-        if not rescued.allow_generation:
+        if not rescued.selected_candidates:
             return decision
 
         log_event(
@@ -603,20 +599,19 @@ class ContextManager:
                     ],
                     trace=trace,
                 )
-            # Sem silo doc: hard stop explícito; não tenta LLM sem base.
-            return self._hard_stop_result(
-                query=query or user_message,
-                reason="insufficient_context",
-                mode=mode,
-                discipline=effective_discipline,
-                pin=pin,
-                trace_retrieval=None,
-                catalog_result=self._catalog_match(query),
+            log_event(
+                log,
+                logging.INFO,
+                ACL_MOD_CONTEXT,
+                "doc_silo_empty_fallback_rag",
+                "silo doc vazio — continua com RAG normal",
+                metadata={"query": query},
             )
 
         # --- Retrieval bruto + política de decisão --------------------------
 
         catalog_result = self._catalog_match(query)
+        trace_reason_override: str | None = None
 
         if (
             self._lesson_catalog
@@ -628,18 +623,16 @@ class ContextManager:
             if top is not None:
                 lesson_key = self._lesson_catalog.lesson_key(top)
                 if lesson_key not in self._indexed_lesson_keys:
-                    return self._hard_stop_result(
-                        query=query or user_message,
-                        reason="index_gap",
-                        mode=mode,
-                        discipline=effective_discipline,
-                        pin=pin,
-                        trace_retrieval=None,
-                        catalog_result=catalog_result,
-                        catalog_match=True,
-                        hard_stop_payload={
-                            "expected_lesson": _lesson_dict_from_entry(top),
-                            "suggested_candidates": [],
+                    trace_reason_override = "index_gap"
+                    log_event(
+                        log,
+                        logging.INFO,
+                        ACL_MOD_CONTEXT,
+                        "index_gap_advisory",
+                        "aula no catalogo ausente do indice — LLM com RAG",
+                        metadata={
+                            "lesson_slug": top.slug,
+                            "lesson_discipline": top.discipline,
                         },
                     )
 
@@ -677,94 +670,81 @@ class ContextManager:
         )
         if catalog_result and self._lesson_catalog:
             decision = self._try_catalog_rescue(query, decision, mode, catalog_result)
-        if decision.allow_generation:
-            catalog_section = (
-                self._lesson_catalog.build_prompt_section(catalog_result)
-                if self._lesson_catalog and catalog_result
-                else ""
-            )
-            selected = [
-                {
-                    "source": c.source,
-                    "text": c.text,
-                    "score": c.raw_score,
-                    "normalized_score": c.normalized_score,
-                }
-                for c in decision.selected_candidates
-            ]
-            grounding = _select_grounding(decision, self._settings)
-            ctx = _format_chunks_for_prompt(selected, decision, self._settings)
-            system_content = _assemble_system_content(
-                sp,
-                self._settings.catalog_router_prompt,
-                catalog_section,
-                grounding,
-                ctx,
-            )
 
-            if effective_discipline is not None:
-                label = _trace_label_for_discipline(effective_discipline)
-            elif force_rag:
-                label = _global_scope_label(self._settings)
-            else:
-                label = _global_scope_label(self._settings)
+        catalog_section = (
+            self._lesson_catalog.build_prompt_section(catalog_result)
+            if self._lesson_catalog and catalog_result
+            else ""
+        )
+        selected = [
+            {
+                "source": c.source,
+                "text": c.text,
+                "score": c.raw_score,
+                "normalized_score": c.normalized_score,
+            }
+            for c in decision.selected_candidates
+        ]
+        grounding = _select_grounding(decision, self._settings)
+        ctx = _format_chunks_for_prompt(selected, decision, self._settings)
+        system_content = _assemble_system_content(
+            sp,
+            self._settings.catalog_router_prompt,
+            catalog_section,
+            grounding,
+            ctx,
+        )
 
-            trace_sources = [s["source"] for s in selected]
-            scope_key = self._scope_key_for_hit(
-                force_rag, discipline_from_command, effective_discipline
-            )
-            self._save_pin(
-                session_id,
-                scope_key,
-                [{"source": s["source"], "text": s["text"]} for s in selected],
-                trace_sources,
-            )
+        if effective_discipline is not None:
+            label = _trace_label_for_discipline(effective_discipline)
+        elif force_rag:
+            label = _global_scope_label(self._settings)
+        else:
+            label = _global_scope_label(self._settings)
 
-            trace = ContextTrace(
-                label=label,
-                sources=_dedupe_sources(trace_sources),
-                pinned_active=self._pin_active(session_id),
-                pinned_display=self._pin_display(session_id),
-                mode=mode,
-                decision="answer",
-                reason=decision.reason,
-                confidence=decision.confidence,
-                retrieval_trace=decision.trace,
-            )
-            log_event(
-                log,
-                logging.INFO,
-                ACL_MOD_CONTEXT,
-                "context_prompt_ready",
-                "mensagens montadas com chunks selecionados",
-                metadata={
-                    "selected_chunk_count": len(selected),
-                    "sources": list(trace.sources),
-                    "reason": decision.reason,
-                    "confidence": decision.confidence,
-                },
-            )
-            return BuildMessagesResult(
-                messages=[
-                    {"role": "system", "content": system_content},
-                    {"role": "user", "content": query},
-                ],
-                trace=trace,
-                decision=decision,
-            )
+        trace_sources = [s["source"] for s in selected]
+        scope_key = self._scope_key_for_hit(
+            force_rag, discipline_from_command, effective_discipline
+        )
+        self._save_pin(
+            session_id,
+            scope_key,
+            [{"source": s["source"], "text": s["text"]} for s in selected],
+            trace_sources,
+        )
 
-        # --- Hard stop ------------------------------------------------------
-        # Pin NÃO ressuscita contexto: no modo strict, se a decisão atual
-        # bloqueou, pin só serve como histórico de UI (mostrar o badge).
-        return self._hard_stop_result(
-            query=query or user_message,
-            reason=decision.reason,
+        final_reason = trace_reason_override or decision.reason
+        trace = ContextTrace(
+            label=label,
+            sources=_dedupe_sources(trace_sources),
+            pinned_active=self._pin_active(session_id),
+            pinned_display=self._pin_display(session_id),
             mode=mode,
-            discipline=effective_discipline,
-            pin=pin,
-            trace_retrieval=decision.trace,
+            decision="answer",
+            reason=final_reason,
+            confidence=decision.confidence,
+            retrieval_trace=decision.trace,
+        )
+        log_event(
+            log,
+            logging.INFO,
+            ACL_MOD_CONTEXT,
+            "context_prompt_ready",
+            "mensagens montadas com chunks selecionados",
+            metadata={
+                "selected_chunk_count": len(selected),
+                "sources": list(trace.sources),
+                "reason": final_reason,
+                "confidence": decision.confidence,
+            },
+        )
+        return BuildMessagesResult(
+            messages=[
+                {"role": "system", "content": system_content},
+                {"role": "user", "content": query},
+            ],
+            trace=trace,
             decision=decision,
-            catalog_result=catalog_result,
         )
 
     # --- Helpers internos ---------------------------------------------------

@@ -37,4 +37,8 @@
 
 ## Histórico de decisões
 
-Registado em `.agent_history.md` (raiz KernelBot e ISS).
+| Data | Decisão | Riscos aceites |
+|------|---------|----------------|
+| 2026-05-25 | **Sempre LLM** — remover hard stops de retrieval; `ACL_RETRIEVAL_MODE` deprecado | Tokens, alucinação com chunks fracos |
+
+Registado em `.agent_history.md`. Plano espelho: KernelPlanner `PLAN.md`.

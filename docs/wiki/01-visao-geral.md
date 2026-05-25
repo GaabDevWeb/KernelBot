@@ -10,7 +10,7 @@ O **ACL — Agente de Contexto Local** é um chatbot educacional que combina:
 2. **LLM via OpenRouter** apenas quando a recuperação passa em gates de confiança.
 3. **Hard stop** quando a evidência é insuficiente, ambígua ou desalinhada — **sem chamar o modelo**.
 
-Regra de ouro: **na dúvida, não responder** (`engine/retrieval.py`).
+Regra de ouro: **sempre responder via LLM**; o retrieval orienta fontes e `reason` advisory (`engine/retrieval.py` + `grounding_strict.txt`).
 
 ## Problema que o sistema resolve
 

@@ -10,7 +10,7 @@ Documentação de **engenharia de prompts** do KernelBot: arquitetura actual dos
 
 ## 1. Arquitetura de prompts do ACL
 
-O ACL combina **gates em código** (`engine/retrieval.py`, hard-stop) com **camadas textuais** montadas em `engine/context.py`. O LLM só é chamado quando `allow_generation` é verdadeiro; caso contrário, a resposta vem de mensagens fixas (sem inventar).
+O ACL combina **classificação em código** (`engine/retrieval.py`: `reason`, chunks) com **camadas textuais** em `engine/context.py`. O LLM é **sempre** chamado; `allow_generation` em ACL_META é telemetria (legado). Hard stop SSE resta só para `provider_error` e fluxos com `trace.decision=hard_stop`.
 
 ### Ordem de montagem do system message
 
@@ -36,7 +36,7 @@ flowchart TD
   CS --> ASM
   GS --> ASM
   RAG --> ASM
-  ASM --> LLM[OpenRouter se allow_generation]
+  ASM --> LLM[OpenRouter sempre]
   GATES[build_decision / hard_stop] -.->|bloqueia| LLM
 ```
 
@@ -45,10 +45,10 @@ flowchart TD
 | Ficheiro | Quando | Comportamento |
 |----------|--------|---------------|
 | `grounding_strict.txt` | RAG válido, `reason=ok`, ou geração sem modo especial | Só factos nos trechos `[Fonte: …]` |
-| `grounding_permissive.txt` | `insufficient_context` + `ACL_RETRIEVAL_MODE=fallback` | Conhecimento geral; aviso em itálico obrigatório no início da resposta |
+| `grounding_permissive.txt` | *(deprecado)* | Histórico; não injectado |
 | `grounding_disambiguation.txt` | `ambiguous_retrieval` + `ACL_DISAMBIGUATION_ENABLED=true` | Desempate entre `[Fonte 1]`, `[Fonte 2]`, …; se não desempatar, emitir **só** `<ambiguity_options>` (sem lista Markdown) |
 
-Variáveis: `ACL_RETRIEVAL_MODE` (`strict` \| `fallback`, default `strict`), `ACL_DISAMBIGUATION_ENABLED` (default `false`).
+Variáveis: `ACL_DISAMBIGUATION_ENABLED` (default `false`). `ACL_RETRIEVAL_MODE` deprecado.
 
 ### Precedência semântica (dentro do texto)
 

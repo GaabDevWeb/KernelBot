@@ -44,12 +44,12 @@ Campo canónico: **`allow_generation`** (boolean). O frontend também aceita fal
 | `ambiguous_retrieval` | `true` | `answer` | Stream markdown **sem** XML cru; `DisambiguationChips` quando há `<ambiguity_options>` ou `disambiguation_options` no meta/texto |
 | `ambiguous_retrieval` | `false` | `hard_stop` | `DisambiguationChips` ou texto fixo; `onDelta` ignorado |
 | `post_generation_misalignment` | `false` | `hard_stop` (override) | Badge **misalignment** substitui hint de desambiguação; header `warning` |
-| `index_gap` | `false` | `hard_stop` | `IndexGapAlert` |
-| Outros hard stops | `false` | `hard_stop` | Texto fixo streamed (sem LLM) |
+| `index_gap` | `true` | `answer` | Badge advisory (sem bloquear LLM) |
+| `provider_error` | `false` | `hard_stop` | Texto fixo streamed (sem LLM) |
 
 Regras em `parseAclMeta.js` + `parseAmbiguityOptions.js`:
 
-- **Hard stop** (`allow_generation=false`): chips/index gap como antes; `onDelta` ignorado em modo `structured`.
+- **Hard stop** (ex.: `provider_error`, `allow_generation=false`): excepção; gates de retrieval não bloqueiam stream LLM.
 - **Desambiguação com geração** (`ambiguous_retrieval` + `allow_generation=true`): o modelo deve emitir `<ambiguity_options>…</ambiguity_options>` (ver `grounding_disambiguation.txt`). O frontend remove o XML do markdown e monta os mesmos `DisambiguationChips`. O backend pode reforçar com `ACL_META` contendo `disambiguation_options` e `payload.suggested_candidates`.
 
 ### Flags de override pós-geração (reactividade)

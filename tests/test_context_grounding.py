@@ -52,10 +52,10 @@ class TestSelectGrounding(unittest.TestCase):
         s = _mock_settings(retrieval_mode="strict")
         self.assertEqual(_select_grounding(d, s), s.grounding_strict)
 
-    def test_fallback_insufficient_uses_permissive(self) -> None:
+    def test_fallback_mode_still_uses_strict(self) -> None:
         d = _fake_decision("insufficient_context")
         s = _mock_settings(retrieval_mode="fallback")
-        self.assertEqual(_select_grounding(d, s), s.grounding_permissive)
+        self.assertEqual(_select_grounding(d, s), s.grounding_strict)
 
     def test_ambiguous_with_flag_uses_disambiguation(self) -> None:
         d = _fake_decision("ambiguous_retrieval")
@@ -105,9 +105,50 @@ class TestBuildDecisionPolicy(unittest.TestCase):
         self.assertTrue(d.allow_generation)
         self.assertEqual(d.reason, "insufficient_context")
 
-    def test_strict_blocks_without_hits(self) -> None:
+    def test_always_allows_generation_without_hits(self) -> None:
         d = build_decision("termo teste", [], acl_retrieval_mode="strict")
-        self.assertFalse(d.allow_generation)
+        self.assertTrue(d.allow_generation)
+        self.assertEqual(d.reason, "insufficient_context")
+        self.assertEqual(d.selected_candidates, ())
+
+    def test_underspecified_query_includes_weak_chunks(self) -> None:
+        c = self._candidate("a.json", 2.0)
+        d = build_decision("x", [c], min_terms=2)
+        self.assertTrue(d.allow_generation)
+        self.assertEqual(d.reason, "underspecified_query")
+        self.assertGreaterEqual(len(d.selected_candidates), 1)
+
+    def test_context_misaligned_includes_chunks(self) -> None:
+        c = RetrievalCandidate(
+            source="a.json",
+            chunk_id="id-a",
+            text="texto sem termos da query",
+            discipline="python",
+            raw_score=3.0,
+            normalized_score=0.3,
+            matched_terms=(),
+        )
+        d = build_decision(
+            "termo especifico longo",
+            [c],
+            min_coverage=0.99,
+        )
+        self.assertTrue(d.allow_generation)
+        self.assertEqual(d.reason, "context_misaligned")
+        self.assertGreaterEqual(len(d.selected_candidates), 1)
+
+    def test_ambiguous_without_flag_allows_with_chunks(self) -> None:
+        c1 = self._candidate("a.json", 2.0)
+        c2 = self._candidate("b.json", 1.9)
+        d = build_decision(
+            "termo teste especifico",
+            [c1, c2],
+            disambiguation_enabled=False,
+            min_score_margin=0.15,
+        )
+        self.assertTrue(d.allow_generation)
+        self.assertEqual(d.reason, "ambiguous_retrieval")
+        self.assertGreaterEqual(len(d.selected_candidates), 2)
 
     def test_disambiguation_allows_two_qualified(self) -> None:
         c1 = self._candidate("a.json", 2.0)

@@ -4,18 +4,18 @@
 
 ## Filosofia
 
-`engine/retrieval.py` implementa: **na dúvida, não responder**.
+`engine/retrieval.py` **classifica** a query (`reason`, `confidence`) e selecciona chunks BM25 para o prompt. **Toda** mensagem dispara OpenRouter; `allow_generation` permanece `true` no contrato ACL_META (telemetria/UI).
 
-A geração só ocorre quando `RetrievalDecision.allow_generation == True` (modo `strict`).
+A regra pedagógica “na dúvida, não responder” passa a **`grounding_strict.txt`** + disclaimers pós-geração — não a bloqueio de runtime.
 
 ## Fluxo de decisão
 
 ```mermaid
 flowchart TD
   Q[Query do utilizador] --> BM25[search_candidates]
-  BM25 --> BD[build_decision]
-  BD -->|allow_generation=false| HS[Hard stop SSE\nsem LLM]
-  BD -->|allow_generation=true| LLM[OpenRouter]
+  BM25 --> BD[build_decision classifica reason]
+  BD --> ASM[Monta prompt top_k chunks]
+  ASM --> LLM[OpenRouter sempre]
   LLM --> PG[post_generation_flags]
   PG -->|flags| OVR[Override\npost_generation_misalignment]
   PG -->|ok| DONE[Resposta final]
@@ -38,20 +38,20 @@ flowchart TD
 
 | `reason` | Quando | LLM chamado? |
 |----------|--------|--------------|
-| `ok` | Passou todos os gates | Sim |
-| `insufficient_context` | Sem hits ou `top_score < MIN_SCORE` | Não (sim se `ACL_RETRIEVAL_MODE=fallback` — sem chunks, `grounding_permissive`) |
-| `underspecified_query` | Menos de `MIN_TERMS` termos informativos | Não |
-| `ambiguous_retrieval` | 2+ candidatos, margem < 0.15 | Não (sim se `ACL_DISAMBIGUATION_ENABLED=true` e ≥2 scores ≥ `MIN_SCORE`) |
-| `context_misaligned` | Coverage baixa no melhor chunk | Não |
-| `vague_but_high_risk` | Query estruturalmente vaga (ex.: performance + banco) | Não |
-| `low_confidence` | Confiança agregada baixa | Não |
-| `index_gap` | Catálogo confiante mas chave fora do índice | Não (emitido em `context.py`) |
-| `post_generation_misalignment` | Sanity pós-LLM falhou | Sim, mas resposta substituída por aviso |
+| `ok` | Passou todos os gates | **Sim** |
+| `insufficient_context` | Sem hits ou `top_score < MIN_SCORE` | **Sim** (chunks fracos se existirem; vazio + strict se zero hits) |
+| `underspecified_query` | Menos de `MIN_TERMS` termos informativos | **Sim** |
+| `ambiguous_retrieval` | 2+ candidatos, margem < 0.15 | **Sim** (disambiguation só com `ACL_DISAMBIGUATION_ENABLED`) |
+| `context_misaligned` | Coverage baixa no melhor chunk | **Sim** |
+| `vague_but_high_risk` | Query estruturalmente vaga | **Sim** |
+| `low_confidence` | Confiança agregada baixa | **Sim** |
+| `index_gap` | Catálogo confiante mas chave fora do índice | **Sim** (advisory em `context.py`; RAG normal) |
+| `post_generation_misalignment` | Sanity pós-LLM falhou | Sim + aviso |
 | `provider_error` | OpenRouter falhou | Parcial |
 
-## Mensagens ao utilizador (`context.py`)
+## Mensagens legadas (`context.py`)
 
-Cada `reason` tem template em `HARD_STOP_MESSAGES` — texto pedagógico de reformulação.
+Templates em `HARD_STOP_MESSAGES` aplicam-se só a `trace.decision == "hard_stop"` (ex.: `provider_error`). Gates de retrieval **não** montam assistant pré-LLM.
 
 Exemplo `underspecified_query`:
 
@@ -93,15 +93,14 @@ indicou que ela pode ter saído do escopo das fontes.
 
 | `decision.reason` | Condição extra | Ficheiro | Chunks no prompt |
 |-------------------|----------------|----------|------------------|
-| (qualquer com geração OK) | default | `grounding_strict.txt` | `[Fonte: path \| Score: …]` |
-| `insufficient_context` | `ACL_RETRIEVAL_MODE=fallback` | `grounding_permissive.txt` | vazio |
+| default | — | `grounding_strict.txt` | `[Fonte: path \| Score: …]` |
 | `ambiguous_retrieval` | `ACL_DISAMBIGUATION_ENABLED=true` | `grounding_disambiguation.txt` | `[Fonte 1: …]`, `[Fonte 2: …]` |
 
-Hard stops continuam a usar `hard_stop_message()` — textos em `_HARD_STOP_MESSAGES` não mudam quando `allow_generation=false`.
+`ACL_RETRIEVAL_MODE` e `grounding_permissive.txt` estão **deprecados** (sempre strict).
 
 ## Ordem dos gates em `build_decision()` (simplificado)
 
-1. Sem candidatos ou top score baixo → `insufficient_context` (ou geração em `fallback`)
+1. Sem candidatos ou top score baixo → `insufficient_context` (+ chunks fracos se houver)
 2. Poucos termos informativos → `underspecified_query`
 3. Margem entre top2 → `ambiguous_retrieval`
 4. Coverage / weighted coverage → `context_misaligned`

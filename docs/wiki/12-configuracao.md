@@ -48,7 +48,7 @@ Scripts `bin/staging-*.sh` exportam `KERNELBOT_ENV=staging`.
 | `ACL_RETRIEVAL_CANDIDATE_K` | 8 |
 | `ACL_RETRIEVAL_TOP_K` | 4 |
 | `ACL_RETRIEVAL_MAX_CHUNKS_PER_SOURCE` | 2 |
-| `ACL_RETRIEVAL_MODE` | strict | `strict` = hard stop sem chunks; `fallback` = LLM com `grounding_permissive.txt` |
+| `ACL_RETRIEVAL_MODE` | *(deprecado)* | Ignorado; gates são só classificação — sempre LLM + `grounding_strict` |
 | `ACL_DISAMBIGUATION_ENABLED` | false | `true` = `ambiguous_retrieval` pode gerar com `grounding_disambiguation.txt` |
 
 ## ACL — operação
@@ -83,7 +83,7 @@ Scripts `bin/staging-*.sh` exportam `KERNELBOT_ENV=staging`.
 |----------|------------------|
 | `system_prompt.txt` | Sim |
 | `grounding_strict.txt` | Sim |
-| `grounding_permissive.txt` | Sim | Modo `ACL_RETRIEVAL_MODE=fallback` sem chunks |
+| `grounding_permissive.txt` | Legado | Não injectado em runtime (histórico) |
 | `grounding_disambiguation.txt` | Sim | `ACL_DISAMBIGUATION_ENABLED=true` + `ambiguous_retrieval` |
 | `catalog_router.txt` | Sim |
 | `sticky_instruction.txt` | Sim (carregado; inject no chat pendente — ver wiki §17) |

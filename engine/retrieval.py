@@ -1,12 +1,11 @@
-"""Contratos e política de decisão do RAG ACL.
+"""Contratos e classificação de decisão do RAG ACL.
 
 Este módulo é o núcleo da mitigação incremental descrita em
 `rag_acl_incremental_6951b55f.plan.md`. Ele NÃO faz retrieval BM25 (isso
 continua em `engine.search`); ele normaliza termos, aplica regras de
-suficiência e devolve uma `RetrievalDecision` que determina se a geração
-deve acontecer ou se há hard stop.
-
-A regra central é: na dúvida, não responder.
+suficiência e devolve uma `RetrievalDecision` com `reason`, `confidence`
+e chunks selecionados. A geração via LLM **sempre** é permitida
+(`allow_generation=True`); os gates são telemetria e escolha de grounding.
 
 Fases suportadas:
 - Fase 1: hard stop por ausência de hits e `top_score < MIN_SCORE`.
@@ -180,10 +179,11 @@ class RetrievalTrace:
 
 @dataclass(frozen=True)
 class RetrievalDecision:
-    """Decisão final do retrieval: permitir geração ou hard stop.
+    """Decisão final do retrieval: classificação + chunks para o prompt.
 
-    `selected_candidates` só é populado quando `allow_generation=True`.
-    `trace` nunca é None e carrega contexto para UI e avaliação.
+    `allow_generation` permanece no contrato por compatibilidade com ACL_META;
+    `build_decision` define-o sempre como `True`. `selected_candidates` pode
+    ser vazio (ex.: `insufficient_context` sem hits). `trace` nunca é None.
     """
 
     allow_generation: bool
@@ -478,6 +478,41 @@ def _build_trace(
     )
 
 
+def _decision_with_chunks(
+    *,
+    reason: DecisionReason,
+    confidence: Confidence,
+    selected: list[RetrievalCandidate],
+    top_k: int,
+    query: str,
+    informative: list[str],
+    mode: Mode,
+    coverage_value: float,
+    debug: dict,
+    trace_candidates: list[RetrievalCandidate] | None = None,
+) -> RetrievalDecision:
+    """Monta decisão advisory: sempre `allow_generation=True`."""
+    chunks = tuple(selected[:top_k])
+    trace_list = list(trace_candidates if trace_candidates is not None else selected)
+    return RetrievalDecision(
+        allow_generation=True,
+        reason=reason,
+        confidence=confidence,
+        selected_candidates=chunks,
+        trace=_build_trace(
+            query,
+            informative,
+            mode,
+            trace_list,
+            coverage_value,
+            reason,
+            True,
+            confidence,
+            debug,
+        ),
+    )
+
+
 def build_decision(
     query: str,
     candidates: list[RetrievalCandidate],
@@ -493,16 +528,22 @@ def build_decision(
     acl_retrieval_mode: AclRetrievalPolicyMode = "strict",
     disambiguation_enabled: bool = False,
 ) -> RetrievalDecision:
-    """Aplica as Fases 1 e 2 sobre candidatos já recuperados.
+    """Classifica candidatos BM25 e seleciona chunks para o prompt (sempre LLM).
 
-    Ordem das verificações segue o plano:
-    1. Ausência de hits ou top_score baixo → `insufficient_context` (F1).
-    2. Query subespecificada → `underspecified_query` (F2, strict).
-    3. Vague but high risk → `vague_but_high_risk` (F2, strict).
-    4. Margem entre top1/top2 baixa → `ambiguous_retrieval` (F2, strict).
-    5. Coverage baixa no melhor chunk → `context_misaligned` (F2).
-    6. `confidence == "low"` após sinais fracos → `low_confidence` (F2, strict).
+    Ordem das verificações:
+    1. Ausência de hits ou top_score baixo → `insufficient_context`.
+    2. Query subespecificada → `underspecified_query`.
+    3. Vague but high risk → `vague_but_high_risk`.
+    4. Margem baixa → `ambiguous_retrieval` (disambiguation só com flag).
+    5. Coverage baixa → `context_misaligned`.
+    6. `confidence == "low"` → `low_confidence`.
+    `acl_retrieval_mode` é legado (ignorado; emite aviso em debug se != strict).
     """
+    if acl_retrieval_mode != "strict":
+        _log.warning(
+            "ACL_RETRIEVAL_MODE=%s ignorado; política única: sempre LLM com grounding_strict",
+            acl_retrieval_mode,
+        )
     informative = extract_informative_terms(query)
     central, optional = classify_terms(informative)
 
@@ -601,108 +642,113 @@ def build_decision(
     if not selected or top < min_score:
         confidence: Confidence = "low"
         debug["confidence"] = confidence
-        if acl_retrieval_mode == "fallback":
-            debug["fallback_generation"] = True
-            return _finish(RetrievalDecision(
-                allow_generation=True,
+        return _finish(
+            _decision_with_chunks(
                 reason="insufficient_context",
                 confidence=confidence,
-                selected_candidates=(),
-                trace=_build_trace(
-                    query, informative, mode, selected, coverage_value,
-                    "insufficient_context", True, confidence, debug,
-                ),
-            ))
-        return _finish(RetrievalDecision(
-            allow_generation=False,
-            reason="insufficient_context",
-            confidence=confidence,
-            selected_candidates=(),
-            trace=_build_trace(
-                query, informative, mode, selected, coverage_value,
-                "insufficient_context", False, confidence, debug,
-            ),
-        ))
+                selected=selected if selected and top < min_score else [],
+                top_k=top_k,
+                query=query,
+                informative=informative,
+                mode=mode,
+                coverage_value=coverage_value,
+                debug=debug,
+                trace_candidates=selected,
+            )
+        )
 
-    # 2. Query subespecificada (Fase 2, strict).
+    # 2. Query subespecificada.
     if mode == "strict" and len(informative) < min_terms:
         confidence = "low"
         debug["confidence"] = confidence
-        return _finish(RetrievalDecision(
-            allow_generation=False,
-            reason="underspecified_query",
-            confidence=confidence,
-            selected_candidates=(),
-            trace=_build_trace(
-                query, informative, mode, selected, coverage_value,
-                "underspecified_query", False, confidence, debug,
-            ),
-        ))
+        return _finish(
+            _decision_with_chunks(
+                reason="underspecified_query",
+                confidence=confidence,
+                selected=selected,
+                top_k=top_k,
+                query=query,
+                informative=informative,
+                mode=mode,
+                coverage_value=coverage_value,
+                debug=debug,
+            )
+        )
 
-    # 3. Vague but high risk (Fase 2, strict).
+    # 3. Vague but high risk.
     if mode == "strict" and vague_high_risk:
         confidence = "low"
         debug["confidence"] = confidence
-        return _finish(RetrievalDecision(
-            allow_generation=False,
-            reason="vague_but_high_risk",
-            confidence=confidence,
-            selected_candidates=(),
-            trace=_build_trace(
-                query, informative, mode, selected, coverage_value,
-                "vague_but_high_risk", False, confidence, debug,
-            ),
-        ))
+        return _finish(
+            _decision_with_chunks(
+                reason="vague_but_high_risk",
+                confidence=confidence,
+                selected=selected,
+                top_k=top_k,
+                query=query,
+                informative=informative,
+                mode=mode,
+                coverage_value=coverage_value,
+                debug=debug,
+            )
+        )
 
-    # 4. Retrieval ambíguo por margem baixa (Fase 2, strict).
-    # Só dispara quando há de fato um segundo candidato; um único hit sólido
-    # não é ambíguo por margem.
+    # 4. Retrieval ambíguo por margem baixa.
     if mode == "strict" and len(selected) > 1 and score_margin < min_score_margin:
         qualified = [c for c in selected if c.raw_score >= min_score]
         if disambiguation_enabled and len(qualified) >= 2:
-            disambig_selected = tuple(qualified[:top_k])
             confidence = "medium"
             debug["confidence"] = confidence
             debug["disambiguation_generation"] = True
-            return _finish(RetrievalDecision(
-                allow_generation=True,
-                reason="ambiguous_retrieval",
-                confidence=confidence,
-                selected_candidates=disambig_selected,
-                trace=_build_trace(
-                    query, informative, mode, list(disambig_selected), coverage_value,
-                    "ambiguous_retrieval", True, confidence, debug,
-                ),
-            ))
+            return _finish(
+                _decision_with_chunks(
+                    reason="ambiguous_retrieval",
+                    confidence=confidence,
+                    selected=qualified,
+                    top_k=top_k,
+                    query=query,
+                    informative=informative,
+                    mode=mode,
+                    coverage_value=coverage_value,
+                    debug=debug,
+                    trace_candidates=qualified,
+                )
+            )
         confidence = "low"
         debug["confidence"] = confidence
-        return _finish(RetrievalDecision(
-            allow_generation=False,
-            reason="ambiguous_retrieval",
-            confidence=confidence,
-            selected_candidates=(),
-            trace=_build_trace(
-                query, informative, mode, selected, coverage_value,
-                "ambiguous_retrieval", False, confidence, debug,
-            ),
-        ))
+        return _finish(
+            _decision_with_chunks(
+                reason="ambiguous_retrieval",
+                confidence=confidence,
+                selected=selected,
+                top_k=top_k,
+                query=query,
+                informative=informative,
+                mode=mode,
+                coverage_value=coverage_value,
+                debug=debug,
+            )
+        )
 
-    # 5. Coverage baixa no melhor chunk (Fase 2).
+    # 5. Coverage baixa no melhor chunk.
     if informative and coverage_value < min_coverage:
         confidence = "low"
         debug["confidence"] = confidence
-        return _finish(RetrievalDecision(
-            allow_generation=False,
-            reason="context_misaligned",
-            confidence=confidence,
-            selected_candidates=(),
-            trace=_build_trace(
-                query, informative, mode, selected, coverage_value,
-                "context_misaligned", False, confidence, debug,
-            ),
-        ))
+        return _finish(
+            _decision_with_chunks(
+                reason="context_misaligned",
+                confidence=confidence,
+                selected=selected,
+                top_k=top_k,
+                query=query,
+                informative=informative,
+                mode=mode,
+                coverage_value=coverage_value,
+                debug=debug,
+            )
+        )
 
-    # 6. Confidence determinística (Fase 2).
+    # 6. Confidence determinística.
     confidence = "high"
     if coverage_w < min_coverage_weighted:
         confidence = "low"
@@ -715,27 +761,33 @@ def build_decision(
     debug["confidence"] = confidence
 
     if mode == "strict" and confidence == "low":
-        return _finish(RetrievalDecision(
-            allow_generation=False,
-            reason="low_confidence",
-            confidence=confidence,
-            selected_candidates=(),
-            trace=_build_trace(
-                query, informative, mode, selected, coverage_value,
-                "low_confidence", False, confidence, debug,
-            ),
-        ))
+        return _finish(
+            _decision_with_chunks(
+                reason="low_confidence",
+                confidence=confidence,
+                selected=selected,
+                top_k=top_k,
+                query=query,
+                informative=informative,
+                mode=mode,
+                coverage_value=coverage_value,
+                debug=debug,
+            )
+        )
 
-    return _finish(RetrievalDecision(
-        allow_generation=True,
-        reason="ok",
-        confidence=confidence,
-        selected_candidates=tuple(selected),
-        trace=_build_trace(
-            query, informative, mode, selected, coverage_value,
-            "ok", True, confidence, debug,
-        ),
-    ))
+    return _finish(
+        _decision_with_chunks(
+            reason="ok",
+            confidence=confidence,
+            selected=selected,
+            top_k=top_k,
+            query=query,
+            informative=informative,
+            mode=mode,
+            coverage_value=coverage_value,
+            debug=debug,
+        )
+    )
 
 
 # --- Sanity check pós-geração (Fase 3) --------------------------------------
