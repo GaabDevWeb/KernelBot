@@ -81,6 +81,11 @@ body {
     color: var(--success);
 }
 
+.header-badge.warning {
+    border-color: var(--warning, #d29922);
+    color: var(--warning, #d29922);
+}
+
 /* ===== Chat Area ===== */
 .chat-box {
     overflow-y: auto;
@@ -293,6 +298,17 @@ body {
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
     background: rgba(110, 118, 129, 0.12);
+}
+
+.message-hint-badge--disambiguation {
+    color: var(--text-muted, #8b949e);
+    background: rgba(110, 118, 129, 0.12);
+}
+
+.message-hint-badge--misalignment {
+    color: var(--warning, #d29922);
+    background: rgba(210, 153, 34, 0.15);
+    border: 1px solid rgba(210, 153, 34, 0.35);
 }
 
 .message-breadcrumbs {
@@ -531,6 +547,64 @@ body {
 .disambiguation-chips--frozen {
     opacity: 0.5;
     pointer-events: none;
+}
+
+.disambiguation-chips--invalidated {
+    opacity: 0.45;
+    pointer-events: none;
+    border: 1px dashed var(--warning, #c9a227);
+}
+
+.stream-prose + .stream-ambiguity-slot,
+.stream-ambiguity-slot + .stream-post-ambiguity {
+    margin-top: 0.5rem;
+}
+
+.stream-ambiguity-slot--reserved {
+    min-height: 2.75rem;
+}
+
+/* Muitos chips: cresce dentro do slot (scroll) em vez de empurrar o texto pós-XML. */
+.stream-ambiguity-slot:not(.stream-ambiguity-slot--reserved) {
+    max-height: min(40vh, 14rem);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+.stream-ambiguity-slot .disambiguation-chips {
+    margin: 0;
+}
+
+.disambiguation-chips--rescued {
+    border-left: 2px solid var(--warning, #c9a227);
+    padding-left: 0.5rem;
+}
+
+.ambiguity-stream-placeholder {
+    margin: 0;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.85rem;
+    line-height: 1.35;
+    color: var(--text-muted);
+    background: var(--surface-elevated, rgba(128, 128, 128, 0.08));
+    border-radius: 6px;
+    border-left: 2px solid var(--accent, #4a9eff);
+}
+
+.stream-truncated-msg--inline {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.stream-truncated-msg {
+    margin: 0;
+    padding: 0.75rem 0.85rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    border-left: 3px solid var(--warning, #c9a227);
+    background: rgba(201, 162, 39, 0.08);
+    border-radius: 6px;
 }
 
 /* ===== Responsividade ===== */

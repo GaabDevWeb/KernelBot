@@ -41,18 +41,33 @@ Campo canónico: **`allow_generation`** (boolean). O frontend também aceita fal
 | `reason` | `allow_generation` | `decision` | UI |
 |----------|-------------------|------------|-----|
 | `ok` | `true` | `answer` | Stream markdown + breadcrumbs de fontes |
-| `ambiguous_retrieval` | `true` | `answer` | Stream markdown + badge informativo (sem chips) |
+| `ambiguous_retrieval` | `true` | `answer` | Stream markdown **sem** XML cru; `DisambiguationChips` quando há `<ambiguity_options>` ou `disambiguation_options` no meta/texto |
 | `ambiguous_retrieval` | `false` | `hard_stop` | `DisambiguationChips` ou texto fixo; `onDelta` ignorado |
+| `post_generation_misalignment` | `false` | `hard_stop` (override) | Badge **misalignment** substitui hint de desambiguação; header `warning` |
 | `index_gap` | `false` | `hard_stop` | `IndexGapAlert` |
 | Outros hard stops | `false` | `hard_stop` | Texto fixo streamed (sem LLM) |
 
-Regra implementada em `frontend/src/acl/parseAclMeta.js`: UI estruturada (chips, index gap) **só** quando `allowsGeneration(meta) === false`. Com `ACL_DISAMBIGUATION_ENABLED=true`, `ambiguous_retrieval` envia `allow_generation: true` e não monta chips — evita colisão chips + tokens SSE.
+Regras em `parseAclMeta.js` + `parseAmbiguityOptions.js`:
+
+- **Hard stop** (`allow_generation=false`): chips/index gap como antes; `onDelta` ignorado em modo `structured`.
+- **Desambiguação com geração** (`ambiguous_retrieval` + `allow_generation=true`): o modelo deve emitir `<ambiguity_options>…</ambiguity_options>` (ver `grounding_disambiguation.txt`). O frontend remove o XML do markdown e monta os mesmos `DisambiguationChips`. O backend pode reforçar com `ACL_META` contendo `disambiguation_options` e `payload.suggested_candidates`.
+
+### Flags de override pós-geração (reactividade)
+
+| Campo `ACL_META` | Quando | Efeito na UI |
+|------------------|--------|----------------|
+| `post_generation_override: true` | Fase 3 strict | Substitui hint verde/cinza por `message-hint-badge--misalignment` |
+| `misalignment: true` | Idem | Alias semântico do override |
+| `allow_generation: false` | Após override | Impede tratar o turno como “sucesso” de desambiguação |
+
+O **primeiro** `ACL_META` pode mostrar hint de desambiguação; o **segundo** (pós-stream) com override **substitui** o badge — nunca coexistem hint de sucesso + aviso de misalignment.
 
 ### Smoke manual (browser)
 
 1. `ACL_DISAMBIGUATION_ENABLED=false` — pergunta ambígua com 2+ hits próximos → chips ou mensagem fixa, sem markdown longo do modelo.
-2. `ACL_DISAMBIGUATION_ENABLED=true` — mesma pergunta → resposta em markdown com stream; badge “Várias fontes próximas…” nos breadcrumbs; sem `.disambiguation-chips`.
+2. `ACL_DISAMBIGUATION_ENABLED=true` — mesma pergunta → chips se o modelo emitir `<ambiguity_options>` (ou fallback meta do backend); hint cinza nos breadcrumbs; XML não visível.
 3. Pergunta com match claro → stream normal, sem badge de desambiguação.
+4. Cenário que dispare `post_generation_misalignment` → hint amarelo substitui o de desambiguação; badge do header “Revisão”.
 
 ## Componentes por `reason` (hard stop)
 
@@ -77,7 +92,9 @@ A UI mostra (quando disponível):
 | `allowsGeneration` | Lê `allow_generation` ou infere de `decision` |
 | `isStructuredHardStop` | `index_gap` / `ambiguous_retrieval` sem geração |
 | `shouldMountDisambiguationChips` | Chips bloqueantes |
-| `isDisambiguationGeneration` | Badge informativo no stream |
+| `isDisambiguationGeneration` | Hint `disambiguation` no stream |
+| `isPostGenerationOverride` | Hint `misalignment` + header warning |
+| `parseAmbiguityOptions.js` | Strip XML/JSON do texto; extrai candidatos para chips |
 
 ## Sessão
 

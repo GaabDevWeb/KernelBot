@@ -25,6 +25,11 @@ import httpx
 from core.config import Settings
 from core.structured_log import ACL_MOD_PROVIDER, log_event
 from engine.context import ContextTrace, hard_stop_message
+from engine.disambiguation_parse import (
+    candidates_from_retrieval,
+    parse_ambiguity_options,
+    strip_ambiguity_markup,
+)
 from engine.retrieval import RetrievalDecision, post_generation_flags
 
 log = logging.getLogger(f"kernelbots.{__name__}")
@@ -243,8 +248,9 @@ class ChatProvider:
                                         "elapsed_ms": round(elapsed, 1),
                                     },
                                 )
-                                async for piece in self._maybe_override_post_generation(
-                                    "".join(full_answer), trace, decision, token_count,
+                                answer_text = "".join(full_answer)
+                                async for piece in self._finalize_generation_meta(
+                                    answer_text, trace, decision, token_count,
                                 ):
                                     yield piece
                                 yield "data: [DONE]\n\n"
@@ -274,8 +280,9 @@ class ChatProvider:
                                 "elapsed_ms": round(elapsed, 1),
                             },
                         )
-                        async for piece in self._maybe_override_post_generation(
-                            "".join(full_answer), trace, decision, token_count,
+                        answer_text = "".join(full_answer)
+                        async for piece in self._finalize_generation_meta(
+                            answer_text, trace, decision, token_count,
                         ):
                             yield piece
                         yield "data: [DONE]\n\n"
@@ -321,7 +328,65 @@ class ChatProvider:
             yield piece
         yield "data: [DONE]\n\n"
 
-    # --- Fase 3: sanity check pós-geração ----------------------------------
+    # --- Meta pós-stream: desambiguação estruturada + sanity check ---------
+
+    async def _finalize_generation_meta(
+        self,
+        answer_text: str,
+        trace: ContextTrace | None,
+        decision: RetrievalDecision | None,
+        tokens_used: int,
+    ) -> AsyncGenerator[str, None]:
+        """Override pós-geração primeiro; chips estruturados só se a resposta passar."""
+        override_emitted = False
+        async for piece in self._maybe_override_post_generation(
+            answer_text, trace, decision, tokens_used,
+        ):
+            override_emitted = True
+            yield piece
+        if override_emitted:
+            return
+        async for piece in self._maybe_emit_disambiguation_meta(
+            answer_text, trace, decision, tokens_used,
+        ):
+            yield piece
+
+    async def _maybe_emit_disambiguation_meta(
+        self,
+        answer_text: str,
+        trace: ContextTrace | None,
+        decision: RetrievalDecision | None,
+        tokens_used: int,
+    ) -> AsyncGenerator[str, None]:
+        if trace is None or decision is None:
+            return
+        if trace.reason != "ambiguous_retrieval" or not decision.allow_generation:
+            return
+
+        _, parsed = strip_ambiguity_markup(answer_text)
+        options = parsed or parse_ambiguity_options(answer_text)
+        if not options:
+            from engine.disambiguation_parse import parse_incomplete_ambiguity_options
+
+            options = parse_incomplete_ambiguity_options(answer_text)
+        if not options and decision.selected_candidates:
+            options = candidates_from_retrieval(decision.selected_candidates)
+        if not options:
+            return
+
+        payload = {"expected_lesson": None, "suggested_candidates": options}
+        updated = _build_meta(trace, llm_called=True, tokens_used=tokens_used)
+        updated["disambiguation_options"] = options
+        updated["payload"] = _normalize_hard_stop_payload("ambiguous_retrieval", payload)
+        log_event(
+            log,
+            logging.INFO,
+            ACL_MOD_PROVIDER,
+            "disambiguation_options_meta",
+            "opções estruturadas detectadas na resposta",
+            metadata={"count": len(options)},
+        )
+        yield _sse_meta(updated)
 
     async def _maybe_override_post_generation(
         self,
@@ -369,6 +434,9 @@ class ChatProvider:
                 "decision": "hard_stop",
                 "reason": "post_generation_misalignment",
                 "confidence": "low",
+                "allow_generation": False,
+                "post_generation_override": True,
+                "misalignment": True,
                 "post_generation_flags": flags,
             }
         )

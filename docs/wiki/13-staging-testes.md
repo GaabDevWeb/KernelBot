@@ -93,7 +93,18 @@ Com apenas `_staging/legacy-modelagem` e `_staging/fluencia-b2`:
 curl -s http://127.0.0.1:8001/health/catalog | jq .
 ```
 
+## Smoke test de latência (UI + SSE)
+
+Ver passos detalhados em [TESTE-LOCAL.md](../../TESTE-LOCAL.md#smoke-test-de-latência-browser). Resumo:
+
+| Passo | O que valida |
+|-------|----------------|
+| Slow 3G no DevTools | `api.js` acumula `ACL_META` parcial; UI não assume meta completo no primeiro chunk |
+| `ACL_DISAMBIGUATION_ENABLED=true` + query ambígua | Chips + strip de `<ambiguity_options>` |
+| Resposta com flags pós-geração | Badge/hint reactivo (`post_generation_override`) |
+
 ## Ver também
 
 - [12-configuracao.md](12-configuracao.md)
 - [09-fluxos-operacionais.md](09-fluxos-operacionais.md)
+- [08-frontend-ui.md](08-frontend-ui.md)

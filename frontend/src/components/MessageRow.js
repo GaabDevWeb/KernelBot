@@ -7,26 +7,42 @@ const MAX_BREADCRUMB_LINES = 5;
  * @param {string[] | undefined} sources
  */
 const HINT_CLASS = "message-hint-badge";
+const HINT_VARIANTS = {
+    disambiguation: "message-hint-badge--disambiguation",
+    misalignment: "message-hint-badge--misalignment",
+};
 
 /**
- * Badge informativo (ex.: desambiguação com geração) — não bloqueia o stream.
+ * Badge informativo reactivo (desambiguação / override pós-geração).
  * @param {HTMLElement | null | undefined} breadcrumbsEl
- * @param {boolean} show
+ * @param {"none" | "disambiguation" | "misalignment"} variant
  */
-export function setDisambiguationHint(breadcrumbsEl, show) {
+export function setTurnHintBadge(breadcrumbsEl, variant) {
     if (!breadcrumbsEl) return;
     const existing = breadcrumbsEl.querySelector(`.${HINT_CLASS}`);
-    if (!show) {
+    if (variant === "none") {
         existing?.remove();
         if (!breadcrumbsEl.childElementCount) breadcrumbsEl.hidden = true;
         return;
     }
     breadcrumbsEl.hidden = false;
-    if (existing) return;
-    const hint = document.createElement("div");
+    const hint = existing ?? document.createElement("div");
     hint.className = HINT_CLASS;
-    hint.textContent = "Várias fontes próximas — o modelo desempata com base no material.";
-    breadcrumbsEl.prepend(hint);
+    Object.values(HINT_VARIANTS).forEach((c) => hint.classList.remove(c));
+    if (variant === "misalignment") {
+        hint.classList.add(HINT_VARIANTS.misalignment);
+        hint.textContent =
+            "Resposta revista — o conteúdo gerado não alinhou com as fontes recuperadas.";
+    } else {
+        hint.classList.add(HINT_VARIANTS.disambiguation);
+        hint.textContent = "Várias fontes próximas — escolha uma aula abaixo ou continue no texto.";
+    }
+    if (!existing) breadcrumbsEl.prepend(hint);
+}
+
+/** @deprecated Use setTurnHintBadge(breadcrumbsEl, show ? "disambiguation" : "none") */
+export function setDisambiguationHint(breadcrumbsEl, show) {
+    setTurnHintBadge(breadcrumbsEl, show ? "disambiguation" : "none");
 }
 
 export function setBreadcrumbsContent(breadcrumbsEl, sources) {
@@ -124,10 +140,20 @@ export function createStreamingBotRow(chatBox, scrollBottom) {
     const bubble = document.createElement("div");
     bubble.classList.add("message", "bot", "cursor-blink");
 
+    const prose = document.createElement("div");
+    prose.className = "stream-prose";
+    const ambiguitySlot = document.createElement("div");
+    ambiguitySlot.className = "stream-ambiguity-slot";
+    const postAmbiguity = document.createElement("div");
+    postAmbiguity.className = "stream-post-ambiguity";
+    bubble.appendChild(prose);
+    bubble.appendChild(ambiguitySlot);
+    bubble.appendChild(postAmbiguity);
+
     row.appendChild(meta);
     row.appendChild(breadcrumbs);
     row.appendChild(bubble);
     chatBox.appendChild(row);
     scrollBottom();
-    return { row, bubble, breadcrumbs };
+    return { row, bubble, breadcrumbs, prose, ambiguitySlot, postAmbiguity };
 }

@@ -95,3 +95,26 @@ newgrp docker   # ou logout/login
 **`OPENROUTER_API_KEY ausente`** — preenche o `.env` principal (só a chave LLM; o DB vem do staging).
 
 **Chat sem resposta / hard stop** — queries de **uma palavra** podem falhar nos gates (`ACL_RETRIEVAL_MIN_TERMS=2`). Usa 2+ termos: ex. `transformers IA generativa`.
+
+## Smoke test de latência (browser)
+
+Requer `staging-serve` activo e DevTools (F12).
+
+1. **Rede lenta:** DevTools → Network → Throttling → **Slow 3G** (ou Fast 3G).
+2. **Desambiguação com geração:** no `.env` usado pelo staging, `ACL_DISAMBIGUATION_ENABLED=true`. Reinicia `./bin/staging-serve.sh`.
+3. Envia pergunta ambígua (2+ hits no índice mínimo), ex.: `níveis integridade relacional transformers`.
+4. **Balão vazio (regressão):** durante o stream só com `<ambiguity_options>`, o balão deve mostrar o placeholder *«A preparar opções de escolha…»* (barra lateral azul), **não** ficar em branco até ao fim.
+5. **Verificar durante o stream:**
+   - Não aparece texto cru `<ambiguity_options>` na bolha.
+   - Se o modelo/camada emitir opções, surgem **chips** (`.disambiguation-chips`) como no hard stop.
+   - Breadcrumb: hint cinza “Várias fontes próximas…”.
+6. **Hard-cut (Offline):** DevTools → **Offline** a meio do XML — abort imediato; mensagem de interrupção ou chips parciais válidos.
+6b. **Rede pendurada (Slow 3G):** deixa o stream parar de enviar bytes **sem** Offline; após **~15s** (`DEFAULT_STREAM_INACTIVITY_MS` em `api.js`) deve aparecer aviso de inatividade — **não** placeholder infinito.
+6c. **Texto antes do XML:** intro em `.stream-prose`, placeholder em `.stream-ambiguity-slot` (sem apagar o parágrafo).
+6d. **Texto depois do XML:** frase após `</ambiguity_options>` deve aparecer em **`.stream-post-ambiguity`**, **abaixo** dos chips (ordem: intro → chips → pós-texto).
+6e. **Chips incrementais:** cada `<option …/>` completa deve aparecer no slot **sem** esperar o fim do stream; opções incompletas ficam ocultas.
+6f. **CLS:** ao fechar `</ambiguity_options>`, o placeholder some **antes** do texto em `.stream-post-ambiguity`; o texto inferior não deve saltar quando os chips terminam de montar.
+6g. **Timeout no meio do XML:** com 2+ `<option/>` já recebidas e rede pendurada ~15s → chips visíveis + nota “opções recuperadas”, **não** placeholder eterno.
+7. **Verificar meta tardio (opcional):** na aba Network, resposta `POST /chat` → eventos `data: [ACL_META]` — pode haver meta com `disambiguation_options` ou override `post_generation_override`.
+8. **Override pós-geração:** se o sanity check disparar, o hint passa a **amarelo** (misalignment) e o header mostra **Revisão** — chips removidos/invalidados.
+9. **Abort / falha:** interromper o carregamento da página ou fechar o separador a meio do stream → badge do header volta a **Online**; `finalizeAmbiguityStreamDisplay` não deixa bolha zumbi vazia.

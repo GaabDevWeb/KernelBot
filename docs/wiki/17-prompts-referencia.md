@@ -46,7 +46,7 @@ flowchart TD
 |----------|--------|---------------|
 | `grounding_strict.txt` | RAG válido, `reason=ok`, ou geração sem modo especial | Só factos nos trechos `[Fonte: …]` |
 | `grounding_permissive.txt` | `insufficient_context` + `ACL_RETRIEVAL_MODE=fallback` | Conhecimento geral; aviso em itálico obrigatório no início da resposta |
-| `grounding_disambiguation.txt` | `ambiguous_retrieval` + `ACL_DISAMBIGUATION_ENABLED=true` | Desempate entre `[Fonte 1]`, `[Fonte 2]`, … |
+| `grounding_disambiguation.txt` | `ambiguous_retrieval` + `ACL_DISAMBIGUATION_ENABLED=true` | Desempate entre `[Fonte 1]`, `[Fonte 2]`, …; se não desempatar, emitir **só** `<ambiguity_options>` (sem lista Markdown) |
 
 Variáveis: `ACL_RETRIEVAL_MODE` (`strict` \| `fallback`, default `strict`), `ACL_DISAMBIGUATION_ENABLED` (default `false`).
 
@@ -86,7 +86,18 @@ Ver também [06-gates-e-decisoes.md](06-gates-e-decisoes.md) e [12-configuracao.
 
 ### Imposto cognitivo
 
-Com `ACL_DISAMBIGUATION_ENABLED=true`, o modelo recebe **várias fontes numeradas** (`[Fonte 1]`, `[Fonte 2]`, …) e instruções de `grounding_disambiguation.txt` para escolher a aula certa sem inventar. Isso aumenta tokens de system prompt e exige raciocínio de desempate — modelos muito baratos ou fracos tendem a misturar aulas, ignorar a numeração ou responder de forma genérica. Em staging/produção com desambiguação activa, prefira modelos da lista OpenRouter com boa aderência a instruções longas (ex. tier médio/alto da configuração `ACL_MODELS`); reserve modelos “económicos” para turnos `reason=ok` com uma fonte dominante ou para hard stops sem LLM.
+Com `ACL_DISAMBIGUATION_ENABLED=true`, o modelo recebe **várias fontes numeradas** (`[Fonte 1]`, `[Fonte 2]`, …) e instruções de `grounding_disambiguation.txt` para escolher a aula certa sem inventar.
+
+**Saída estruturada (regra 4)** — parse em `engine/disambiguation_parse.py` e `frontend/src/acl/parseAmbiguityOptions.js`:
+
+```xml
+<ambiguity_options>
+<option discipline="python" slug="python__01__por-que-programar" label="Por que programar em Python"/>
+<option discipline="python" slug="python__02__algoritmos" label="Algoritmos e notebooks"/>
+</ambiguity_options>
+```
+
+O backend pode reemitir o mesmo conteúdo em `ACL_META.disambiguation_options` / `payload.suggested_candidates` após o stream. Isso aumenta tokens de system prompt e exige raciocínio de desempate — modelos muito baratos ou fracos tendem a misturar aulas, ignorar a numeração ou responder de forma genérica. Em staging/produção com desambiguação activa, prefira modelos da lista OpenRouter com boa aderência a instruções longas (ex. tier médio/alto da configuração `ACL_MODELS`); reserve modelos “económicos” para turnos `reason=ok` com uma fonte dominante ou para hard stops sem LLM.
 
 ---
 

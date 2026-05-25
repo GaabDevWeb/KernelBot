@@ -108,10 +108,21 @@ export function shouldMountIndexGap(reason, payload, meta) {
  * @returns {boolean}
  */
 export function shouldMountDisambiguationChips(reason, payload, meta) {
-    return (
-        !allowsGeneration(meta) &&
-        reason === "ambiguous_retrieval" &&
-        Array.isArray(payload?.suggested_candidates) &&
-        payload.suggested_candidates.length > 0
-    );
+    const candidates = payload?.suggested_candidates;
+    const hasCandidates = Array.isArray(candidates) && candidates.length > 0;
+    if (!hasCandidates) return false;
+    if (!allowsGeneration(meta) && reason === "ambiguous_retrieval") return true;
+    return isDisambiguationGeneration(meta) && hasCandidates;
+}
+
+/**
+ * Override pós-geração (Fase 3) — substitui badge/hint de sucesso.
+ * @param {Record<string, unknown> | null | undefined} meta
+ * @returns {boolean}
+ */
+export function isPostGenerationOverride(meta) {
+    if (meta?.post_generation_override === true || meta?.misalignment === true) {
+        return true;
+    }
+    return String(meta?.reason || "") === "post_generation_misalignment";
 }
