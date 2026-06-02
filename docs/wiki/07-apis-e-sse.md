@@ -35,6 +35,8 @@
 | `token` | Durante geração | Fragmento de texto |
 | `[DONE]` | Fim | — |
 
+O provider LLM pode ser OpenRouter ou Cursor SDK (`ACL_LLM_PROVIDER`), mas o contrato SSE é o mesmo: `ACL_META` sai **antes** de qualquer texto e o stream termina com `[DONE]`.
+
 ### `ACL_META` v=3 (campos principais)
 
 | Campo | Significado |

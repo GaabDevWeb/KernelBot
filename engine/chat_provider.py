@@ -112,6 +112,25 @@ def _sse_text_chunk(text: str, chunk_size: int = 80) -> list[str]:
     return out
 
 
+def _cursor_prompt_from_messages(messages: list[dict]) -> str:
+    """Converte mensagens (estilo OpenAI chat) para um prompt único no Cursor SDK."""
+    parts: list[str] = []
+    for m in messages:
+        role = str(m.get("role") or "").strip().lower()
+        content = str(m.get("content") or "")
+        if not content:
+            continue
+        if role == "system":
+            parts.append("SYSTEM:\n" + content)
+        elif role == "user":
+            parts.append("USER:\n" + content)
+        elif role == "assistant":
+            parts.append("ASSISTANT:\n" + content)
+        else:
+            parts.append(f"{role.upper() or 'MESSAGE'}:\n{content}")
+    return "\n\n".join(parts).strip()
+
+
 class ChatProvider:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
@@ -122,6 +141,11 @@ class ChatProvider:
         trace: ContextTrace | None = None,
         decision: RetrievalDecision | None = None,
     ) -> AsyncGenerator[str, None]:
+        if self._settings.llm_provider == "cursor":
+            async for piece in self._stream_cursor(messages, trace=trace, decision=decision):
+                yield piece
+            return
+
         # --- Hard stop: não chama LLM ----------------------------------------
         is_hard_stop = trace is not None and trace.decision == "hard_stop"
         if is_hard_stop:
@@ -325,6 +349,148 @@ class ChatProvider:
             metadata={"models_tried": list(models)},
         )
         for piece in _sse_text_chunk(friendly):
+            yield piece
+        yield "data: [DONE]\n\n"
+
+    async def _stream_cursor(
+        self,
+        messages: list[dict],
+        *,
+        trace: ContextTrace | None,
+        decision: RetrievalDecision | None,
+    ) -> AsyncGenerator[str, None]:
+        # --- Hard stop: não chama LLM ----------------------------------------
+        is_hard_stop = trace is not None and trace.decision == "hard_stop"
+        if is_hard_stop:
+            meta = _build_meta(trace, llm_called=False, tokens_used=0)
+            yield _sse_meta(meta)
+            hard_text = ""
+            if messages and messages[-1].get("role") == "assistant":
+                hard_text = str(messages[-1].get("content") or "")
+            if not hard_text:
+                hard_text = hard_stop_message(trace.reason)
+            log_event(
+                log,
+                logging.INFO,
+                ACL_MOD_PROVIDER,
+                "llm_skipped_hard_stop",
+                "stream sem LLM (hard stop retrieval)",
+                metadata={
+                    "reason": trace.reason,
+                    "confidence": trace.confidence,
+                    "mode": trace.mode,
+                    "llm_called": False,
+                    "tokens_used": 0,
+                },
+            )
+            for piece in _sse_text_chunk(hard_text):
+                yield piece
+            yield "data: [DONE]\n\n"
+            return
+
+        initial_meta = _build_meta(trace, llm_called=True, tokens_used=0)
+        yield _sse_meta(initial_meta)
+
+        prompt = _cursor_prompt_from_messages(messages)
+        full_answer: list[str] = []
+        token_count = 0
+
+        try:
+            from cursor_sdk import AsyncClient, LocalAgentOptions
+            from cursor_sdk.errors import CursorAgentError
+        except Exception as e:
+            # Dependência ausente ou import falhou: degrade para provider_error.
+            friendly = hard_stop_message("provider_error")
+            failure_meta = _build_meta(trace, llm_called=False, tokens_used=0)
+            failure_meta.update({"decision": "hard_stop", "reason": "provider_error", "confidence": "low"})
+            yield _sse_meta(failure_meta)
+            log_event(
+                log,
+                logging.ERROR,
+                ACL_MOD_PROVIDER,
+                "cursor_sdk_import_error",
+                f"falha ao importar cursor-sdk: {type(e).__name__}",
+                metadata={"error": str(e)},
+            )
+            for piece in _sse_text_chunk(friendly):
+                yield piece
+            yield "data: [DONE]\n\n"
+            return
+
+        t_start = time.perf_counter()
+        try:
+            async with await AsyncClient.launch_bridge(workspace=str(self._settings.project_root)) as client:
+                async with await client.agents.create(
+                    model=self._settings.cursor_model,
+                    api_key=self._settings.cursor_api_key,
+                    local=LocalAgentOptions(cwd=str(self._settings.project_root)),
+                ) as agent:
+                    run = await agent.send(prompt)
+                    async for chunk in run.iter_text():
+                        if not chunk:
+                            continue
+                        token_count += 1
+                        full_answer.append(chunk)
+                        safe = chunk.replace("\n", "\\n")
+                        yield f"data: {safe}\n\n"
+
+                    result = await run.wait()
+                    elapsed = (time.perf_counter() - t_start) * 1000
+                    log_event(
+                        log,
+                        logging.INFO,
+                        ACL_MOD_PROVIDER,
+                        "llm_stream_complete",
+                        "stream Cursor SDK finalizado",
+                        metadata={
+                            "model": self._settings.cursor_model,
+                            "status": getattr(result, "status", None),
+                            "tokens_used": token_count,
+                            "elapsed_ms": round(elapsed, 1),
+                        },
+                    )
+        except CursorAgentError as e:
+            log_event(
+                log,
+                logging.ERROR,
+                ACL_MOD_PROVIDER,
+                "cursor_sdk_error",
+                f"erro no Cursor SDK: {getattr(e, 'code', None) or type(e).__name__}",
+                metadata={
+                    "error": str(e),
+                    "is_retryable": bool(getattr(e, "is_retryable", False)),
+                    "code": getattr(e, "code", None),
+                },
+            )
+            friendly = hard_stop_message("provider_error")
+            failure_meta = _build_meta(trace, llm_called=False, tokens_used=0)
+            failure_meta.update({"decision": "hard_stop", "reason": "provider_error", "confidence": "low"})
+            yield _sse_meta(failure_meta)
+            for piece in _sse_text_chunk(friendly):
+                yield piece
+            yield "data: [DONE]\n\n"
+            return
+        except Exception as e:
+            log_event(
+                log,
+                logging.ERROR,
+                ACL_MOD_PROVIDER,
+                "cursor_sdk_exception",
+                f"excecao no stream Cursor SDK: {type(e).__name__}",
+                metadata={"error": str(e)},
+            )
+            log.exception("cursor_sdk_exception detail")
+            friendly = hard_stop_message("provider_error")
+            failure_meta = _build_meta(trace, llm_called=False, tokens_used=0)
+            failure_meta.update({"decision": "hard_stop", "reason": "provider_error", "confidence": "low"})
+            yield _sse_meta(failure_meta)
+            for piece in _sse_text_chunk(friendly):
+                yield piece
+            yield "data: [DONE]\n\n"
+            return
+
+        answer_text = "".join(full_answer)
+        async for piece in self._finalize_generation_meta(answer_text, trace, decision, token_count):
             yield piece
         yield "data: [DONE]\n\n"
 

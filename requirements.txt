@@ -10,3 +10,4 @@ PyMySQL
 cryptography
 PyYAML
 jsonschema
+cursor-sdk

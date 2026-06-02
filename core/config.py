@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 GlobalContextMode = Literal["geral", "all"]
 RetrievalPolicyMode = Literal["strict", "fallback"]
+LLMProvider = Literal["openrouter", "cursor"]
 
 _LOG = logging.getLogger("kernelbots.config")
 
@@ -29,7 +30,10 @@ def _normalize_db_host(raw: str) -> str:
 
 @dataclass(frozen=True)
 class Settings:
+    llm_provider: LLMProvider
     openrouter_api_key: str
+    cursor_api_key: str
+    cursor_model: str
     project_root: Path
     content_dir: Path
     bm25_score_threshold: float
@@ -94,9 +98,22 @@ class Settings:
         load_dotenv()
         if os.getenv("KERNELBOT_ENV", "").strip().lower() == "staging" and staging_env.is_file():
             load_dotenv(staging_env, override=True)
-        key = os.getenv("OPENROUTER_API_KEY")
-        if not key:
-            raise RuntimeError("OPENROUTER_API_KEY ausente no .env — impossível iniciar.")
+        raw_provider = (os.getenv("ACL_LLM_PROVIDER") or "cursor").strip().lower()
+        if raw_provider not in ("openrouter", "cursor"):
+            raise RuntimeError(
+                "ACL_LLM_PROVIDER deve ser 'openrouter' ou 'cursor' "
+                f"(recebido: {raw_provider!r})."
+            )
+        llm_provider: LLMProvider = "cursor" if raw_provider == "cursor" else "openrouter"
+
+        openrouter_key = (os.getenv("OPENROUTER_API_KEY") or "").strip()
+        cursor_key = (os.getenv("CURSOR_API_KEY") or "").strip()
+        cursor_model = (os.getenv("ACL_CURSOR_MODEL") or "composer-2.5").strip()
+
+        if llm_provider == "openrouter" and not openrouter_key:
+            raise RuntimeError("OPENROUTER_API_KEY ausente no .env — impossível iniciar (provider=openrouter).")
+        if llm_provider == "cursor" and not cursor_key:
+            raise RuntimeError("CURSOR_API_KEY ausente no .env — impossível iniciar (provider=cursor).")
 
         project_root = Path(__file__).resolve().parent.parent
         content_dir = project_root / "content"
@@ -277,7 +294,10 @@ class Settings:
         db_password = (os.getenv("DB_PASSWORD") or "").strip()
 
         return cls(
-            openrouter_api_key=key,
+            llm_provider=llm_provider,
+            openrouter_api_key=openrouter_key,
+            cursor_api_key=cursor_key,
+            cursor_model=cursor_model,
             project_root=project_root,
             content_dir=content_dir,
             bm25_score_threshold=0.7,

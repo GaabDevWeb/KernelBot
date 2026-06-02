@@ -23,7 +23,10 @@ Scripts `bin/staging-*.sh` exportam `KERNELBOT_ENV=staging`.
 
 | Variável | Descrição |
 |----------|-----------|
-| `OPENROUTER_API_KEY` | API OpenRouter |
+| `ACL_LLM_PROVIDER` | `cursor` (default) ou `openrouter` |
+| `OPENROUTER_API_KEY` | Obrigatória se `ACL_LLM_PROVIDER=openrouter` |
+| `CURSOR_API_KEY` | Obrigatória se `ACL_LLM_PROVIDER=cursor` |
+| `ACL_CURSOR_MODEL` | Modelo Cursor SDK (default `composer-2.5`) |
 | Prompts | `core/systemPrompt/` — ver [17-prompts-referencia.md](17-prompts-referencia.md) |
 
 ## MySQL
@@ -67,6 +70,15 @@ Scripts `bin/staging-*.sh` exportam `KERNELBOT_ENV=staging`.
 |----------|-------|
 | Modelos | Lista em `chat_provider.py` com fallback |
 | Timeout | Configurado no provider |
+
+## Cursor SDK
+
+Quando `ACL_LLM_PROVIDER=cursor`, o backend usa o pacote `cursor-sdk` (Python) em runtime local.
+
+| Variável | Notas |
+|----------|-------|
+| `CURSOR_API_KEY` | Chave no Cursor Dashboard → API Keys |
+| `ACL_CURSOR_MODEL` | Ex.: `composer-2.5` |
 
 ## Logging
 
