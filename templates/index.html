@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ACL — Agente de Contexto Local</title>
-    <meta name="description" content="Chatbot RAG local de alta performance com busca BM25 sobre arquivos Markdown." />
+    <title>Kernel — assistente de estudo</title>
+    <meta name="description" content="Kernel: assistente de estudo com busca nas aulas do curso (BM25 + material indexado)." />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
@@ -26,19 +26,23 @@
 
         <main class="chat-box" id="chat" role="log" aria-live="polite" aria-label="Histórico de mensagens">
             <div class="empty-state" id="empty-state">
-                <div class="empty-state-icon">🗂️</div>
-                <div class="empty-state-title">Base de conhecimento pronta</div>
-                <p class="empty-state-sub">Prefixos: <code>/content</code> (RAG geral), <code>/doc</code> (pasta
-                    <code>content/doc</code>), <code>/python</code>, <code>/visualizacao-sql</code>,
-                    <code>/projeto-bloco</code>, <code>/planejamento-curso-carreira</code> (RAG só na disciplina).</p>
+                <div class="empty-state-icon" aria-hidden="true">◉</div>
+                <div class="empty-state-title">Oi, sou o Kernel</div>
+                <p class="empty-state-intro">
+                    Assistente de estudo das <strong>suas aulas</strong> — o que está indexado manda; o resto eu digo
+                    na cara ou marco como extensão, sem inventar material do curso.
+                </p>
+                <p class="empty-state-sub">
+                    Pergunte com disciplina e tema, ou use um prefixo:
+                    <code>/python</code> · <code>/visualizacao-sql</code> · <code>/projeto-bloco</code> ·
+                    <code>/planejamento-curso-carreira</code> · <code>/doc</code> · <code>/content</code>
+                </p>
                 <div class="cmd-pills">
-                    <span class="cmd-pill">/reload</span>
                     <span class="cmd-pill">/python o que são listas?</span>
                     <span class="cmd-pill">/visualizacao-sql explique GROUP BY</span>
-                    <span class="cmd-pill">/projeto-bloco resuma o pipeline</span>
-                    <span class="cmd-pill">/planejamento-curso-carreira dicas de currículo</span>
-                    <span class="cmd-pill">/doc visão geral do ACL</span>
-                    <span class="cmd-pill">/content o que é BM25?</span>
+                    <span class="cmd-pill">Por que aprender Python?</span>
+                    <span class="cmd-pill">/projeto-bloco integrar Python e SQL</span>
+                    <span class="cmd-pill">/content diferença ML e DL</span>
                 </div>
             </div>
         </main>

@@ -800,6 +800,9 @@ def post_generation_flags(
     answer: str,
     informative_terms: Iterable[str],
     selected_candidates: Iterable[RetrievalCandidate],
+    *,
+    grounding_policy: str = "strict",
+    decision_reason: str | None = None,
 ) -> list[str]:
     """Sanity check leve, não-LLM, sobre a resposta gerada.
 
@@ -813,9 +816,11 @@ def post_generation_flags(
     """
     flags: list[str] = []
     answer_tokens = _tokens_of(answer)
+    relaxed_anchored = grounding_policy in ("anchored", "hybrid")
 
     info = [t.lower() for t in informative_terms]
-    if info and not any(t in answer_tokens for t in info):
+    check_informative = not relaxed_anchored or decision_reason == "ok"
+    if check_informative and info and not any(t in answer_tokens for t in info):
         flags.append("missing_informative_terms")
 
     candidates = list(selected_candidates)
@@ -825,14 +830,15 @@ def post_generation_flags(
         chunk_tokens |= _tokens_of(c.text)
         sources.add(c.source.lower())
 
-    source_mentioned = any(src_part for src_part in sources if src_part in answer.lower())
-    # Termos centrais dos chunks presentes: heurística mínima. Se a resposta
-    # não cita nem fonte nem termos dos chunks, é sinal forte de alucinação
-    # ou de resposta genérica.
-    answer_tokens_sigset = {t for t in answer_tokens if len(t) > 4}
-    shared_with_chunks = bool(answer_tokens_sigset & chunk_tokens)
-    if candidates and not source_mentioned and not shared_with_chunks:
-        flags.append("missing_source_entities")
+    if not relaxed_anchored:
+        source_mentioned = any(src_part for src_part in sources if src_part in answer.lower())
+        # Termos centrais dos chunks presentes: heurística mínima. Se a resposta
+        # não cita nem fonte nem termos dos chunks, é sinal forte de alucinação
+        # ou de resposta genérica.
+        answer_tokens_sigset = {t for t in answer_tokens if len(t) > 4}
+        shared_with_chunks = bool(answer_tokens_sigset & chunk_tokens)
+        if candidates and not source_mentioned and not shared_with_chunks:
+            flags.append("missing_source_entities")
 
     if candidates:
         tech_like = {t for t in answer_tokens if len(t) >= 5 and re.search(r"[a-z]", t)}

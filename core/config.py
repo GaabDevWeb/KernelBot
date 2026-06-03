@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 GlobalContextMode = Literal["geral", "all"]
 RetrievalPolicyMode = Literal["strict", "fallback"]
 LLMProvider = Literal["openrouter", "cursor"]
+GroundingPolicy = Literal["strict", "anchored", "hybrid"]
 
 _LOG = logging.getLogger("kernelbots.config")
 
@@ -41,7 +42,9 @@ class Settings:
     openrouter_base: str
     models: tuple[str, ...]
     system_prompt_geral: str
+    grounding_policy: GroundingPolicy
     grounding_strict: str
+    grounding_anchored: str
     grounding_permissive: str
     grounding_disambiguation: str
     sticky_instruction: str
@@ -86,7 +89,7 @@ class Settings:
             "Authorization": f"Bearer {self.openrouter_api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "http://localhost:8000",
-            "X-Title": "ACL - Agente de Contexto Local",
+            "X-Title": "Kernel - Assistente de Estudo",
         }
 
     @classmethod
@@ -128,6 +131,7 @@ class Settings:
         prompts_dir = Path(__file__).resolve().parent / "systemPrompt"
         system_prompt_file = prompts_dir / "system_prompt.txt"
         grounding_strict_file = prompts_dir / "grounding_strict.txt"
+        grounding_anchored_file = prompts_dir / "grounding_anchored.txt"
         grounding_permissive_file = prompts_dir / "grounding_permissive.txt"
         grounding_disambiguation_file = prompts_dir / "grounding_disambiguation.txt"
         sticky_instruction_file = prompts_dir / "sticky_instruction.txt"
@@ -142,6 +146,11 @@ class Settings:
             raise RuntimeError(
                 f"Arquivo de grounding não encontrado: {grounding_strict_file}. "
                 "Crie o arquivo core/systemPrompt/grounding_strict.txt com o contrato anti-alucinação."
+            )
+        if not grounding_anchored_file.exists():
+            raise RuntimeError(
+                f"Arquivo de grounding anchored não encontrado: {grounding_anchored_file}. "
+                "Crie o arquivo core/systemPrompt/grounding_anchored.txt."
             )
         if not grounding_permissive_file.exists():
             raise RuntimeError(
@@ -165,7 +174,16 @@ class Settings:
             )
 
         system_prompt = system_prompt_file.read_text(encoding="utf-8").strip()
+        raw_grounding_policy = (os.getenv("ACL_GROUNDING_POLICY") or "anchored").strip().lower()
+        if raw_grounding_policy not in ("strict", "anchored", "hybrid"):
+            raise RuntimeError(
+                "ACL_GROUNDING_POLICY deve ser 'strict', 'anchored' ou 'hybrid' "
+                f"(recebido: {raw_grounding_policy!r})."
+            )
+        grounding_policy: GroundingPolicy = raw_grounding_policy  # type: ignore[assignment]
+
         grounding_strict = grounding_strict_file.read_text(encoding="utf-8").strip()
+        grounding_anchored = grounding_anchored_file.read_text(encoding="utf-8").strip()
         grounding_permissive = grounding_permissive_file.read_text(encoding="utf-8").strip()
         grounding_disambiguation = grounding_disambiguation_file.read_text(encoding="utf-8").strip()
         sticky_instruction = sticky_instruction_file.read_text(encoding="utf-8").strip()
@@ -305,7 +323,9 @@ class Settings:
             openrouter_base="https://openrouter.ai/api/v1/chat/completions",
             models=models,
             system_prompt_geral=system_prompt,
+            grounding_policy=grounding_policy,
             grounding_strict=grounding_strict,
+            grounding_anchored=grounding_anchored,
             grounding_permissive=grounding_permissive,
             grounding_disambiguation=grounding_disambiguation,
             sticky_instruction=sticky_instruction,

@@ -20,7 +20,7 @@ Função `_assemble_system_content()` em `engine/context.py`:
 1. system_prompt.txt          — identidade, tom, precedência, segurança
 2. catalog_router.txt         — só se existir secção de catálogo (match lexical)
 3. catalog_section            — dinâmico (LessonCatalog.build_prompt_section)
-4. grounding (condicional)      — strict | permissive | disambiguation — ver §1.1
+4. grounding (condicional)      — strict | anchored | permissive | disambiguation — ver §1.1
 5. Trechos RAG                — [Fonte: path | Score: n.nn] ou [Fonte 1: …] em desambiguação
 ```
 
@@ -44,11 +44,14 @@ flowchart TD
 
 | Ficheiro | Quando | Comportamento |
 |----------|--------|---------------|
-| `grounding_strict.txt` | RAG válido, `reason=ok`, ou geração sem modo especial | Só factos nos trechos `[Fonte: …]` |
-| `grounding_permissive.txt` | *(deprecado)* | Histórico; não injectado |
-| `grounding_disambiguation.txt` | `ambiguous_retrieval` + `ACL_DISAMBIGUATION_ENABLED=true` | Desempate entre `[Fonte 1]`, `[Fonte 2]`, …; se não desempatar, emitir **só** `<ambiguity_options>` (sem lista Markdown) |
+| `grounding_anchored.txt` | Default (`ACL_GROUNDING_POLICY=anchored`) | Trechos = evidência primária; extensão pedagógica com rótulo *Extensão pedagógica (fora do material indexado):* |
+| `grounding_strict.txt` | `ACL_GROUNDING_POLICY=strict` | Só factos nos trechos `[Fonte: …]` |
+| `grounding_permissive.txt` | `hybrid` sem chunks (retrieval fraco) | Aviso + conhecimento geral didático |
+| `grounding_disambiguation.txt` | `ambiguous_retrieval` + `ACL_DISAMBIGUATION_ENABLED=true` | Desempate entre `[Fonte 1]`, `[Fonte 2]`, … |
 
-Variáveis: `ACL_DISAMBIGUATION_ENABLED` (default `false`). `ACL_RETRIEVAL_MODE` deprecado.
+Variáveis: `ACL_GROUNDING_POLICY` (default `anchored`), `ACL_DISAMBIGUATION_ENABLED` (default `false`). `ACL_RETRIEVAL_MODE` deprecado.
+
+**Checklist de teste (anchored):** pergunta on-corpus (`reason=ok`) deve citar `[Fonte: …]` e pode incluir bloco *Extensão pedagógica* sem `post_generation_misalignment` espúrio.
 
 ### Precedência semântica (dentro do texto)
 
@@ -66,7 +69,8 @@ Variáveis: `ACL_DISAMBIGUATION_ENABLED` (default `false`). `ACL_RETRIEVAL_MODE`
 |----------|---------------------|--------|
 | `system_prompt.txt` | Sim | Papel ACL, PT-BR, didático, precedência, comandos `/doc` `/content` |
 | `grounding_strict.txt` | Sim | Hard constraints: só factos nos trechos; proíbe conhecimento geral |
-| `grounding_permissive.txt` | Sim | Extensão pedagógica sem chunks (`ACL_RETRIEVAL_MODE=fallback`) |
+| `grounding_anchored.txt` | Sim | Evidência primária + extensão pedagógica rotulada (default de produto) |
+| `grounding_permissive.txt` | Sim | Extensão pedagógica sem chunks (`hybrid` sem hits) |
 | `grounding_disambiguation.txt` | Sim | Resolução de ambiguidade multi-fonte (`ACL_DISAMBIGUATION_ENABLED`) |
 | `catalog_router.txt` | Sim | Meta de catálogo ≠ prova; orienta quando há match ISS |
 | `sticky_instruction.txt` | Sim (carregado) | Template `{name}` para sessão com contexto fixado — **ainda não injectado** em `context.py` (ver [Backlog](#6-backlog-e-manutenção)) |
@@ -212,7 +216,7 @@ Repositório de **prompts de referência** (vazamentos / documentação pública
 | ID | Item | Notas |
 |----|------|-------|
 | P1 | Injectar `sticky_instruction` quando pin activo | `Settings.sticky_instruction` + `{name}` ← `pin.display_name` |
-| P2 | Modo `assistive` opcional | Ficheiro `grounding_assistive.txt` + flag em `select_mode()` |
+| P2 | ~~Modo `assistive` opcional~~ | **Feito** como `grounding_anchored.txt` + `ACL_GROUNDING_POLICY` |
 | P3 | Testes `tests/test_context_grounding.py` | `_select_grounding`, formatação `[Fonte N]`, `build_decision` fallback/disambiguation |
 | P4 | Sincronizar esta página quando mudar `core/systemPrompt/` | — |
 

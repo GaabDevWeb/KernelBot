@@ -93,7 +93,7 @@ export function appendMessageRow(chatBox, opts) {
     const meta = document.createElement("div");
     meta.className = "message-meta";
     const now = new Date();
-    meta.textContent = role === "user" ? `Você · ${fmt(now)}` : `ACL · ${fmt(now)}`;
+    meta.textContent = role === "user" ? `Você · ${fmt(now)}` : `Kernel · ${fmt(now)}`;
 
     const breadcrumbs = document.createElement("div");
     breadcrumbs.className = "message-breadcrumbs";
@@ -131,7 +131,7 @@ export function createStreamingBotRow(chatBox, scrollBottom) {
 
     const meta = document.createElement("div");
     meta.className = "message-meta";
-    meta.textContent = `ACL · ${fmt(new Date())}`;
+    meta.textContent = `Kernel · ${fmt(new Date())}`;
 
     const breadcrumbs = document.createElement("div");
     breadcrumbs.className = "message-breadcrumbs";

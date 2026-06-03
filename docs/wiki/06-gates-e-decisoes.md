@@ -89,14 +89,21 @@ indicou que ela pode ter saído do escopo das fontes.
 
 ## Contratos de grounding condicionais
 
-`engine/context.py` escolhe o bloco injectado via `_select_grounding()`:
+`engine/context.py` escolhe o bloco injectado via `_select_grounding()` conforme `ACL_GROUNDING_POLICY` (default **`anchored`**):
+
+| Política | Comportamento |
+|----------|----------------|
+| `strict` | Sempre `grounding_strict.txt` (SSOT nos trechos) |
+| `anchored` | Sempre `grounding_anchored.txt` (evidência primária + extensão pedagógica rotulada), excepto desambiguação |
+| `hybrid` | `anchored` com chunks ou `reason=ok`; `permissive` sem chunks em retrieval fraco |
 
 | `decision.reason` | Condição extra | Ficheiro | Chunks no prompt |
 |-------------------|----------------|----------|------------------|
-| default | — | `grounding_strict.txt` | `[Fonte: path \| Score: …]` |
 | `ambiguous_retrieval` | `ACL_DISAMBIGUATION_ENABLED=true` | `grounding_disambiguation.txt` | `[Fonte 1: …]`, `[Fonte 2: …]` |
+| default (policy `anchored`) | — | `grounding_anchored.txt` | `[Fonte: path \| Score: …]` |
+| default (policy `strict`) | — | `grounding_strict.txt` | `[Fonte: path \| Score: …]` |
 
-`ACL_RETRIEVAL_MODE` e `grounding_permissive.txt` estão **deprecados** (sempre strict).
+`ACL_RETRIEVAL_MODE` está **deprecado**; `grounding_permissive.txt` usa-se em `hybrid` sem chunks.
 
 ## Ordem dos gates em `build_decision()` (simplificado)
 

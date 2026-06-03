@@ -41,6 +41,17 @@ No chat, escolhe disciplina **`_staging`** (se o UI filtrar) ou pergunta em modo
 | Aula legada (sem meta) | `Quais são os quatro níveis de integridade do modelo relacional?` |
 | Keyword B2 (chunk 0) | `transformers` ou `O que são transformers em IA generativa?` |
 
+## Checklist grounding `anchored` (default)
+
+Com `ACL_GROUNDING_POLICY=anchored` no `.env` (ou omitido — default em código):
+
+1. **On-corpus** (`reason=ok`): pergunta da tabela acima → resposta cita `[Fonte: …]` e pode incluir bloco *Extensão pedagógica (fora do material indexado):* **sem** override `post_generation_misalignment` no fim.
+2. **Off-corpus** (pergunta fora do índice, 2+ termos): aviso de lacuna ou nota permissiva — **sem** inventar comandos do ACL.
+3. **A/B:** repetir a mesma pergunta com `ACL_GROUNDING_POLICY=strict` → resposta mais conservadora (sem extensão pedagógica rotulada).
+4. **Desambiguação:** com `ACL_DISAMBIGUATION_ENABLED=true`, comportamento de chips inalterado.
+
+`pytest tests/test_context_grounding.py tests/test_post_generation_anchored.py -q`
+
 ## O que o setup faz
 
 1. **Docker** — `kernelbot-mysql-staging` na porta `3307`

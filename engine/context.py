@@ -28,6 +28,7 @@ from core.structured_log import ACL_MOD_CONTEXT, log_event
 from engine.lesson_catalog import CatalogMatchResult, LessonCatalog, LessonEntry
 from engine.pinned_store import PinnedContext, PinnedSessionStore
 from engine.retrieval import (
+    RetrievalCandidate,
     RetrievalDecision,
     RetrievalTrace,
     build_decision,
@@ -253,11 +254,31 @@ def _join_chunks_for_prompt(selected: list[dict[str, str]]) -> str:
     )
 
 
+_WEAK_GROUNDING_REASONS = frozenset({
+    "insufficient_context",
+    "context_misaligned",
+    "underspecified_query",
+    "low_confidence",
+    "vague_but_high_risk",
+})
+
+
 def _select_grounding(decision: RetrievalDecision, settings: Settings) -> str:
-    """Escolhe o contrato de grounding conforme decisão e flags de produto."""
+    """Escolhe o contrato de grounding conforme política, decisão e flags de produto."""
     if decision.reason == "ambiguous_retrieval" and settings.disambiguation_enabled:
         return settings.grounding_disambiguation
-    return settings.grounding_strict
+    if settings.grounding_policy == "strict":
+        return settings.grounding_strict
+    if settings.grounding_policy == "anchored":
+        return settings.grounding_anchored
+    # hybrid
+    if decision.reason == "ok" and decision.selected_candidates:
+        return settings.grounding_anchored
+    if decision.reason in _WEAK_GROUNDING_REASONS:
+        if decision.selected_candidates:
+            return settings.grounding_anchored
+        return settings.grounding_permissive
+    return settings.grounding_anchored
 
 
 def _format_chunks_for_prompt(
@@ -572,11 +593,36 @@ class ContextManager:
                     if self._lesson_catalog and catalog_result
                     else ""
                 )
+                doc_candidates = tuple(
+                    RetrievalCandidate(
+                        source=str(c["source"]),
+                        chunk_id=f"doc-{i}",
+                        text=str(c["text"]),
+                        discipline="doc",
+                        raw_score=1.0,
+                        normalized_score=1.0,
+                        matched_terms=(),
+                    )
+                    for i, c in enumerate(doc_chunks)
+                )
+                doc_decision = RetrievalDecision(
+                    allow_generation=True,
+                    reason="ok",
+                    confidence="high",
+                    selected_candidates=doc_candidates,
+                    trace=RetrievalTrace(
+                        query=query,
+                        normalized_query=query,
+                        informative_terms=(),
+                        mode=mode,
+                    ),
+                )
+                grounding = _select_grounding(doc_decision, self._settings)
                 system_content = _assemble_system_content(
                     sp,
                     self._settings.catalog_router_prompt,
                     catalog_section,
-                    self._settings.grounding_strict,
+                    grounding,
                     ctx,
                 )
                 trace_sources = [str(c["source"]) for c in doc_chunks]

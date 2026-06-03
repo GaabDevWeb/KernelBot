@@ -56,7 +56,13 @@ def _normalize_hard_stop_payload(reason: str, payload: dict | None) -> dict | No
     return out
 
 
-def _build_meta(trace: ContextTrace | None, llm_called: bool, tokens_used: int) -> dict:
+def _build_meta(
+    trace: ContextTrace | None,
+    llm_called: bool,
+    tokens_used: int,
+    *,
+    grounding_policy: str | None = None,
+) -> dict:
     meta: dict = {"v": 3}
     if trace is None:
         meta.update(
@@ -95,6 +101,8 @@ def _build_meta(trace: ContextTrace | None, llm_called: bool, tokens_used: int) 
         payload = _normalize_hard_stop_payload(trace.reason, trace.hard_stop_payload)
         if payload is not None:
             meta["payload"] = payload
+    if grounding_policy is not None:
+        meta["grounding_policy"] = grounding_policy
     return meta
 
 
@@ -135,6 +143,20 @@ class ChatProvider:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
 
+    def _stream_meta(
+        self,
+        trace: ContextTrace | None,
+        *,
+        llm_called: bool,
+        tokens_used: int,
+    ) -> dict:
+        return _build_meta(
+            trace,
+            llm_called,
+            tokens_used,
+            grounding_policy=self._settings.grounding_policy,
+        )
+
     async def stream_response(
         self,
         messages: list[dict],
@@ -149,7 +171,7 @@ class ChatProvider:
         # --- Hard stop: não chama LLM ----------------------------------------
         is_hard_stop = trace is not None and trace.decision == "hard_stop"
         if is_hard_stop:
-            meta = _build_meta(trace, llm_called=False, tokens_used=0)
+            meta = self._stream_meta(trace, llm_called=False, tokens_used=0)
             yield _sse_meta(meta)
             hard_text = ""
             # A última mensagem (assistant) carrega a resposta pré-montada.
@@ -188,7 +210,7 @@ class ChatProvider:
         # provider trocamos para decision=hard_stop no meta final via
         # mensagem [ACL_META_UPDATE] (mantido compatível: frontend ignora
         # prefixos desconhecidos).
-        initial_meta = _build_meta(trace, llm_called=True, tokens_used=0)
+        initial_meta = self._stream_meta(trace, llm_called=True, tokens_used=0)
         yield _sse_meta(initial_meta)
 
         full_answer: list[str] = []
@@ -337,7 +359,7 @@ class ChatProvider:
         # Todos os modelos falharam: mantém UX amigável e separa do hard stop
         # de retrieval via meta atualizada.
         friendly = hard_stop_message("provider_error")
-        failure_meta = _build_meta(trace, llm_called=False, tokens_used=0)
+        failure_meta = self._stream_meta(trace, llm_called=False, tokens_used=0)
         failure_meta.update({"decision": "hard_stop", "reason": "provider_error", "confidence": "low"})
         yield _sse_meta(failure_meta)
         log_event(
@@ -362,7 +384,7 @@ class ChatProvider:
         # --- Hard stop: não chama LLM ----------------------------------------
         is_hard_stop = trace is not None and trace.decision == "hard_stop"
         if is_hard_stop:
-            meta = _build_meta(trace, llm_called=False, tokens_used=0)
+            meta = self._stream_meta(trace, llm_called=False, tokens_used=0)
             yield _sse_meta(meta)
             hard_text = ""
             if messages and messages[-1].get("role") == "assistant":
@@ -388,7 +410,7 @@ class ChatProvider:
             yield "data: [DONE]\n\n"
             return
 
-        initial_meta = _build_meta(trace, llm_called=True, tokens_used=0)
+        initial_meta = self._stream_meta(trace, llm_called=True, tokens_used=0)
         yield _sse_meta(initial_meta)
 
         prompt = _cursor_prompt_from_messages(messages)
@@ -401,7 +423,7 @@ class ChatProvider:
         except Exception as e:
             # Dependência ausente ou import falhou: degrade para provider_error.
             friendly = hard_stop_message("provider_error")
-            failure_meta = _build_meta(trace, llm_called=False, tokens_used=0)
+            failure_meta = self._stream_meta(trace, llm_called=False, tokens_used=0)
             failure_meta.update({"decision": "hard_stop", "reason": "provider_error", "confidence": "low"})
             yield _sse_meta(failure_meta)
             log_event(
@@ -463,7 +485,7 @@ class ChatProvider:
                 },
             )
             friendly = hard_stop_message("provider_error")
-            failure_meta = _build_meta(trace, llm_called=False, tokens_used=0)
+            failure_meta = self._stream_meta(trace, llm_called=False, tokens_used=0)
             failure_meta.update({"decision": "hard_stop", "reason": "provider_error", "confidence": "low"})
             yield _sse_meta(failure_meta)
             for piece in _sse_text_chunk(friendly):
@@ -481,7 +503,7 @@ class ChatProvider:
             )
             log.exception("cursor_sdk_exception detail")
             friendly = hard_stop_message("provider_error")
-            failure_meta = _build_meta(trace, llm_called=False, tokens_used=0)
+            failure_meta = self._stream_meta(trace, llm_called=False, tokens_used=0)
             failure_meta.update({"decision": "hard_stop", "reason": "provider_error", "confidence": "low"})
             yield _sse_meta(failure_meta)
             for piece in _sse_text_chunk(friendly):
@@ -541,7 +563,7 @@ class ChatProvider:
             return
 
         payload = {"expected_lesson": None, "suggested_candidates": options}
-        updated = _build_meta(trace, llm_called=True, tokens_used=tokens_used)
+        updated = self._stream_meta(trace, llm_called=True, tokens_used=tokens_used)
         updated["disambiguation_options"] = options
         updated["payload"] = _normalize_hard_stop_payload("ambiguous_retrieval", payload)
         log_event(
@@ -579,6 +601,8 @@ class ChatProvider:
             answer_text,
             trace.retrieval_trace.informative_terms if trace.retrieval_trace else (),
             decision.selected_candidates,
+            grounding_policy=self._settings.grounding_policy,
+            decision_reason=decision.reason,
         )
         if not flags:
             return
@@ -594,7 +618,7 @@ class ChatProvider:
                 "tokens_used": tokens_used,
             },
         )
-        updated_meta = _build_meta(trace, llm_called=True, tokens_used=tokens_used)
+        updated_meta = self._stream_meta(trace, llm_called=True, tokens_used=tokens_used)
         updated_meta.update(
             {
                 "decision": "hard_stop",

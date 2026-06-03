@@ -53,6 +53,7 @@ Scripts `bin/staging-*.sh` exportam `KERNELBOT_ENV=staging`.
 | `ACL_RETRIEVAL_MAX_CHUNKS_PER_SOURCE` | 2 |
 | `ACL_RETRIEVAL_MODE` | *(deprecado)* | Ignorado; gates são só classificação — sempre LLM + `grounding_strict` |
 | `ACL_DISAMBIGUATION_ENABLED` | false | `true` = `ambiguous_retrieval` pode gerar com `grounding_disambiguation.txt` |
+| `ACL_GROUNDING_POLICY` | anchored | `strict` \| `anchored` \| `hybrid` — contrato injectado no prompt |
 
 ## ACL — operação
 
@@ -95,7 +96,8 @@ Quando `ACL_LLM_PROVIDER=cursor`, o backend usa o pacote `cursor-sdk` (Python) e
 |----------|------------------|
 | `system_prompt.txt` | Sim |
 | `grounding_strict.txt` | Sim |
-| `grounding_permissive.txt` | Legado | Não injectado em runtime (histórico) |
+| `grounding_anchored.txt` | Sim | Default com `ACL_GROUNDING_POLICY=anchored` |
+| `grounding_permissive.txt` | Sim | `hybrid` sem chunks no prompt |
 | `grounding_disambiguation.txt` | Sim | `ACL_DISAMBIGUATION_ENABLED=true` + `ambiguous_retrieval` |
 | `catalog_router.txt` | Sim |
 | `sticky_instruction.txt` | Sim (carregado; inject no chat pendente — ver wiki §17) |
