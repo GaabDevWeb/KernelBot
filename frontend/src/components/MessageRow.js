@@ -1,4 +1,5 @@
 import { fmt } from "../utils/time.js";
+import { formatSourceLabel } from "../utils/formatSource.js";
 
 const MAX_BREADCRUMB_LINES = 5;
 
@@ -10,12 +11,51 @@ const HINT_CLASS = "message-hint-badge";
 const HINT_VARIANTS = {
     disambiguation: "message-hint-badge--disambiguation",
     misalignment: "message-hint-badge--misalignment",
+    advisory: "message-hint-badge--advisory",
 };
 
+const CONTEXT_BADGE_CLASS = "message-context-badge";
+
 /**
- * Badge informativo reactivo (desambiguação / override pós-geração).
+ * Badges de reason / grounding_policy ao lado dos breadcrumbs.
  * @param {HTMLElement | null | undefined} breadcrumbsEl
- * @param {"none" | "disambiguation" | "misalignment"} variant
+ * @param {{ reason?: string, groundingPolicy?: string, pedagogy?: boolean }} opts
+ */
+export function setContextBadges(breadcrumbsEl, opts) {
+    if (!breadcrumbsEl) return;
+    breadcrumbsEl.querySelectorAll(`.${CONTEXT_BADGE_CLASS}`).forEach((el) => el.remove());
+
+    const items = [];
+    if (opts.groundingPolicy) {
+        items.push({ text: opts.groundingPolicy, variant: "course" });
+    }
+    if (opts.reason) {
+        items.push({ text: opts.reason, variant: "weak" });
+    }
+    if (opts.pedagogy) {
+        items.push({ text: "Complemento pedagógico", variant: "pedagogy" });
+    }
+    if (!items.length) {
+        if (!breadcrumbsEl.childElementCount) breadcrumbsEl.hidden = true;
+        return;
+    }
+
+    breadcrumbsEl.hidden = false;
+    const wrap = document.createElement("div");
+    wrap.className = "message-context-badges";
+    for (const item of items) {
+        const badge = document.createElement("span");
+        badge.className = `${CONTEXT_BADGE_CLASS} message-context-badge--${item.variant}`;
+        badge.textContent = item.text;
+        wrap.appendChild(badge);
+    }
+    breadcrumbsEl.prepend(wrap);
+}
+
+/**
+ * Badge informativo reactivo (desambiguação / override / advisory pós-geração).
+ * @param {HTMLElement | null | undefined} breadcrumbsEl
+ * @param {"none" | "disambiguation" | "misalignment" | "advisory"} variant
  */
 export function setTurnHintBadge(breadcrumbsEl, variant) {
     if (!breadcrumbsEl) return;
@@ -33,6 +73,10 @@ export function setTurnHintBadge(breadcrumbsEl, variant) {
         hint.classList.add(HINT_VARIANTS.misalignment);
         hint.textContent =
             "Resposta revista — o conteúdo gerado não alinhou com as fontes recuperadas.";
+    } else if (variant === "advisory") {
+        hint.classList.add(HINT_VARIANTS.advisory);
+        hint.textContent =
+            "A checagem automática sugere rever as fontes — a resposta acima foi mantida.";
     } else {
         hint.classList.add(HINT_VARIANTS.disambiguation);
         hint.textContent = "Várias fontes próximas — escolha uma aula abaixo ou continue no texto.";
@@ -58,7 +102,7 @@ export function setBreadcrumbsContent(breadcrumbsEl, sources) {
     for (const path of slice) {
         const line = document.createElement("div");
         line.className = "message-breadcrumb-line";
-        line.textContent = path.split("/").join(" > ");
+        line.textContent = formatSourceLabel(path);
         breadcrumbsEl.appendChild(line);
     }
     const extra = sources.length - slice.length;

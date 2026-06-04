@@ -130,6 +130,7 @@ class ContextTrace:
     sources: tuple[str, ...]
     pinned_active: bool = False
     pinned_display: str | None = None
+    pin_chunks_used: bool = False
     mode: str = "strict"
     decision: str = "answer"
     reason: str = "ok"
@@ -254,6 +255,33 @@ def _join_chunks_for_prompt(selected: list[dict[str, str]]) -> str:
     )
 
 
+def _merge_pin_and_retrieval_chunks(
+    pin: PinnedContext | None,
+    retrieval_chunks: list[dict[str, str | float]],
+    max_chars: int,
+) -> list[dict[str, str]]:
+    """Pin primeiro, depois retrieval; dedupe por source; respeita max_chars."""
+    merged: list[dict[str, str]] = []
+    seen_sources: set[str] = set()
+
+    if pin and pin.chunks:
+        for c in pin.chunks:
+            src = str(c.get("source") or "")
+            if src and src not in seen_sources:
+                seen_sources.add(src)
+                merged.append({"source": src, "text": str(c.get("text") or "")})
+
+    for s in retrieval_chunks:
+        src = str(s.get("source") or "")
+        text = str(s.get("text") or "")
+        if not src or not text or src in seen_sources:
+            continue
+        seen_sources.add(src)
+        merged.append({"source": src, "text": text})
+
+    return _trim_pin_chunks(merged, max_chars)
+
+
 _WEAK_GROUNDING_REASONS = frozenset({
     "insufficient_context",
     "context_misaligned",
@@ -318,15 +346,25 @@ def _assemble_system_content(
     catalog_section: str,
     grounding: str,
     chunk_context: str,
+    *,
+    sticky_block: str = "",
 ) -> str:
     parts = [base_prompt]
     if catalog_section:
         parts.append(catalog_router)
         parts.append(catalog_section)
+    if sticky_block:
+        parts.append(sticky_block)
     parts.append(grounding)
     if chunk_context:
         parts.append(chunk_context)
     return "\n\n".join(parts)
+
+
+def _sticky_block_for_pin(settings: Settings, pin: PinnedContext | None) -> str:
+    if not pin or not pin.display_name:
+        return ""
+    return settings.sticky_instruction.format(name=pin.display_name)
 
 
 def _lesson_dict_from_entry(lesson: LessonEntry) -> dict[str, str]:
@@ -584,9 +622,6 @@ class ContextManager:
                     "injecao deterministica silo doc",
                     metadata={"chunk_count": len(doc_chunks)},
                 )
-                ctx = _join_chunks_for_prompt(
-                    [{"source": str(c["source"]), "text": str(c["text"])} for c in doc_chunks]
-                )
                 catalog_result = self._catalog_match(query)
                 catalog_section = (
                     self._lesson_catalog.build_prompt_section(catalog_result)
@@ -617,22 +652,36 @@ class ContextManager:
                         mode=mode,
                     ),
                 )
+                doc_selected = [
+                    {"source": str(c["source"]), "text": str(c["text"])}
+                    for c in doc_chunks
+                ]
+                merged_doc = _merge_pin_and_retrieval_chunks(
+                    pin,
+                    doc_selected,
+                    self._settings.pinned_max_chars,
+                )
+                ctx = _join_chunks_for_prompt(merged_doc)
                 grounding = _select_grounding(doc_decision, self._settings)
+                sticky_block = _sticky_block_for_pin(self._settings, pin)
+                pin_used = bool(pin and pin.chunks)
                 system_content = _assemble_system_content(
                     sp,
                     self._settings.catalog_router_prompt,
                     catalog_section,
                     grounding,
                     ctx,
+                    sticky_block=sticky_block,
                 )
-                trace_sources = [str(c["source"]) for c in doc_chunks]
-                pin_chunks = [{"source": str(c["source"]), "text": str(c["text"])} for c in doc_chunks]
+                trace_sources = [d["source"] for d in merged_doc]
+                pin_chunks = [{"source": d["source"], "text": d["text"]} for d in merged_doc]
                 self._save_pin(session_id, "doc", pin_chunks, trace_sources)
                 trace = ContextTrace(
                     label="Documentação (doc)",
                     sources=_dedupe_sources(trace_sources),
                     pinned_active=self._pin_active(session_id),
                     pinned_display=self._pin_display(session_id),
+                    pin_chunks_used=pin_used,
                     mode=mode,
                     decision="answer",
                     reason="ok",
@@ -732,13 +781,30 @@ class ContextManager:
             for c in decision.selected_candidates
         ]
         grounding = _select_grounding(decision, self._settings)
-        ctx = _format_chunks_for_prompt(selected, decision, self._settings)
+        merged_chunks = _merge_pin_and_retrieval_chunks(
+            pin,
+            selected,
+            self._settings.pinned_max_chars,
+        )
+        score_by_source = {str(s["source"]): s.get("normalized_score") for s in selected}
+        selected_for_format = [
+            {
+                "source": d["source"],
+                "text": d["text"],
+                "normalized_score": score_by_source.get(d["source"]),
+            }
+            for d in merged_chunks
+        ]
+        ctx = _format_chunks_for_prompt(selected_for_format, decision, self._settings)
+        sticky_block = _sticky_block_for_pin(self._settings, pin)
+        pin_used = bool(pin and pin.chunks)
         system_content = _assemble_system_content(
             sp,
             self._settings.catalog_router_prompt,
             catalog_section,
             grounding,
             ctx,
+            sticky_block=sticky_block,
         )
 
         if effective_discipline is not None:
@@ -748,14 +814,14 @@ class ContextManager:
         else:
             label = _global_scope_label(self._settings)
 
-        trace_sources = [s["source"] for s in selected]
+        trace_sources = [d["source"] for d in merged_chunks]
         scope_key = self._scope_key_for_hit(
             force_rag, discipline_from_command, effective_discipline
         )
         self._save_pin(
             session_id,
             scope_key,
-            [{"source": s["source"], "text": s["text"]} for s in selected],
+            [{"source": d["source"], "text": d["text"]} for d in merged_chunks],
             trace_sources,
         )
 
@@ -765,6 +831,7 @@ class ContextManager:
             sources=_dedupe_sources(trace_sources),
             pinned_active=self._pin_active(session_id),
             pinned_display=self._pin_display(session_id),
+            pin_chunks_used=pin_used,
             mode=mode,
             decision="answer",
             reason=final_reason,

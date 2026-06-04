@@ -13,7 +13,7 @@
 
 | ID | Item | Impacto | Ficheiro(s) |
 |----|------|---------|-------------|
-| B3 | Calibrar `post_generation_flags` | Falsos `post_generation_misalignment` | `engine/retrieval.py`, `chat_provider.py` |
+| B3 | ~~Calibrar `post_generation_flags`~~ | **Onda 1:** advisory em anchored; override só em `strict` | `engine/retrieval.py`, `chat_provider.py`, UI |
 | B4 | Meta no prompt (recomendação A opcional) | Queries body-only sem keywords no LLM | `engine/context.py` |
 | B5 | Expandir `SecretRedactingFilter` | Traces com mais padrões sensíveis | `core/logging_config.py` |
 
@@ -25,7 +25,7 @@
 | B7 | Testes automatizados BM25 B2 | Casos chunk0 vs body-only |
 | B8 | Remover ou documentar `engine/watcher.py` | Legado |
 | B9 | Ingest staging completo (todas as aulas) | Melhor representatividade nos testes |
-| B10 | Injectar `sticky_instruction` no pin | Template `{name}` já alinhado ao strict — ver [17-prompts-referencia.md](17-prompts-referencia.md) |
+| B10 | ~~Injectar `sticky_instruction` no pin~~ | **Onda 1:** merge pin + sticky em `context.py` — ver [09-fluxos-operacionais.md](09-fluxos-operacionais.md) §4 |
 
 ## Push / release (bloqueado pelo utilizador)
 

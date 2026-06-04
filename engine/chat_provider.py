@@ -87,6 +87,7 @@ def _build_meta(
             "sources": list(trace.sources),
             "pinned_active": trace.pinned_active,
             "pinned_display": trace.pinned_display,
+            "pin_chunks_used": trace.pin_chunks_used,
             "mode": trace.mode,
             "decision": trace.decision,
             "reason": trace.reason,
@@ -591,21 +592,41 @@ class ChatProvider:
         """
         if trace is None or decision is None:
             return
-        if trace.mode != "strict":
-            return
         if not decision.allow_generation:
             return
         if not decision.selected_candidates:
             return
+        policy = self._settings.grounding_policy
         flags = post_generation_flags(
             answer_text,
             trace.retrieval_trace.informative_terms if trace.retrieval_trace else (),
             decision.selected_candidates,
-            grounding_policy=self._settings.grounding_policy,
+            grounding_policy=policy,
             decision_reason=decision.reason,
         )
         if not flags:
             return
+
+        updated_meta = self._stream_meta(trace, llm_called=True, tokens_used=tokens_used)
+
+        if policy in ("anchored", "hybrid"):
+            log_event(
+                log,
+                logging.INFO,
+                ACL_MOD_PROVIDER,
+                "post_generation_advisory",
+                "sanity pos-geracao — aviso sem override (anchored/hybrid)",
+                metadata={"flags": list(flags), "tokens_used": tokens_used},
+            )
+            updated_meta.update(
+                {
+                    "post_generation_advisory": True,
+                    "post_generation_flags": flags,
+                }
+            )
+            yield _sse_meta(updated_meta)
+            return
+
         log_event(
             log,
             logging.WARNING,
@@ -618,7 +639,6 @@ class ChatProvider:
                 "tokens_used": tokens_used,
             },
         )
-        updated_meta = self._stream_meta(trace, llm_called=True, tokens_used=tokens_used)
         updated_meta.update(
             {
                 "decision": "hard_stop",
@@ -630,8 +650,6 @@ class ChatProvider:
                 "post_generation_flags": flags,
             }
         )
-        # Emite um separador textual para evitar que a resposta parcial já
-        # mostrada fique sem aviso. Usamos meta novo + bloco textual claro.
         yield _sse_meta(updated_meta)
         override_text = (
             "\n\n---\n\n"

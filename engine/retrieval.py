@@ -796,6 +796,16 @@ def _tokens_of(text: str) -> set[str]:
     return set(normalize_and_tokenize(text))
 
 
+_PEDAGOGICAL_EXTENSION_RE = re.compile(
+    r"extens[aã]o pedag[oó]gica\s*\(fora do material indexado\)",
+    re.IGNORECASE,
+)
+
+
+def _has_pedagogical_extension_marker(answer: str) -> bool:
+    return bool(_PEDAGOGICAL_EXTENSION_RE.search(answer))
+
+
 def post_generation_flags(
     answer: str,
     informative_terms: Iterable[str],
@@ -817,6 +827,7 @@ def post_generation_flags(
     flags: list[str] = []
     answer_tokens = _tokens_of(answer)
     relaxed_anchored = grounding_policy in ("anchored", "hybrid")
+    has_pedagogy_marker = _has_pedagogical_extension_marker(answer)
 
     info = [t.lower() for t in informative_terms]
     check_informative = not relaxed_anchored or decision_reason == "ok"
@@ -830,11 +841,9 @@ def post_generation_flags(
         chunk_tokens |= _tokens_of(c.text)
         sources.add(c.source.lower())
 
-    if not relaxed_anchored:
+    skip_missing_source = relaxed_anchored and has_pedagogy_marker
+    if not skip_missing_source:
         source_mentioned = any(src_part for src_part in sources if src_part in answer.lower())
-        # Termos centrais dos chunks presentes: heurística mínima. Se a resposta
-        # não cita nem fonte nem termos dos chunks, é sinal forte de alucinação
-        # ou de resposta genérica.
         answer_tokens_sigset = {t for t in answer_tokens if len(t) > 4}
         shared_with_chunks = bool(answer_tokens_sigset & chunk_tokens)
         if candidates and not source_mentioned and not shared_with_chunks:
@@ -843,9 +852,8 @@ def post_generation_flags(
     if candidates:
         tech_like = {t for t in answer_tokens if len(t) >= 5 and re.search(r"[a-z]", t)}
         unsupported = [t for t in tech_like if t not in chunk_tokens and t not in info]
-        # Limite conservador: só marca se muitos termos técnicos longos
-        # aparecerem sem suporte nos chunks.
-        if len(unsupported) > 25:
+        unsupported_limit = 35 if relaxed_anchored else 25
+        if len(unsupported) > unsupported_limit:
             flags.append("introduced_unsupported_terms")
 
     return flags

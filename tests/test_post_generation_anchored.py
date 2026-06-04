@@ -52,6 +52,21 @@ class TestPostGenerationAnchored(unittest.TestCase):
         )
         self.assertIn("missing_source_entities", flags)
 
+    def test_pedagogical_marker_only_no_missing_source(self) -> None:
+        answer = (
+            "[Fonte: aula.json] Facto do curso.\n\n"
+            "*Extensão pedagógica (fora do material indexado):*\n"
+            "Analogia livre."
+        )
+        flags = post_generation_flags(
+            answer,
+            ("termo",),
+            [_candidate()],
+            grounding_policy="anchored",
+            decision_reason="ok",
+        )
+        self.assertNotIn("missing_source_entities", flags)
+
     def test_anchored_skips_informative_terms_when_reason_not_ok(self) -> None:
         answer = "Explicação geral sem repetir os termos da query."
         flags = post_generation_flags(

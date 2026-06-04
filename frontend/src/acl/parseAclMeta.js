@@ -126,3 +126,15 @@ export function isPostGenerationOverride(meta) {
     }
     return String(meta?.reason || "") === "post_generation_misalignment";
 }
+
+/**
+ * Aviso pós-geração sem anular a resposta (anchored/hybrid).
+ * @param {Record<string, unknown> | null | undefined} meta
+ * @returns {boolean}
+ */
+export function isPostGenerationAdvisory(meta) {
+    return (
+        meta?.post_generation_advisory === true &&
+        !isPostGenerationOverride(meta)
+    );
+}

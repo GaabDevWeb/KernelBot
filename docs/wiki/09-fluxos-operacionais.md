@@ -42,9 +42,13 @@ sequenceDiagram
 
 | Evento | Acção |
 |--------|-------|
-| Decisão `ok` com chunks | `PinnedSessionStore.save(session_id, chunks)` |
-| Turnos seguintes | Chunks pinados prepended ao contexto |
-| TTL expirado | Pin descartado após N turnos |
+| Decisão com chunks (RAG ou `/doc`) | `PinnedSessionStore.set_pinned()` após o turno |
+| Turno seguinte (mesmo scope) | `_merge_pin_and_retrieval_chunks()` — pin primeiro, dedupe por `source`, `pinned_max_chars` |
+| Sticky | `sticky_instruction.format(name=…)` injectado **antes** do grounding em `_assemble_system_content()` |
+| Scope diferente | `_pin_conflicts` → `clear` pin |
+| `/reset` | `clear` pin |
+| TTL | `begin_turn()` decrementa `turns_left`; expira → pin removido |
+| Meta SSE | `pinned_active`, `pinned_display`, `pin_chunks_used` (UI: “Continuando: {name}”) |
 
 ## 5. Reload de índice
 

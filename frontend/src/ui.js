@@ -6,6 +6,7 @@ import {
 import {
     buildDisambiguationFollowUp,
     isDisambiguationGeneration,
+    isPostGenerationAdvisory,
     isPostGenerationOverride,
     isStructuredHardStop,
     normalizeHardStopPayload,
@@ -30,7 +31,12 @@ import {
 } from "./acl/ambiguityStreamBuffer.js";
 import { mountIndexGapAlert } from "./components/IndexGapAlert.js";
 import { createStatusBadge } from "./components/StatusBadge.js";
-import { setBreadcrumbsContent, setTurnHintBadge } from "./components/MessageRow.js";
+import {
+    setBreadcrumbsContent,
+    setContextBadges,
+    setTurnHintBadge,
+} from "./components/MessageRow.js";
+import { groundingPolicyLabel, reasonLabel } from "./acl/reasonLabel.js";
 import { siloClassSuffix, siloDisplayName, immediateContextLabel } from "./utils/contextLabel.js";
 import { loadHistory, saveHistory } from "./utils/history.js";
 import { getOrCreateSessionId } from "./utils/sessionId.js";
@@ -75,11 +81,30 @@ export function init() {
         const label = typeof meta?.pinned_display === "string" ? meta.pinned_display.trim() : "";
         if (active && label) {
             pinBadge.hidden = false;
-            pinBadge.textContent = `Contexto: ${label}`;
+            const continuing = meta?.pin_chunks_used === true;
+            pinBadge.textContent = continuing ? `Continuando: ${label}` : `Contexto: ${label}`;
         } else {
             pinBadge.hidden = true;
             pinBadge.textContent = "";
         }
+    }
+
+    /**
+     * @param {Record<string, unknown> | null | undefined} meta
+     * @param {string} [answerText]
+     * @param {HTMLElement | null | undefined} breadcrumbsEl
+     */
+    function refreshStreamContextUi(meta, answerText = "", breadcrumbsEl) {
+        refreshPinBadge(meta);
+        if (!meta || !breadcrumbsEl) return;
+        const pedagogy = /extens[aã]o pedag[oó]gica\s*\(fora do material indexado\)/i.test(
+            answerText,
+        );
+        setContextBadges(breadcrumbsEl, {
+            groundingPolicy: groundingPolicyLabel(String(meta.grounding_policy || "")),
+            reason: reasonLabel(String(meta.reason || "")),
+            pedagogy: pedagogy && !isPostGenerationOverride(meta),
+        });
     }
 
     function refreshSiloUi() {
@@ -383,9 +408,18 @@ export function init() {
                 document.querySelectorAll(".disambiguation-chips").forEach((el) => el.remove());
                 setTurnHintBadge(breadcrumbs, "misalignment");
                 status.setWarning("Revisão");
-                refreshPinBadge(meta);
                 streamSources = Array.isArray(meta?.sources) ? meta.sources : [];
                 setBreadcrumbsContent(breadcrumbs, streamSources);
+                refreshStreamContextUi(meta, "", breadcrumbs);
+                return;
+            }
+
+            if (isPostGenerationAdvisory(meta)) {
+                turnMode = "markdown";
+                setTurnHintBadge(breadcrumbs, "advisory");
+                streamSources = Array.isArray(meta?.sources) ? meta.sources : [];
+                setBreadcrumbsContent(breadcrumbs, streamSources);
+                refreshStreamContextUi(meta, "", breadcrumbs);
                 return;
             }
 
@@ -406,12 +440,12 @@ export function init() {
             }
 
             turnMode = "markdown";
-            refreshPinBadge(meta);
             if (meta && typeof meta.label === "string" && meta.label) {
                 statusEl.textContent = `Analisando resumos de ${meta.label}...`;
             }
             streamSources = Array.isArray(meta?.sources) ? meta.sources : [];
             setBreadcrumbsContent(breadcrumbs, streamSources);
+            refreshStreamContextUi(meta, "", breadcrumbs);
 
             if (isDisambiguationGeneration(meta) && !isPostGenerationOverride(meta)) {
                 setTurnHintBadge(breadcrumbs, "disambiguation");
@@ -497,6 +531,7 @@ export function init() {
             });
         } else {
             const finalized = finalizeTurnFromStream(result.fullText || streamFullText);
+            refreshStreamContextUi(lastMeta, result.fullText || streamFullText, breadcrumbs);
             const finalText = isPostGenerationOverride(lastMeta)
                 ? finalized.displayText
                 : [finalized.proseBefore, finalized.proseAfter].filter(Boolean).join("\n\n") ||

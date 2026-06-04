@@ -56,18 +56,26 @@ Regras em `parseAclMeta.js` + `parseAmbiguityOptions.js`:
 
 | Campo `ACL_META` | Quando | Efeito na UI |
 |------------------|--------|----------------|
-| `post_generation_override: true` | Fase 3 strict | Substitui hint verde/cinza por `message-hint-badge--misalignment` |
-| `misalignment: true` | Idem | Alias semântico do override |
+| `post_generation_override: true` | `ACL_GROUNDING_POLICY=strict` | Hint `misalignment` + header “Revisão”; disclaimer no fim do stream |
+| `post_generation_advisory: true` | `anchored` / `hybrid` | Hint `advisory` amarelo suave — resposta **mantida** |
+| `grounding_policy` | Sempre que disponível | Badge “Modo didático” / “Modo rigoroso” |
+| `pin_chunks_used: true` | Pin merge activo | Badge input “Continuando: {name}” |
 | `allow_generation: false` | Após override | Impede tratar o turno como “sucesso” de desambiguação |
 
-O **primeiro** `ACL_META` pode mostrar hint de desambiguação; o **segundo** (pós-stream) com override **substitui** o badge — nunca coexistem hint de sucesso + aviso de misalignment.
+Com `ACL_GROUNDING_POLICY=anchored`, o segundo `ACL_META` pós-stream pode ser **advisory** (hint suave) em vez de override destrutivo.
+
+### Breadcrumbs e badges de contexto
+
+- `formatSource.js` — `db:discipline/slug` → rótulo legível
+- `reasonLabel.js` — badge quando `reason` ≠ `ok`
+- Badge “Complemento pedagógico” se o texto final contém *Extensão pedagógica*
 
 ### Smoke manual (browser)
 
-1. `ACL_DISAMBIGUATION_ENABLED=false` — pergunta ambígua com 2+ hits próximos → chips ou mensagem fixa, sem markdown longo do modelo.
-2. `ACL_DISAMBIGUATION_ENABLED=true` — mesma pergunta → chips se o modelo emitir `<ambiguity_options>` (ou fallback meta do backend); hint cinza nos breadcrumbs; XML não visível.
-3. Pergunta com match claro → stream normal, sem badge de desambiguação.
-4. Cenário que dispare `post_generation_misalignment` → hint amarelo substitui o de desambiguação; badge do header “Revisão”.
+1. `ACL_DISAMBIGUATION_ENABLED=false` — pergunta ambígua com 2+ hits próximos → chips ou mensagem fixa.
+2. `ACL_DISAMBIGUATION_ENABLED=true` — chips + hint cinza; XML não visível na bolha.
+3. On-corpus com extensão pedagógica rotulada → **sem** override “Revisão” (default `anchored`).
+4. `ACL_GROUNDING_POLICY=strict` + resposta genérica → override “Revisão” se flags dispararem.
 
 ## Componentes por `reason` (hard stop)
 

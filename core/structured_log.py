@@ -66,7 +66,14 @@ class SecretRedactingFilter(logging.Filter):
     """Última linha de defesa: redige ``msg`` e ``exc_text`` antes do formatador."""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.msg = redact_secrets(record.getMessage())
+        # Materializa a mensagem final uma vez; limpa args para o Formatter não
+        # re-interpolar (httpx, pinned_store, etc.).
+        try:
+            record.msg = record.getMessage()
+        except Exception:
+            record.msg = str(record.msg)
+        record.args = ()
+        record.msg = redact_secrets(str(record.msg))
         if record.exc_text:
             record.exc_text = redact_secrets(record.exc_text)
         return True

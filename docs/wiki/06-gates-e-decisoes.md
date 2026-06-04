@@ -62,15 +62,20 @@ Use o formato: [tecnologia] + [problema] + [contexto].
 
 ## Pós-geração: `post_generation_flags`
 
-Executado em `chat_provider.py` após o LLM responder (modo strict).
+Executado em `chat_provider.py` após o LLM responder.
 
 | Flag | Condição (resumo) |
 |------|-------------------|
-| `missing_informative_terms` | Resposta não contém termos informativos da query |
-| `missing_source_entities` | Não menciona fonte nem termos longos dos chunks |
-| `introduced_unsupported_terms` | >25 termos técnicos longos sem suporte nos chunks |
+| `missing_informative_terms` | Resposta não contém termos informativos da query (`anchored`: só se `reason=ok`) |
+| `missing_source_entities` | Não menciona fonte nem termos longos dos chunks (`anchored`/`hybrid`: omitido se há marcador de extensão pedagógica) |
+| `introduced_unsupported_terms` | >25 (strict) ou >35 (anchored/hybrid) termos técnicos longos sem suporte nos chunks |
 
-Se há flags → stream adicional com `post_generation_misalignment`:
+| `ACL_GROUNDING_POLICY` | Se há flags |
+|------------------------|-------------|
+| `strict` | Override destrutivo: `post_generation_misalignment` + disclaimer no stream |
+| `anchored` / `hybrid` | **Advisory** apenas: `post_generation_advisory` + hint suave; resposta mantida |
+
+Texto de override (só `strict`):
 
 ```text
 Preparei uma resposta com base nos trechos encontrados, mas a checagem final

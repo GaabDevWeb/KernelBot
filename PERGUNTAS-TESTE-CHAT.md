@@ -6,7 +6,7 @@ Bateria de perguntas **como um utilizador real** faria no chat (http://127.0.0.1
 
 1. Subir staging: `./bin/staging-setup.sh` e `./bin/staging-serve.sh` (ver [TESTE-LOCAL.md](TESTE-LOCAL.md)).
 2. Marque cada pergunta: ✅ útil / ⚠️ aceitável com ressalvas / ❌ falha.
-3. Anote no rodapé da UI: `reason`, fontes, disclaimer `post_generation_misalignment`.
+3. Anote no rodapé: `reason`, `grounding_policy`, fontes legíveis, hint `advisory` vs override `Revisão`.
 4. Em staging mínimo (2 aulas seed), muitas queries trazem **duas fontes** — isso é limitação do índice, não bug de produção.
 
 **Legenda de perfil**
@@ -160,11 +160,11 @@ Perguntas muito comuns na vida real do aluno.
 
 ## 9. Follow-up e contexto (pin / mesma sessão)
 
-Envie na **mesma sessão** (mesmo `session_id` no browser).
+Envie na **mesma sessão** (mesmo `session_id` no browser). Com pin activo, a UI deve mostrar **Continuando: {aula}** e o system prompt deve incluir chunks fixados + `sticky_instruction`.
 
 | # | Sequência | Perfil | O que observar |
 |---|-----------|--------|----------------|
-| 9.1 | 1) “O que é list comprehension?” → 2) “Me dá um exemplo com números pares” | Estudante | Segunda pergunta usa contexto; não repete aula inteira |
+| 9.1 | 1) “O que é list comprehension?” → 2) “Me dá um exemplo com números pares” | Estudante | Segunda pergunta referencia a aula pinada; `pin_chunks_used` no meta; sem override advisory espúrio |
 | 9.2 | 1) “Explica GROUP BY” → 2) “E se eu quiser filtrar depois de agrupar?” | Estudante | HAVING / GROUP BY coerente |
 | 9.3 | 1) `/python variáveis` → 2) “E strings?” | Estudante | Mantém escopo python |
 | 9.4 | 1) Pergunta off-topic → 2) “Mas e a aula de Python?” | Curioso | Recupera com termos melhores |
