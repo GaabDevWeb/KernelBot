@@ -131,6 +131,10 @@ class ContextTrace:
     pinned_active: bool = False
     pinned_display: str | None = None
     pin_chunks_used: bool = False
+    pinned_scope_key: str | None = None
+    scope_hint: str | None = None
+    suggested_scope_command: str | None = None
+    sources_note: str | None = None
     mode: str = "strict"
     decision: str = "answer"
     reason: str = "ok"
@@ -219,6 +223,185 @@ def _discipline_from_pin_scope(pin: PinnedContext) -> str | None:
     if pin.scope_key.startswith("discipline:"):
         return pin.scope_key.split(":", 1)[1]
     return None
+
+
+def _dominant_discipline_from_chunks(chunks: list[dict[str, str]]) -> str | None:
+    """Disciplina mais frequente nas fontes do pin (ex.: scope_key=content)."""
+    counts: dict[str, int] = {}
+    for c in chunks:
+        src = (c.get("source") or "").lower()
+        m = re.search(r"db:([^/]+)/", src)
+        if m:
+            disc = m.group(1)
+            counts[disc] = counts.get(disc, 0) + 1
+    if not counts:
+        return None
+    return max(counts, key=counts.get)
+
+
+def _effective_pin_discipline(pin: PinnedContext) -> str | None:
+    explicit = _discipline_from_pin_scope(pin)
+    if explicit:
+        return explicit
+    return _dominant_discipline_from_chunks(pin.chunks)
+
+
+_FOLLOW_UP_PREFIX_RE = re.compile(
+    r"^(e\s+)?(o\s+que\s+é|o\s+que\s+e|e\s+o|e\s+a|e\s+isso|também|tambem)\b",
+    re.IGNORECASE,
+)
+
+_FOLLOW_UP_TOPIC_MARKERS = (
+    "f-string",
+    "fstring",
+    "elif",
+    "jupyter",
+    "variável",
+    "variavel",
+    "loop",
+    "enumerate",
+    "nameerror",
+    "snake_case",
+)
+
+
+def _is_short_follow_up_query(query: str, informative_count: int, *, min_terms: int = 2) -> bool:
+    if informative_count >= min_terms:
+        return False
+    q = query.strip()
+    if not q:
+        return False
+    if _FOLLOW_UP_PREFIX_RE.match(q) and len(q) <= 80:
+        return True
+    ql = q.lower()
+    if len(q.split()) <= 5 and any(m in ql for m in _FOLLOW_UP_TOPIC_MARKERS):
+        return True
+    return False
+
+
+def _relax_weak_reason_for_pinned_follow_up(
+    reason: str,
+    query: str,
+    pin: PinnedContext | None,
+    pin_chunks_used: bool,
+) -> str:
+    if reason != "underspecified_query" or not pin or not pin_chunks_used:
+        return reason
+    informative = extract_informative_terms(query)
+    if _is_short_follow_up_query(query, len(informative)):
+        return "ok"
+    return reason
+
+
+_PYTHON_QUERY_MARKERS = (
+    "jupyter",
+    "variável",
+    "variavel",
+    "f-string",
+    "fstring",
+    "python",
+    "elif",
+    "snake_case",
+    "nameerror",
+    "enumerate",
+    "lista",
+    "laço",
+    "laco",
+    "print(",
+    "for ",
+)
+
+_SQL_QUERY_MARKERS = (
+    "looker",
+    "group by",
+    "groupby",
+    "dashboard",
+    "having",
+    " duplicata",
+    "sql",
+    " join ",
+    "select ",
+    "cafeteria",
+)
+
+
+def _infer_query_discipline_from_text(query: str) -> str | None:
+    """Heurística leve: disciplina provável da pergunta (sem LLM)."""
+    q = query.lower()
+    py = sum(1 for m in _PYTHON_QUERY_MARKERS if m in q)
+    sql = sum(1 for m in _SQL_QUERY_MARKERS if m in q)
+    if py > sql and py >= 1:
+        return "python"
+    if sql > py and sql >= 1:
+        return "visualizacao-sql"
+    return None
+
+
+def _discipline_display_name(disc_id: str) -> str:
+    return _TRACE_LABEL_BY_DISCIPLINE.get(disc_id, disc_id.replace("-", " ").title())
+
+
+def _retrieval_adds_sources_beyond_pin(
+    pin: PinnedContext | None,
+    retrieval_chunks: list[dict[str, str | float]],
+) -> bool:
+    """True quando a busca deste turno traz fontes fora do pin do turno anterior."""
+    if not pin or not pin.chunks:
+        return False
+    pin_sources = {
+        str(c.get("source") or "")
+        for c in pin.chunks
+        if c.get("source")
+    }
+    for s in retrieval_chunks:
+        src = str(s.get("source") or "")
+        if src and src not in pin_sources:
+            return True
+    return False
+
+
+def _build_scope_ui_hints(
+    pin: PinnedContext | None,
+    query: str,
+    discipline_from_command: str | None,
+    pin_chunks_used: bool,
+    *,
+    sources_mix_this_turn: bool = False,
+) -> tuple[str | None, str | None, str | None, str | None]:
+    """(pinned_scope_key, scope_hint, suggested_scope_command, sources_note)."""
+    if not pin:
+        return None, None, None, None
+
+    pinned_scope_key = pin.scope_key
+    sources_note: str | None = None
+    if sources_mix_this_turn:
+        sources_note = (
+            "Rodapé deste turno combina fontes do contexto anterior com a busca atual — "
+            "use /reset ou um comando de disciplina (/python, /visualizacao-sql…) para alinhar."
+        )
+
+    pin_disc = _effective_pin_discipline(pin)
+    inferred = _infer_query_discipline_from_text(query)
+    scope_hint: str | None = None
+    suggested: str | None = None
+
+    if discipline_from_command and pin_disc and discipline_from_command != pin_disc:
+        suggested = f"/{discipline_from_command}"
+        scope_hint = (
+            f"Tema fixado em «{pin.display_name}» ({_discipline_display_name(pin_disc)}), "
+            f"mas você usou {suggested}. Use /reset para limpar o pin ou continue em {suggested}."
+        )
+        return pinned_scope_key, scope_hint, suggested, sources_note
+
+    if pin_chunks_used and pin_disc and inferred and inferred != pin_disc:
+        suggested = f"/{inferred}"
+        scope_hint = (
+            f"Tema fixado em «{pin.display_name}». A pergunta parece ser de "
+            f"{_discipline_display_name(inferred)} — use {suggested} no início ou "
+            "/reset para limpar o contexto fixado."
+        )
+
+    return pinned_scope_key, scope_hint, suggested, sources_note
 
 
 def _display_name_from_source(source: str) -> str:
@@ -676,12 +859,25 @@ class ContextManager:
                 trace_sources = [d["source"] for d in merged_doc]
                 pin_chunks = [{"source": d["source"], "text": d["text"]} for d in merged_doc]
                 self._save_pin(session_id, "doc", pin_chunks, trace_sources)
+                scope_psk, scope_hint, scope_cmd, sources_note = _build_scope_ui_hints(
+                    pin,
+                    query,
+                    discipline_from_command,
+                    pin_used,
+                    sources_mix_this_turn=_retrieval_adds_sources_beyond_pin(
+                        pin, doc_selected
+                    ),
+                )
                 trace = ContextTrace(
                     label="Documentação (doc)",
                     sources=_dedupe_sources(trace_sources),
                     pinned_active=self._pin_active(session_id),
                     pinned_display=self._pin_display(session_id),
                     pin_chunks_used=pin_used,
+                    pinned_scope_key=scope_psk,
+                    scope_hint=scope_hint,
+                    suggested_scope_command=scope_cmd,
+                    sources_note=sources_note,
                     mode=mode,
                     decision="answer",
                     reason="ok",
@@ -826,12 +1022,26 @@ class ContextManager:
         )
 
         final_reason = trace_reason_override or decision.reason
+        final_reason = _relax_weak_reason_for_pinned_follow_up(
+            final_reason, query, pin, pin_used
+        )
+        scope_psk, scope_hint, scope_cmd, sources_note = _build_scope_ui_hints(
+            pin,
+            query,
+            discipline_from_command,
+            pin_used,
+            sources_mix_this_turn=_retrieval_adds_sources_beyond_pin(pin, selected),
+        )
         trace = ContextTrace(
             label=label,
             sources=_dedupe_sources(trace_sources),
             pinned_active=self._pin_active(session_id),
             pinned_display=self._pin_display(session_id),
             pin_chunks_used=pin_used,
+            pinned_scope_key=scope_psk,
+            scope_hint=scope_hint,
+            suggested_scope_command=scope_cmd,
+            sources_note=sources_note,
             mode=mode,
             decision="answer",
             reason=final_reason,
@@ -944,11 +1154,18 @@ class ContextManager:
         trace_sources: list[str] = []
         if trace_retrieval is not None:
             trace_sources = [s["source"] for s in trace_retrieval.selected_sources]
+        scope_psk, scope_hint, scope_cmd, sources_note = _build_scope_ui_hints(
+            pin, query, None, False
+        )
         trace = ContextTrace(
             label=label,
             sources=_dedupe_sources(trace_sources),
             pinned_active=bool(pin),
             pinned_display=pin.display_name if pin else None,
+            pinned_scope_key=scope_psk,
+            scope_hint=scope_hint,
+            suggested_scope_command=scope_cmd,
+            sources_note=sources_note,
             mode=mode,
             decision="hard_stop",
             reason=reason,

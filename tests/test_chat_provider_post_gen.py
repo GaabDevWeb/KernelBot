@@ -69,12 +69,121 @@ def _collect_override_events(provider: ChatProvider, policy: str) -> list[dict]:
 
 
 class TestPostGenerationGate(unittest.TestCase):
-    def test_anchored_emits_advisory_not_hard_stop(self) -> None:
+    def test_anchored_weak_flags_no_advisory_meta(self) -> None:
         provider = ChatProvider(MagicMock())
         metas = _collect_override_events(provider, "anchored")
+        self.assertEqual(len(metas), 0)
+
+    def test_anchored_strong_flags_emit_advisory_not_hard_stop(self) -> None:
+        provider = ChatProvider(MagicMock())
+        settings = MagicMock()
+        settings.grounding_policy = "anchored"
+        provider._settings = settings
+
+        candidate = RetrievalCandidate(
+            source="db:python/a.json",
+            chunk_id="1",
+            text="aula",
+            discipline="python",
+            raw_score=2.0,
+            normalized_score=0.5,
+            matched_terms=("termo",),
+        )
+        trace = RetrievalTrace(
+            query="termo",
+            normalized_query="termo",
+            informative_terms=("termo",),
+            mode="strict",
+        )
+        decision = RetrievalDecision(
+            allow_generation=True,
+            reason="ok",
+            confidence="high",
+            selected_candidates=(candidate,),
+            trace=trace,
+        )
+        ctx_trace = ContextTrace(
+            label="Test",
+            sources=("db:python/a.json",),
+            mode="strict",
+            decision="answer",
+            reason="ok",
+            confidence="high",
+            retrieval_trace=trace,
+        )
+        noise = " ".join(f"zztermoextra{i}" for i in range(55))
+        answer = f"Resposta genérica sem citação {noise}"
+
+        async def _run() -> list[dict]:
+            metas: list[dict] = []
+            async for chunk in provider._maybe_override_post_generation(
+                answer, ctx_trace, decision, tokens_used=10,
+            ):
+                if chunk.startswith("data: [ACL_META]"):
+                    import json
+                    metas.append(json.loads(chunk[len("data: [ACL_META]") :]))
+            return metas
+
+        metas = asyncio.run(_run())
         self.assertEqual(len(metas), 1)
         self.assertTrue(metas[0].get("post_generation_advisory"))
         self.assertNotEqual(metas[0].get("decision"), "hard_stop")
+
+    def test_anchored_cited_answer_no_advisory_meta(self) -> None:
+        provider = ChatProvider(MagicMock())
+        settings = MagicMock()
+        settings.grounding_policy = "anchored"
+        provider._settings = settings
+
+        candidate = RetrievalCandidate(
+            source="db:python/a.json",
+            chunk_id="1",
+            text="aula",
+            discipline="python",
+            raw_score=2.0,
+            normalized_score=0.5,
+            matched_terms=("termo",),
+        )
+        trace = RetrievalTrace(
+            query="f-string",
+            normalized_query="f-string",
+            informative_terms=("f-string",),
+            mode="strict",
+        )
+        decision = RetrievalDecision(
+            allow_generation=True,
+            reason="ok",
+            confidence="high",
+            selected_candidates=(candidate,),
+            trace=trace,
+        )
+        ctx_trace = ContextTrace(
+            label="Test",
+            sources=("db:python/a.json",),
+            mode="strict",
+            decision="answer",
+            reason="ok",
+            confidence="high",
+            retrieval_trace=trace,
+        )
+        noise = " ".join(f"termoextra{i}" for i in range(40))
+        answer = (
+            f"Segundo [Fonte: db:python/loops-for-range-listas], f-string é {noise}. "
+            "*Extensão pedagógica (fora do material indexado):* exemplo."
+        )
+
+        async def _run() -> list[dict]:
+            metas: list[dict] = []
+            async for chunk in provider._maybe_override_post_generation(
+                answer, ctx_trace, decision, tokens_used=10,
+            ):
+                if chunk.startswith("data: [ACL_META]"):
+                    import json
+                    metas.append(json.loads(chunk[len("data: [ACL_META]") :]))
+            return metas
+
+        metas = asyncio.run(_run())
+        self.assertEqual(len(metas), 0)
 
     def test_strict_emits_override(self) -> None:
         provider = ChatProvider(MagicMock())

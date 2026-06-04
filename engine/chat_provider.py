@@ -30,7 +30,11 @@ from engine.disambiguation_parse import (
     parse_ambiguity_options,
     strip_ambiguity_markup,
 )
-from engine.retrieval import RetrievalDecision, post_generation_flags
+from engine.retrieval import (
+    RetrievalDecision,
+    anchored_post_generation_advisory_flags,
+    post_generation_flags,
+)
 
 log = logging.getLogger(f"kernelbots.{__name__}")
 
@@ -104,6 +108,14 @@ def _build_meta(
             meta["payload"] = payload
     if grounding_policy is not None:
         meta["grounding_policy"] = grounding_policy
+    if trace.pinned_scope_key:
+        meta["pinned_scope_key"] = trace.pinned_scope_key
+    if trace.scope_hint:
+        meta["scope_hint"] = trace.scope_hint
+    if trace.suggested_scope_command:
+        meta["suggested_scope_command"] = trace.suggested_scope_command
+    if trace.sources_note:
+        meta["sources_note"] = trace.sources_note
     return meta
 
 
@@ -610,18 +622,21 @@ class ChatProvider:
         updated_meta = self._stream_meta(trace, llm_called=True, tokens_used=tokens_used)
 
         if policy in ("anchored", "hybrid"):
+            advisory_flags = anchored_post_generation_advisory_flags(flags, answer_text)
+            if not advisory_flags:
+                return
             log_event(
                 log,
                 logging.INFO,
                 ACL_MOD_PROVIDER,
                 "post_generation_advisory",
                 "sanity pos-geracao — aviso sem override (anchored/hybrid)",
-                metadata={"flags": list(flags), "tokens_used": tokens_used},
+                metadata={"flags": advisory_flags, "tokens_used": tokens_used},
             )
             updated_meta.update(
                 {
                     "post_generation_advisory": True,
-                    "post_generation_flags": flags,
+                    "post_generation_flags": advisory_flags,
                 }
             )
             yield _sse_meta(updated_meta)

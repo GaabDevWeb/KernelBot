@@ -10,6 +10,9 @@ import {
     isPostGenerationOverride,
     isStructuredHardStop,
     normalizeHardStopPayload,
+    resolveTurnHintVariant,
+    scopeHintFromMeta,
+    sourcesNoteFromMeta,
     shouldMountDisambiguationChips,
     shouldMountIndexGap,
 } from "./acl/parseAclMeta.js";
@@ -82,11 +85,32 @@ export function init() {
         if (active && label) {
             pinBadge.hidden = false;
             const continuing = meta?.pin_chunks_used === true;
-            pinBadge.textContent = continuing ? `Continuando: ${label}` : `Contexto: ${label}`;
+            let text = continuing ? `Continuando: ${label}` : `Contexto: ${label}`;
+            const cmd =
+                typeof meta?.suggested_scope_command === "string"
+                    ? meta.suggested_scope_command.trim()
+                    : "";
+            if (continuing && cmd) {
+                text += ` — experimente ${cmd}`;
+            }
+            pinBadge.textContent = text;
+            const hint = scopeHintFromMeta(meta);
+            if (hint) pinBadge.title = hint;
+            else pinBadge.removeAttribute("title");
         } else {
             pinBadge.hidden = true;
             pinBadge.textContent = "";
+            pinBadge.removeAttribute("title");
         }
+    }
+
+    /**
+     * @param {Record<string, unknown> | null | undefined} meta
+     * @param {HTMLElement | null | undefined} breadcrumbsEl
+     */
+    function applyTurnHintFromMeta(meta, breadcrumbsEl) {
+        const { variant, text } = resolveTurnHintVariant(meta);
+        setTurnHintBadge(breadcrumbsEl, variant, text ?? undefined);
     }
 
     /**
@@ -363,7 +387,7 @@ export function init() {
             if (committed.insideOpenBlock && committed.streamTruncated && !chipsMounted) {
                 clearAmbiguityPlaceholder();
                 const msg = opts.stalled
-                    ? `Ligação instável (sem dados há ~15s). ${STREAM_TRUNCATED_AMBIGUITY_MSG}`
+                    ? `Ligação instável (sem dados há ~45s). ${STREAM_TRUNCATED_AMBIGUITY_MSG}`
                     : opts.aborted
                       ? `Ligação interrompida. ${STREAM_TRUNCATED_AMBIGUITY_MSG}`
                       : STREAM_TRUNCATED_AMBIGUITY_MSG;
@@ -406,19 +430,27 @@ export function init() {
                 freezeDisambiguationChips(bubble);
                 invalidateDisambiguationChips(bubble);
                 document.querySelectorAll(".disambiguation-chips").forEach((el) => el.remove());
-                setTurnHintBadge(breadcrumbs, "misalignment");
+                applyTurnHintFromMeta(meta, breadcrumbs);
                 status.setWarning("Revisão");
                 streamSources = Array.isArray(meta?.sources) ? meta.sources : [];
-                setBreadcrumbsContent(breadcrumbs, streamSources);
+                setBreadcrumbsContent(
+                    breadcrumbs,
+                    streamSources,
+                    sourcesNoteFromMeta(meta),
+                );
                 refreshStreamContextUi(meta, "", breadcrumbs);
                 return;
             }
 
             if (isPostGenerationAdvisory(meta)) {
                 turnMode = "markdown";
-                setTurnHintBadge(breadcrumbs, "advisory");
+                applyTurnHintFromMeta(meta, breadcrumbs);
                 streamSources = Array.isArray(meta?.sources) ? meta.sources : [];
-                setBreadcrumbsContent(breadcrumbs, streamSources);
+                setBreadcrumbsContent(
+                    breadcrumbs,
+                    streamSources,
+                    sourcesNoteFromMeta(meta),
+                );
                 refreshStreamContextUi(meta, "", breadcrumbs);
                 return;
             }
@@ -444,14 +476,13 @@ export function init() {
                 statusEl.textContent = `Analisando resumos de ${meta.label}...`;
             }
             streamSources = Array.isArray(meta?.sources) ? meta.sources : [];
-            setBreadcrumbsContent(breadcrumbs, streamSources);
+            setBreadcrumbsContent(
+                breadcrumbs,
+                streamSources,
+                sourcesNoteFromMeta(meta),
+            );
             refreshStreamContextUi(meta, "", breadcrumbs);
-
-            if (isDisambiguationGeneration(meta) && !isPostGenerationOverride(meta)) {
-                setTurnHintBadge(breadcrumbs, "disambiguation");
-            } else {
-                setTurnHintBadge(breadcrumbs, "none");
-            }
+            applyTurnHintFromMeta(meta, breadcrumbs);
 
             const options = disambiguationOptionsFromMeta(meta);
             if (options.length && isDisambiguationGeneration(meta)) {
@@ -532,6 +563,12 @@ export function init() {
         } else {
             const finalized = finalizeTurnFromStream(result.fullText || streamFullText);
             refreshStreamContextUi(lastMeta, result.fullText || streamFullText, breadcrumbs);
+            setBreadcrumbsContent(
+                breadcrumbs,
+                streamSources,
+                sourcesNoteFromMeta(lastMeta),
+            );
+            applyTurnHintFromMeta(lastMeta, breadcrumbs);
             const finalText = isPostGenerationOverride(lastMeta)
                 ? finalized.displayText
                 : [finalized.proseBefore, finalized.proseAfter].filter(Boolean).join("\n\n") ||

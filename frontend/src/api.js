@@ -6,7 +6,7 @@
  */
 
 /** Pausa máxima sem bytes SSE antes de encerrar o turno (ms). */
-export const DEFAULT_STREAM_INACTIVITY_MS = 15_000;
+export const DEFAULT_STREAM_INACTIVITY_MS = 45_000;
 
 export class ChatService {
     constructor(chatPath = "/chat") {

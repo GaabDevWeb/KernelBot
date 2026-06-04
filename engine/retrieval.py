@@ -801,9 +801,44 @@ _PEDAGOGICAL_EXTENSION_RE = re.compile(
     re.IGNORECASE,
 )
 
+_FONTES_CITATION_RE = re.compile(r"\[fonte", re.IGNORECASE)
+
+# Em anchored/hybrid só estes flags disparam aviso pós-geração na UI.
+_ANCHORED_ADVISORY_STRONG_FLAGS = frozenset({"introduced_unsupported_terms"})
+
 
 def _has_pedagogical_extension_marker(answer: str) -> bool:
     return bool(_PEDAGOGICAL_EXTENSION_RE.search(answer))
+
+
+def _answer_cites_indexed_sources(answer: str) -> bool:
+    low = answer.lower()
+    return bool(_FONTES_CITATION_RE.search(answer)) or "db:" in low
+
+
+_LACUNA_OR_REFUSAL_RE = re.compile(
+    r"(não vou ignorar|não vou passar|não há trecho|lacuna declarada|"
+    r"não aparece nos trechos|não tenho \(nem devo|não faz parte do que o kernel|"
+    r"material injectado neste turno não|não há definição nem explicação)",
+    re.IGNORECASE,
+)
+
+
+def anchored_post_generation_advisory_flags(
+    flags: list[str],
+    answer: str = "",
+) -> list[str]:
+    """Subconjunto de flags que justificam aviso amarelo em modo anchored/hybrid."""
+    strong = [f for f in flags if f in _ANCHORED_ADVISORY_STRONG_FLAGS]
+    if not strong:
+        return []
+    if _answer_cites_indexed_sources(answer):
+        return []
+    if _LACUNA_OR_REFUSAL_RE.search(answer):
+        return []
+    if _has_pedagogical_extension_marker(answer):
+        return []
+    return strong
 
 
 def post_generation_flags(
@@ -828,11 +863,12 @@ def post_generation_flags(
     answer_tokens = _tokens_of(answer)
     relaxed_anchored = grounding_policy in ("anchored", "hybrid")
     has_pedagogy_marker = _has_pedagogical_extension_marker(answer)
+    cites_sources = _answer_cites_indexed_sources(answer)
 
     info = [t.lower() for t in informative_terms]
-    check_informative = not relaxed_anchored or decision_reason == "ok"
-    if check_informative and info and not any(t in answer_tokens for t in info):
-        flags.append("missing_informative_terms")
+    if not relaxed_anchored and decision_reason == "ok":
+        if info and not any(t in answer_tokens for t in info):
+            flags.append("missing_informative_terms")
 
     candidates = list(selected_candidates)
     chunk_tokens: set[str] = set()
@@ -841,7 +877,9 @@ def post_generation_flags(
         chunk_tokens |= _tokens_of(c.text)
         sources.add(c.source.lower())
 
-    skip_missing_source = relaxed_anchored and has_pedagogy_marker
+    skip_missing_source = relaxed_anchored and (
+        has_pedagogy_marker or cites_sources
+    )
     if not skip_missing_source:
         source_mentioned = any(src_part for src_part in sources if src_part in answer.lower())
         answer_tokens_sigset = {t for t in answer_tokens if len(t) > 4}
@@ -849,10 +887,13 @@ def post_generation_flags(
         if candidates and not source_mentioned and not shared_with_chunks:
             flags.append("missing_source_entities")
 
-    if candidates:
+    skip_unsupported = relaxed_anchored and (
+        cites_sources or has_pedagogy_marker
+    )
+    if candidates and not skip_unsupported:
         tech_like = {t for t in answer_tokens if len(t) >= 5 and re.search(r"[a-z]", t)}
         unsupported = [t for t in tech_like if t not in chunk_tokens and t not in info]
-        unsupported_limit = 35 if relaxed_anchored else 25
+        unsupported_limit = 50 if relaxed_anchored else 25
         if len(unsupported) > unsupported_limit:
             flags.append("introduced_unsupported_terms")
 

@@ -366,6 +366,15 @@ body {
     margin-top: 2px;
 }
 
+.message-sources-note {
+    margin-top: 6px;
+    padding: 6px 8px;
+    border-left: 2px solid var(--accent-muted, #6b7280);
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
 .input-hint {
     font-size: 11px;
     color: var(--text-muted);

@@ -138,3 +138,49 @@ export function isPostGenerationAdvisory(meta) {
         !isPostGenerationOverride(meta)
     );
 }
+
+/**
+ * Hint de escopo/pin (meta.scope_hint).
+ * @param {Record<string, unknown> | null | undefined} meta
+ * @returns {string | null}
+ */
+export function scopeHintFromMeta(meta) {
+    const h = meta?.scope_hint;
+    if (typeof h !== "string") return null;
+    const t = h.trim();
+    return t.length ? t : null;
+}
+
+/**
+ * Nota de rodapé quando pin + retrieval misturam fontes (meta.sources_note).
+ * @param {Record<string, unknown> | null | undefined} meta
+ * @returns {string | null}
+ */
+export function sourcesNoteFromMeta(meta) {
+    const n = meta?.sources_note;
+    if (typeof n !== "string") return null;
+    const t = n.trim();
+    return t.length ? t : null;
+}
+
+/**
+ * Prioridade de badge no rodapé: misalignment → disambiguation → scope → advisory → none.
+ * @param {Record<string, unknown> | null | undefined} meta
+ * @returns {{ variant: "none" | "disambiguation" | "misalignment" | "advisory" | "scope", text: string | null }}
+ */
+export function resolveTurnHintVariant(meta) {
+    if (isPostGenerationOverride(meta)) {
+        return { variant: "misalignment", text: null };
+    }
+    if (isDisambiguationGeneration(meta)) {
+        return { variant: "disambiguation", text: null };
+    }
+    const scopeText = scopeHintFromMeta(meta);
+    if (scopeText) {
+        return { variant: "scope", text: scopeText };
+    }
+    if (isPostGenerationAdvisory(meta)) {
+        return { variant: "advisory", text: null };
+    }
+    return { variant: "none", text: null };
+}

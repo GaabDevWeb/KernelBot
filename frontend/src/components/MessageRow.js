@@ -12,9 +12,11 @@ const HINT_VARIANTS = {
     disambiguation: "message-hint-badge--disambiguation",
     misalignment: "message-hint-badge--misalignment",
     advisory: "message-hint-badge--advisory",
+    scope: "message-hint-badge--scope",
 };
 
 const CONTEXT_BADGE_CLASS = "message-context-badge";
+const SOURCES_NOTE_CLASS = "message-sources-note";
 
 /**
  * Badges de reason / grounding_policy ao lado dos breadcrumbs.
@@ -55,9 +57,10 @@ export function setContextBadges(breadcrumbsEl, opts) {
 /**
  * Badge informativo reactivo (desambiguação / override / advisory pós-geração).
  * @param {HTMLElement | null | undefined} breadcrumbsEl
- * @param {"none" | "disambiguation" | "misalignment" | "advisory"} variant
+ * @param {"none" | "disambiguation" | "misalignment" | "advisory" | "scope"} variant
+ * @param {string} [hintText] — obrigatório para variant `scope` (meta.scope_hint)
  */
-export function setTurnHintBadge(breadcrumbsEl, variant) {
+export function setTurnHintBadge(breadcrumbsEl, variant, hintText) {
     if (!breadcrumbsEl) return;
     const existing = breadcrumbsEl.querySelector(`.${HINT_CLASS}`);
     if (variant === "none") {
@@ -77,6 +80,12 @@ export function setTurnHintBadge(breadcrumbsEl, variant) {
         hint.classList.add(HINT_VARIANTS.advisory);
         hint.textContent =
             "A checagem automática sugere rever as fontes — a resposta acima foi mantida.";
+    } else if (variant === "scope") {
+        hint.classList.add(HINT_VARIANTS.scope);
+        const t = (hintText || "").trim();
+        hint.textContent =
+            t ||
+            "O tema fixado pode não coincidir com a pergunta — use um comando de disciplina ou /reset.";
     } else {
         hint.classList.add(HINT_VARIANTS.disambiguation);
         hint.textContent = "Várias fontes próximas — escolha uma aula abaixo ou continue no texto.";
@@ -89,9 +98,15 @@ export function setDisambiguationHint(breadcrumbsEl, show) {
     setTurnHintBadge(breadcrumbsEl, show ? "disambiguation" : "none");
 }
 
-export function setBreadcrumbsContent(breadcrumbsEl, sources) {
+/**
+ * @param {HTMLElement | null | undefined} breadcrumbsEl
+ * @param {string[] | undefined} sources
+ * @param {string | null | undefined} [sourcesNote]
+ */
+export function setBreadcrumbsContent(breadcrumbsEl, sources, sourcesNote) {
     if (!breadcrumbsEl) return;
-    if (!sources?.length) {
+    const noteText = (sourcesNote || "").trim();
+    if (!sources?.length && !noteText) {
         breadcrumbsEl.hidden = true;
         breadcrumbsEl.replaceChildren();
         return;
@@ -111,6 +126,12 @@ export function setBreadcrumbsContent(breadcrumbsEl, sources) {
         more.className = "message-breadcrumb-more";
         more.textContent = `+${extra} ficheiro${extra === 1 ? "" : "s"}`;
         breadcrumbsEl.appendChild(more);
+    }
+    if (noteText) {
+        const note = document.createElement("div");
+        note.className = SOURCES_NOTE_CLASS;
+        note.textContent = noteText;
+        breadcrumbsEl.appendChild(note);
     }
 }
 
