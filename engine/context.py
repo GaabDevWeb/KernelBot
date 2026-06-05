@@ -324,17 +324,97 @@ _SQL_QUERY_MARKERS = (
     "cafeteria",
 )
 
+_CARREIRA_QUERY_MARKERS = (
+    "competência",
+    "competencia",
+    "avaliação por",
+    "avaliacao por",
+    "carreira",
+    "estágio",
+    "estagio",
+    "linkedin",
+    "rubrica",
+    "entrevista",
+    "currículo",
+    "curriculo",
+    "oratória",
+    "oratoria",
+    "soft skill",
+    "estágio de",
+)
+
+_PROJETO_BLOCO_QUERY_MARKERS = (
+    "placeholder",
+    "commit()",
+    "crud",
+    "mini-projeto",
+    "mini projeto",
+    "projeto de bloco",
+    "projeto-bloco",
+    "ingestão csv",
+    "ingestao csv",
+    "postgresql",
+    "mysql",
+    "sql server",
+    "modelagem conceitual",
+    "ecommerce",
+    "e-commerce",
+)
+
+_PIN_POISONING_RE = re.compile(
+    r"(ignore\s+(todas\s+as\s+)?regras|ignore\s+suas\s+instru|developer\s+mode|"
+    r"você\s+agora\s+é\s+dan\b|chatgpt\s+with|"
+    r"malware|senha\s+do\s+banco|gabarito\s+do\s+at|"
+    r"api\s+key\s+real|\[INJECT\]|reveal\s+secrets|"
+    r"omega\s+\(|uncensored\s+creativity)",
+    re.IGNORECASE,
+)
+
 
 def _infer_query_discipline_from_text(query: str) -> str | None:
     """Heurística leve: disciplina provável da pergunta (sem LLM)."""
     q = query.lower()
-    py = sum(1 for m in _PYTHON_QUERY_MARKERS if m in q)
-    sql = sum(1 for m in _SQL_QUERY_MARKERS if m in q)
-    if py > sql and py >= 1:
-        return "python"
-    if sql > py and sql >= 1:
-        return "visualizacao-sql"
-    return None
+    scores: dict[str, int] = {
+        "python": sum(1 for m in _PYTHON_QUERY_MARKERS if m in q),
+        "visualizacao-sql": sum(1 for m in _SQL_QUERY_MARKERS if m in q),
+        "planejamento-curso-carreira": sum(1 for m in _CARREIRA_QUERY_MARKERS if m in q),
+        "projeto-bloco": sum(1 for m in _PROJETO_BLOCO_QUERY_MARKERS if m in q),
+    }
+    best_score = max(scores.values())
+    if best_score < 1:
+        return None
+    winners = [disc for disc, n in scores.items() if n == best_score]
+    if len(winners) != 1:
+        return None
+    return winners[0]
+
+
+def _pin_inherited_discipline_filter(
+    query: str,
+    pin: PinnedContext | None,
+) -> str | None:
+    """Disciplina herdada do pin para filtro BM25; None se domínio mudou."""
+    if pin is None:
+        return None
+    explicit = _discipline_from_pin_scope(pin)
+    if not explicit:
+        return None
+    informative = extract_informative_terms(query)
+    if _is_short_follow_up_query(query, len(informative)):
+        return explicit
+    inferred = _infer_query_discipline_from_text(query)
+    if inferred and inferred != explicit:
+        return None
+    return explicit
+
+
+def _should_skip_pin_update(query: str, *, did_reset: bool) -> bool:
+    """Evita fixar pin após reset, confirmação de reset ou turnos adversariais."""
+    if did_reset:
+        return True
+    if "contexto fixado foi removido" in query.lower():
+        return True
+    return bool(_PIN_POISONING_RE.search(query))
 
 
 def _discipline_display_name(disc_id: str) -> str:
@@ -758,9 +838,13 @@ class ContextManager:
         elif json_discipline is not None:
             effective_discipline = json_discipline
         elif request_scope is None and pin is not None:
-            effective_discipline = self._sanitize_discipline(_discipline_from_pin_scope(pin))
+            effective_discipline = self._sanitize_discipline(
+                _pin_inherited_discipline_filter(query, pin)
+            )
         else:
             effective_discipline = None
+
+        skip_pin_update = _should_skip_pin_update(query, did_reset=did_reset)
 
         # Sempre `strict` nesta mitigação. `assistive` viria via flag
         # explícita de produto, que hoje não existe — fica como hook.
@@ -858,7 +942,8 @@ class ContextManager:
                 )
                 trace_sources = [d["source"] for d in merged_doc]
                 pin_chunks = [{"source": d["source"], "text": d["text"]} for d in merged_doc]
-                self._save_pin(session_id, "doc", pin_chunks, trace_sources)
+                if not skip_pin_update:
+                    self._save_pin(session_id, "doc", pin_chunks, trace_sources)
                 scope_psk, scope_hint, scope_cmd, sources_note = _build_scope_ui_hints(
                     pin,
                     query,
@@ -1014,12 +1099,13 @@ class ContextManager:
         scope_key = self._scope_key_for_hit(
             force_rag, discipline_from_command, effective_discipline
         )
-        self._save_pin(
-            session_id,
-            scope_key,
-            [{"source": d["source"], "text": d["text"]} for d in merged_chunks],
-            trace_sources,
-        )
+        if not skip_pin_update:
+            self._save_pin(
+                session_id,
+                scope_key,
+                [{"source": d["source"], "text": d["text"]} for d in merged_chunks],
+                trace_sources,
+            )
 
         final_reason = trace_reason_override or decision.reason
         final_reason = _relax_weak_reason_for_pinned_follow_up(
