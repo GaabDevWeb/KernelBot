@@ -1,0 +1,75 @@
+# Stack completa para testar deploy containerizado com MySQL staging (porta 3307 no host).
+# Não usar credenciais de produção/Aiven aqui.
+#
+#   cp .env.staging.example .env.staging.docker
+#   # Adicionar OPENROUTER_API_KEY ou CURSOR_API_KEY + ACL_LLM_PROVIDER
+#   docker compose -f docker-compose.deploy-staging.yml up -d --build
+#
+# UI: http://127.0.0.1:8001
+
+services:
+  mysql-staging:
+    image: mysql:8.4
+    container_name: kernelbot-mysql-staging
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: staging_root
+      MYSQL_DATABASE: kernelbot_staging
+      MYSQL_USER: kb_staging
+      MYSQL_PASSWORD: kb_staging_pw
+    volumes:
+      - mysql_staging_data:/var/lib/mysql
+      - ./scripts/staging/init-knowledge.sql:/docker-entrypoint-initdb.d/01-init-knowledge.sql:ro
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "127.0.0.1",
+          "-u",
+          "root",
+          "-pstaging_root",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  kernelbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kernelbot:latest
+    container_name: kernelbot-staging
+    restart: unless-stopped
+    depends_on:
+      mysql-staging:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+    environment:
+      ACL_LLM_PROVIDER: ${ACL_LLM_PROVIDER:-openrouter}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      CURSOR_API_KEY: ${CURSOR_API_KEY:-}
+      ACL_CURSOR_MODEL: ${ACL_CURSOR_MODEL:-composer-2.5}
+      DB_HOST: mysql-staging
+      DB_PORT: "3306"
+      DB_NAME: kernelbot_staging
+      DB_USER: kb_staging
+      DB_PASSWORD: kb_staging_pw
+      ACL_GLOBAL_CONTEXT: geral
+      ACL_CATALOG_ENABLED: "false"
+      ACL_GROUNDING_POLICY: anchored
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  mysql_staging_data:

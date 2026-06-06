@@ -38,6 +38,12 @@ def _verify_reload_bearer(request: Request) -> None:
         raise HTTPException(status_code=401, detail="Invalid reload bearer token")
 
 
+@router.get("/health")
+async def health() -> dict[str, str]:
+    """Liveness para Docker/Kubernetes (sem autenticação)."""
+    return {"status": "ok"}
+
+
 @router.get("/health/catalog")
 async def health_catalog(request: Request) -> dict:
     """Snapshot de catálogo vs índice (protegido; Job 4 CI)."""
