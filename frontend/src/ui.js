@@ -41,8 +41,13 @@ import {
 } from "./components/MessageRow.js";
 import { groundingPolicyLabel, reasonLabel } from "./acl/reasonLabel.js";
 import { siloClassSuffix, siloDisplayName, immediateContextLabel } from "./utils/contextLabel.js";
-import { loadHistory, saveHistory } from "./utils/history.js";
-import { getOrCreateSessionId } from "./utils/sessionId.js";
+import {
+    clearConversation,
+    getHistoryForApi,
+    loadHistory,
+    saveHistory,
+} from "./utils/history.js";
+import { getOrCreateSessionId, regenerateSessionId } from "./utils/sessionId.js";
 import { highlightCodeBlocks, renderMarkdown } from "./utils/markdown.js";
 
 export function init() {
@@ -54,7 +59,8 @@ export function init() {
     const inputArea = document.querySelector(".input-area");
     const siloPill = document.getElementById("silo-pill");
     const pinBadge = document.getElementById("context-pin-badge");
-    const sessionId = getOrCreateSessionId();
+    const newChatBtn = document.getElementById("new-chat-button");
+    let sessionId = getOrCreateSessionId();
 
     if (!chatBox || !input || !sendBtn || !statusBadge) {
         console.error("[ACL] DOM esperado ausente (chat, input, send ou status).");
@@ -131,6 +137,20 @@ export function init() {
         });
     }
 
+    function hidePinBadge() {
+        if (!pinBadge) return;
+        pinBadge.hidden = true;
+        pinBadge.textContent = "";
+        pinBadge.removeAttribute("title");
+    }
+
+    function finishConversationReset() {
+        clearConversation();
+        sessionId = regenerateSessionId();
+        chatView.clearChat();
+        hidePinBadge();
+    }
+
     function refreshSiloUi() {
         if (!inputArea) return;
         [...inputArea.classList].forEach((c) => {
@@ -168,11 +188,13 @@ export function init() {
         composer.setEnabled(false);
         status.setProcessing();
 
+        const isResetCmd = /^\/(?:reset|limpar)\b/i.test(text);
+        const historyForApi = isResetCmd ? [] : getHistoryForApi();
+
         chatView.appendMessage("user", text);
 
         const history = loadHistory();
         history.push({ role: "user", text });
-        saveHistory(history);
 
         const statusEl = document.createElement("div");
         statusEl.className = "context-search-status";
@@ -492,6 +514,7 @@ export function init() {
 
         const result = await chatService.sendStream(text, {
             sessionId,
+            history: historyForApi,
             onMeta(meta) {
                 applyMetaUi(meta);
             },
@@ -586,7 +609,11 @@ export function init() {
             });
         }
 
-        saveHistory(history);
+        if (isResetCmd && result.ok) {
+            finishConversationReset();
+        } else {
+            saveHistory(history);
+        }
 
         composer.setEnabled(true);
         if (isPostGenerationOverride(lastMeta)) {
@@ -612,6 +639,14 @@ export function init() {
         onSend: sendMessage,
         pillsRoot: document,
     });
+
+    if (newChatBtn) {
+        newChatBtn.addEventListener("click", () => {
+            if (sending) return;
+            finishConversationReset();
+            void sendMessage("/reset");
+        });
+    }
 
     input.addEventListener("input", refreshSiloUi);
     refreshSiloUi();

@@ -122,6 +122,86 @@ def hard_stop_message(reason: str) -> str:
     )
 
 
+_MAX_HISTORY_ITEMS_RAW = 40
+_MAX_HISTORY_CONTENT_LEN = 8192
+_VALID_HISTORY_ROLES = frozenset({"user", "assistant"})
+
+
+class ConversationHistoryError(ValueError):
+    """History inválido no body do POST /chat."""
+
+
+def _normalize_conversation_history(raw: object) -> list[dict[str, str]]:
+    """Valida e normaliza history do cliente (sem role system)."""
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise ConversationHistoryError("Campo 'history' deve ser uma lista.")
+    if len(raw) > _MAX_HISTORY_ITEMS_RAW:
+        raise ConversationHistoryError(
+            f"Campo 'history' excede o máximo de {_MAX_HISTORY_ITEMS_RAW} itens."
+        )
+    out: list[dict[str, str]] = []
+    for i, item in enumerate(raw):
+        if not isinstance(item, dict):
+            raise ConversationHistoryError(f"history[{i}] deve ser um objeto.")
+        role = item.get("role")
+        if role == "system":
+            raise ConversationHistoryError(
+                "role 'system' não é permitido em history (reservado ao servidor)."
+            )
+        if role not in _VALID_HISTORY_ROLES:
+            raise ConversationHistoryError(
+                f"history[{i}].role deve ser 'user' ou 'assistant'."
+            )
+        content = item.get("content")
+        if not isinstance(content, str) or not content.strip():
+            raise ConversationHistoryError(f"history[{i}].content ausente ou vazio.")
+        text = content.strip()
+        if len(text) > _MAX_HISTORY_CONTENT_LEN:
+            text = text[:_MAX_HISTORY_CONTENT_LEN]
+        out.append({"role": str(role), "content": text})
+    return out
+
+
+def _truncate_conversation_history(
+    history: list[dict[str, str]],
+    *,
+    max_turns: int,
+    max_chars: int,
+) -> list[dict[str, str]]:
+    """Mantém os turnos mais recentes dentro dos limites de mensagens e caracteres."""
+    if not history or max_turns <= 0:
+        return []
+    trimmed = history[-max_turns:]
+    kept_rev: list[dict[str, str]] = []
+    total = 0
+    for msg in reversed(trimmed):
+        content = msg["content"]
+        if total + len(content) > max_chars and kept_rev:
+            break
+        if total + len(content) > max_chars:
+            kept_rev.append(
+                {"role": msg["role"], "content": content[:max_chars]}
+            )
+            break
+        total += len(content)
+        kept_rev.append(msg)
+    return list(reversed(kept_rev))
+
+
+def _merge_messages_with_history(
+    system_content: str,
+    history: list[dict[str, str]],
+    current_user: str,
+) -> list[dict[str, str]]:
+    """system → history truncado → user atual."""
+    messages: list[dict[str, str]] = [{"role": "system", "content": system_content}]
+    messages.extend(history)
+    messages.append({"role": "user", "content": current_user})
+    return messages
+
+
 @dataclass(frozen=True)
 class ContextTrace:
     """Metadados para UI: rótulo de contexto, fontes, pin, decisão e confiança."""
@@ -788,6 +868,7 @@ class ContextManager:
         user_message: str,
         discipline_filter: str | None = None,
         session_id: str | None = None,
+        conversation_history: list[dict[str, str]] | None = None,
     ) -> BuildMessagesResult:
         store = self._pinned_store
         sp = self._settings.system_prompt_geral
@@ -846,6 +927,14 @@ class ContextManager:
 
         skip_pin_update = _should_skip_pin_update(query, did_reset=did_reset)
 
+        history_in = conversation_history or []
+        history_truncated = _truncate_conversation_history(
+            history_in,
+            max_turns=self._settings.chat_history_max_turns,
+            max_chars=self._settings.chat_history_max_chars,
+        )
+        history_used_chars = sum(len(m["content"]) for m in history_truncated)
+
         # Sempre `strict` nesta mitigação. `assistive` viria via flag
         # explícita de produto, que hoje não existe — fica como hook.
         mode = select_mode(
@@ -871,6 +960,9 @@ class ContextManager:
                 "discipline_from_command": discipline_from_command,
                 "did_reset": did_reset,
                 "pin_active": bool(pin),
+                "history_turns_in": len(history_in),
+                "history_turns_used": len(history_truncated),
+                "history_chars_used": history_used_chars,
             },
         )
 
@@ -969,10 +1061,9 @@ class ContextManager:
                     confidence="high",
                 )
                 return BuildMessagesResult(
-                    messages=[
-                        {"role": "system", "content": system_content},
-                        {"role": "user", "content": query},
-                    ],
+                    messages=_merge_messages_with_history(
+                        system_content, history_truncated, query
+                    ),
                     trace=trace,
                 )
             log_event(
@@ -1148,10 +1239,9 @@ class ContextManager:
             },
         )
         return BuildMessagesResult(
-            messages=[
-                {"role": "system", "content": system_content},
-                {"role": "user", "content": query},
-            ],
+            messages=_merge_messages_with_history(
+                system_content, history_truncated, query
+            ),
             trace=trace,
             decision=decision,
         )

@@ -11,6 +11,8 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 
 from collections.abc import AsyncGenerator
 
+from engine.context import ConversationHistoryError, _normalize_conversation_history
+
 log = logging.getLogger("kernelbots.api.chat")
 
 router = APIRouter()
@@ -113,6 +115,19 @@ async def chat(request: Request) -> StreamingResponse:
             detail="Campo 'session_id' deve ser string ou omitido.",
         )
 
+    raw_history = data.get("history")
+    if raw_history is not None and not isinstance(raw_history, list):
+        log.warning(f"⚠  Requisição de {client_ip} — campo 'history' com tipo inválido")
+        raise HTTPException(
+            status_code=400,
+            detail="Campo 'history' deve ser uma lista ou omitido.",
+        )
+    try:
+        conversation_history = _normalize_conversation_history(raw_history)
+    except ConversationHistoryError as exc:
+        log.warning(f"⚠  Requisição de {client_ip} — history inválido: {exc}")
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     if user_message.strip().lower() == "/reload":
         _verify_reload_bearer(request)
 
@@ -153,6 +168,7 @@ async def chat(request: Request) -> StreamingResponse:
         user_message,
         discipline_filter=discipline,
         session_id=session_id,
+        conversation_history=conversation_history,
     )
 
     return StreamingResponse(

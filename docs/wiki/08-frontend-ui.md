@@ -9,7 +9,7 @@
 | Template | `templates/index.html` |
 | Lógica | `frontend/src/ui.js`, `main.js` |
 | API SSE | `frontend/src/api.js` |
-| Sessão | `frontend/src/utils/sessionId.js` |
+| Histórico + sessão | `frontend/src/utils/history.js`, `sessionId.js` |
 | Estilos | `frontend/assets/css/theme.css` |
 
 ## Fluxo do chat (browser)
@@ -21,15 +21,15 @@ sequenceDiagram
   participant API as api.js
   participant S as KernelBot /chat
   U->>UI: Envia mensagem
-  UI->>API: streamChat()
+  UI->>API: streamChat(message, history)
   API->>S: POST JSON
-  S-->>API: SSE ACL_META
-  API-->>UI: onMeta(decision)
+  S-->>API: data ACL_META json
+  API-->>UI: onMeta(payload)
   alt allow_generation
-    S-->>API: tokens
-    API-->>UI: onToken
+    S-->>API: data fragmento de texto
+    API-->>UI: onDelta(fullText)
   else hard stop
-    S-->>API: mensagem fixa
+    S-->>API: data mensagem fixa
   end
   API-->>UI: onDone
 ```
@@ -59,8 +59,10 @@ Regras em `parseAclMeta.js` + `parseAmbiguityOptions.js`:
 | `post_generation_override: true` | `ACL_GROUNDING_POLICY=strict` | Hint `misalignment` + header “Revisão”; disclaimer no fim do stream |
 | `post_generation_advisory: true` | `anchored` / `hybrid` | Hint `advisory` amarelo suave — resposta **mantida** |
 | `grounding_policy` | Sempre que disponível | Badge “Modo didático” / “Modo rigoroso” |
-| `pin_chunks_used: true` | Pin merge activo | Badge input “Continuando: {name}” |
-| `allow_generation: false` | Após override | Impede tratar o turno como “sucesso” de desambiguação |
+| `pin_chunks_used: true` | Pin merge activo | Badge input «Continuando: {name}» |
+| `scope_hint` | Pin vs disciplina da pergunta | Hint `--scope` no header |
+| `sources_note` | Fontes do turno ≠ só pin | Nota no rodapé (`.message-sources-note`) |
+| `allow_generation: false` | Após override | Impede tratar o turno como «sucesso» de desambiguação |
 
 Com `ACL_GROUNDING_POLICY=anchored`, o segundo `ACL_META` pós-stream pode ser **advisory** (hint suave) em vez de override destrutivo.
 
@@ -86,12 +88,12 @@ Com `ACL_GROUNDING_POLICY=anchored`, o segundo `ACL_META` pós-stream pode ser *
 
 ## ACL meta no rodapé
 
-A UI mostra (quando disponível):
+A UI mostra (quando disponível no `[ACL_META]`):
 
-- Score de confiança
-- Fontes (`db:...`)
-- Termos correspondidos
-- Aviso `post_generation_misalignment`
+- `confidence` (rótulo de confiança)
+- `sources` (`db:discipline/slug`)
+- `sources_note` (rodapé, quando fontes ≠ só pin)
+- Aviso `post_generation_advisory` / `post_generation_override`
 
 ## Parse de ACL (`frontend/src/acl/parseAclMeta.js`)
 
@@ -104,13 +106,29 @@ A UI mostra (quando disponível):
 | `isPostGenerationOverride` | Hint `misalignment` + header warning |
 | `parseAmbiguityOptions.js` | Strip XML/JSON do texto; extrai candidatos para chips |
 
-## Sessão
+## Histórico de conversa (browser)
 
 | Aspecto | Implementação |
 |---------|---------------|
-| ID | UUID em `sessionStorage` |
+| Storage | `localStorage` chave `acl_conversation_v1` |
+| Estrutura | `{ session_id, turns: [{ role, text, sources?, ts }] }` |
+| Envio API | `getHistoryForApi()` → até `MAX_API_MESSAGES` (12) turnos como `{ role, content }` |
+| Limites UI | `MAX_TURNS=30`, `MAX_CHARS=200_000` (truncagem ao gravar) |
+| Migração | `sessionStorage` legado (`acl_history`, `acl_session_id`) → `localStorage` |
+| Nova conversa | Botão no header → `clearConversation()` + novo `session_id` + `POST /reset` |
+| `/reset` | Limpa pin servidor; **não** apaga histórico visual sozinho |
+
+Persistência sobrevive refresh e fechar aba (mesma origem). Sem autenticação — POC local.
+
+Detalhe API: [07-apis-e-sse.md](07-apis-e-sse.md) · FAQ: [19-faq-usuario.md](19-faq-usuario.md).
+
+## Sessão e pin (servidor)
+
+| Aspecto | Implementação |
+|---------|---------------|
+| ID | UUID em `localStorage` (via `history.js` / `sessionId.js`) |
 | Pin | Servidor-side `PinnedSessionStore` por `session_id` |
-| TTL pin | `ACL_PIN_TTL_TURNS` (default 3) |
+| TTL pin | `ACL_PINNED_MAX_TURNS` (default 5) — decrementado em `begin_turn()` |
 
 ## Markdown na resposta
 

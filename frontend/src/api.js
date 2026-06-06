@@ -36,6 +36,7 @@ export class ChatService {
      * @param {string} message
      * @param {{
      *   sessionId?: string,
+     *   history?: Array<{ role: 'user' | 'assistant', content: string }>,
      *   inactivityMs?: number,
      *   onDelta: (fullText: string) => void,
      *   onMeta?: (payload: Record<string, unknown>) => void,
@@ -51,6 +52,7 @@ export class ChatService {
     async sendStream(message, handlers) {
         const {
             sessionId,
+            history,
             onDelta,
             onMeta,
             onFirstToken,
@@ -90,6 +92,9 @@ export class ChatService {
             const body = { message };
             if (sessionId) {
                 body.session_id = sessionId;
+            }
+            if (Array.isArray(history) && history.length) {
+                body.history = history;
             }
             bumpInactivity();
 

@@ -27,16 +27,16 @@ sequenceDiagram
 3. `SearchEngine.search_candidates()`.
 4. `build_decision()` → `ok`.
 5. Monta mensagens (system + chunks + histórico + pin).
-6. `ChatProvider` stream OpenRouter.
-7. `post_generation_flags()` — pode override.
+6. `ChatProvider` faz stream do LLM (Cursor SDK por default; OpenRouter se configurado).
+7. `post_generation_flags()` — pode override (`strict`) ou advisory (`anchored`).
 8. SSE completo → UI renderiza.
 
 ## 3. Fluxo hard stop
 
 1. Passos 1–4 até `build_decision()`.
-2. `allow_generation=false`.
-3. `hard_stop_message(reason)` — **sem** OpenRouter.
-4. SSE com `ACL_META` + texto pedagógico.
+2. `allow_generation=false` (ex.: `provider_error`, override `strict`).
+3. `hard_stop_message(reason)` — **sem** chamada ao LLM.
+4. SSE com `[ACL_META]` + texto pedagógico.
 
 ## 4. Pin de contexto
 
@@ -54,9 +54,9 @@ sequenceDiagram
 
 | Origem | Mecanismo |
 |--------|-----------|
-| Manual | `POST /reload` + token |
-| CI ISS Job 3 | `reload-kernelbot.mjs` após ingest |
-| Restart processo | `rebuild()` no boot |
+| Manual | `POST /chat` com `message: "/reload"` + `Authorization: Bearer` |
+| CI ISS | Workflow `sync-kernelbot-knowledge` (verify + `/reload`) após ingest |
+| Restart processo | `rebuild()` no boot (import de `main.py`) |
 
 **Não há** reload automático por filesystem (`watcher.py` inactivo).
 

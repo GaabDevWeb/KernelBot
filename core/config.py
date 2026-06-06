@@ -55,6 +55,9 @@ class Settings:
     pinned_max_turns: int
     pinned_max_chars: int
     pinned_weak_score: float
+    # Histórico de diálogo no prompt (POC — não indexa no RAG)
+    chat_history_max_turns: int
+    chat_history_max_chars: int
     db_host: str
     db_port: int
     db_name: str
@@ -247,6 +250,9 @@ class Settings:
             "ACL_RETRIEVAL_MAX_CHUNKS_PER_SOURCE", 2, 1, 10
         )
 
+        chat_history_max_turns = _env_int("ACL_CHAT_HISTORY_MAX_TURNS", 12, 0, 40)
+        chat_history_max_chars = _env_int("ACL_CHAT_HISTORY_MAX_CHARS", 12000, 0, 200_000)
+
         raw_retrieval_mode = (os.getenv("ACL_RETRIEVAL_MODE") or "strict").strip().lower()
         if raw_retrieval_mode not in ("strict", "fallback"):
             raise RuntimeError(
@@ -335,6 +341,8 @@ class Settings:
             pinned_max_turns=pinned_max_turns,
             pinned_max_chars=pinned_max_chars,
             pinned_weak_score=pinned_weak_score,
+            chat_history_max_turns=chat_history_max_turns,
+            chat_history_max_chars=chat_history_max_chars,
             db_host=db_host,
             db_port=db_port,
             db_name=db_name,

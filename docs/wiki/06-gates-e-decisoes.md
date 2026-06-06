@@ -4,7 +4,7 @@
 
 ## Filosofia
 
-`engine/retrieval.py` **classifica** a query (`reason`, `confidence`) e selecciona chunks BM25 para o prompt. **Toda** mensagem dispara OpenRouter; `allow_generation` permanece `true` no contrato ACL_META (telemetria/UI).
+`engine/retrieval.py` **classifica** a query (`reason`, `confidence`) e selecciona chunks BM25 para o prompt. **Toda** mensagem dispara o LLM (provider configurável — Cursor SDK ou OpenRouter); `allow_generation` permanece `true` no contrato ACL_META (telemetria/UI).
 
 A regra pedagógica “na dúvida, não responder” passa a **`grounding_strict.txt`** + disclaimers pós-geração — não a bloqueio de runtime.
 
@@ -15,7 +15,7 @@ flowchart TD
   Q[Query do utilizador] --> BM25[search_candidates]
   BM25 --> BD[build_decision classifica reason]
   BD --> ASM[Monta prompt top_k chunks]
-  ASM --> LLM[OpenRouter sempre]
+  ASM --> LLM[LLM sempre - Cursor/OpenRouter]
   LLM --> PG[post_generation_flags]
   PG -->|flags| OVR[Override\npost_generation_misalignment]
   PG -->|ok| DONE[Resposta final]
@@ -47,7 +47,7 @@ flowchart TD
 | `low_confidence` | Confiança agregada baixa | **Sim** |
 | `index_gap` | Catálogo confiante mas chave fora do índice | **Sim** (advisory em `context.py`; RAG normal) |
 | `post_generation_misalignment` | Sanity pós-LLM falhou | Sim + aviso |
-| `provider_error` | OpenRouter falhou | Parcial |
+| `provider_error` | Provider LLM falhou (Cursor/OpenRouter) | Não (texto fixo) |
 
 ## Mensagens legadas (`context.py`)
 
@@ -74,6 +74,22 @@ Executado em `chat_provider.py` após o LLM responder.
 |------------------------|-------------|
 | `strict` | Override destrutivo: `post_generation_misalignment` + disclaimer no stream |
 | `anchored` / `hybrid` | **Advisory** apenas: `post_generation_advisory` + hint suave; resposta mantida |
+
+### Supressão de advisory em `anchored` (B3.1)
+
+Função `anchored_post_generation_advisory_flags()` em `engine/retrieval.py` — **não** emite advisory quando a resposta:
+
+| Condição | Motivo |
+|----------|--------|
+| Contém `[Fonte:` | Citação explícita ao corpus |
+| Declara lacuna ou recusa | Padrões `_LACUNA_OR_REFUSAL_RE` |
+| Inclui extensão pedagógica rotulada | Marcador no texto do assistente |
+
+Em `anchored`, `missing_informative_terms` não entra nas flags fortes; `introduced_unsupported_terms` só gera advisory se nenhuma das condições acima se aplicar.
+
+### `sources_note` e pin (UI)
+
+Quando o pin fixa um tema e a busca actual traz fontes **adicionais**, o meta inclui `sources_note` no rodapé — copy orienta `/reset` ou comando de disciplina. Não é advisory amarelo; é nota informativa (`engine/context.py` → `_build_scope_ui_hints`).
 
 Texto de override (só `strict`):
 
