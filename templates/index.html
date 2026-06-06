@@ -13,6 +13,7 @@
         rel="stylesheet" />
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+    <link rel="stylesheet" href="/assets/css/output.css" />
     <link rel="stylesheet" href="/assets/css/theme.css" />
 </head>
 
@@ -43,18 +44,77 @@
             </div>
         </main>
 
-        <footer class="input-area">
+        <footer class="input-area rounded-4xl">
             <div class="silo-pill" id="silo-pill" hidden aria-live="polite"></div>
-            <div class="input-hint">
+            <!-- <div class="input-hint">
                 <span>Enter</span> envia · <span>Shift+Enter</span> nova linha ·
                 <span>/python</span> · <span>/visualizacao-sql</span> · <span>/projeto-bloco</span> ·
                 <span>/planejamento-curso-carreira</span> · <span>/doc</span> · <span>/content</span>
                 · <span>/reload</span> para reconstruir o índice
-            </div>
+            </div> -->
             <div class="input-row">
-                <textarea id="message-input" rows="1" placeholder="Digite sua mensagem..." autocomplete="off"
+
+                <!-- Scope selector -->
+                <div class="relative flex-shrink-0" id="scope-selector">
+                    <button
+                        id="scope-btn"
+                        type="button"
+                        class="rounded-2xl w-11 h-11 flex items-center justify-center cursor-pointer"
+                        aria-label="Selecionar escopo da busca"
+                        title="Selecionar escopo"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                            <rect x="1" y="1" width="6" height="6" rx="1"/>
+                            <rect x="9" y="1" width="6" height="6" rx="1"/>
+                            <rect x="1" y="9" width="6" height="6" rx="1"/>
+                            <rect x="9" y="9" width="6" height="6" rx="1"/>
+                        </svg>
+                    </button>
+
+                    <div
+                        id="scope-menu"
+                        role="menu"
+                        aria-labelledby="scope-btn"
+                        class="absolute left-0 z-50 rounded-2xl overflow-hidden"
+                    >
+                        <div class="!p-4">
+                            <p class="px-4 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-widest scope-menu-label">
+                                Escopo da busca
+                            </p>
+
+                            <button type="button" role="menuitem" data-cmd="/python"
+                                class="scope-option w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
+                                <span class="text-sm font-semibold scope-option-cmd">/python</span>
+                                <span class="text-xs leading-snug scope-option-desc">Consultas sobre Python e programação</span>
+                            </button>
+
+                            <button type="button" role="menuitem" data-cmd="/visualizacao-sql"
+                                class="scope-option w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
+                                <span class="text-sm font-semibold scope-option-cmd">/sql</span>
+                                <span class="text-xs leading-snug scope-option-desc">Visualização SQL e consultas de banco de dados</span>
+                            </button>
+
+                            <button type="button" role="menuitem" data-cmd="/planejamento-curso-carreira"
+                                class="scope-option w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
+                                <span class="text-sm font-semibold scope-option-cmd">/carreira</span>
+                                <span class="text-xs leading-snug scope-option-desc">Planejamento de curso e carreira profissional</span>
+                            </button>
+
+                            <button type="button" role="menuitem" data-cmd="/doc"
+                                class="scope-option w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
+                                <span class="text-sm font-semibold scope-option-cmd">/doc</span>
+                                <span class="text-xs leading-snug scope-option-desc">Documentação e arquivos internos do sistema</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- End scope selector -->
+
+                <textarea class="rounded-2xl" id="message-input" rows="1" placeholder="O que vamos revisar hoje?" autocomplete="off"
                     aria-label="Campo de mensagem"></textarea>
-                <button id="send-button" aria-label="Enviar mensagem" title="Enviar">
+                <button class="rounded-2xl" id="send-button" aria-label="Enviar mensagem" title="Enviar">
                     ➤
                 </button>
             </div>
@@ -63,6 +123,50 @@
     </div>
 
     <script type="module" src="/src/main.js"></script>
+    <script>
+        (function () {
+            var btn  = document.getElementById('scope-btn');
+            var menu = document.getElementById('scope-menu');
+            var input = document.getElementById('message-input');
+
+            function openMenu() {
+                menu.classList.add('open');
+                btn.setAttribute('aria-expanded', 'true');
+            }
+            function closeMenu() {
+                menu.classList.remove('open');
+                btn.setAttribute('aria-expanded', 'false');
+            }
+
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                menu.classList.contains('open') ? closeMenu() : openMenu();
+            });
+
+            menu.querySelectorAll('.scope-option').forEach(function (opt) {
+                opt.addEventListener('click', function () {
+                    var cmd = opt.dataset.cmd + ' ';
+                    var current = input.value.trim();
+                    var stripped = current.replace(/^\/[a-z\-]+\s*/, '');
+                    input.value = stripped ? cmd + stripped : cmd;
+                    input.dispatchEvent(new Event('input'));
+                    closeMenu();
+                    input.focus();
+                    input.selectionStart = input.selectionEnd = input.value.length;
+                });
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!document.getElementById('scope-selector').contains(e.target)) {
+                    closeMenu();
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closeMenu();
+            });
+        })();
+    </script>
 </body>
 
 </html>
