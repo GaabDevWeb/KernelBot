@@ -39,6 +39,7 @@ Para **alunos**, **curiosos** e **primeiro contacto** — linguagem directa, sem
 | 15 | [Glossário](15-glossario.md) | Termos do domínio |
 | 16 | [Backlog](16-backlog.md) | Débitos e próximos passos |
 | 17 | [Prompts — referência](17-prompts-referencia.md) | Arquitetura ACL, inventário CL4R1T4S, padrões |
+| 20 | [Deploy Railway](20-deploy-railway.md) | Runbook: Docker, MySQL, variáveis, ingest, smoke, rollback |
 
 ---
 
@@ -59,6 +60,6 @@ Para **alunos**, **curiosos** e **primeiro contacto** — linguagem directa, sem
 | **Aluno / curioso** | [00](00-inicio-publico.md) → [19](19-faq-usuario.md) |
 | **Novo contribuidor** | [00](00-inicio-publico.md) → [18](18-contribuir.md) → 1 → 2 → 3 → 9 → 7 |
 | **Novo no projeto (técnico)** | 1 → 2 → 3 → 9 → 7 |
-| **Operador / deploy** | 10 → 13 → 12 |
+| **Operador / deploy** | 20 → 10 → 13 → 12 |
 | **RAG / retrieval** | 5 → 6 → 17 → 11 |
 | **Debug advisory / pin** | 6 → 8 → 13 |

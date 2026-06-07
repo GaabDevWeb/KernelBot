@@ -24,7 +24,8 @@ Links: substituir pelos URLs GitHub reais do projecto quando publicar.
 1. **Issue ou alinhamento** — para mudanças grandes, abra issue ou comente no PR o «porquê».
 2. **Branch** — crie a partir de `main` (ou branch acordada): `fix/…`, `feat/…`, `docs/…`.
 3. **Staging local** — valide que o chat sobe e responde (ver abaixo).
-4. **Diff focado** — uma preocupação por PR quando possível (ex.: docs separado de refactor grande).
+4. **Testes** — `pytest -q` verde antes do PR.
+5. **Diff focado** — uma preocupação por PR quando possível (ex.: docs separado de refactor grande).
 
 ---
 
@@ -34,7 +35,7 @@ Links: substituir pelos URLs GitHub reais do projecto quando publicar.
 
 - Python 3.11+ (ou versão do projecto)
 - Docker (MySQL staging na porta **3307**)
-- Chave do provider LLM no `.env`: `CURSOR_API_KEY` (default `ACL_LLM_PROVIDER=cursor`) **ou** `OPENROUTER_API_KEY` (se `ACL_LLM_PROVIDER=openrouter`)
+- `OPENROUTER_API_KEY` no `.env` (para respostas LLM no chat)
 - Repositório **ISS** em `../ISS` (ingest completo opcional)
 
 ### Subir staging
@@ -42,7 +43,7 @@ Links: substituir pelos URLs GitHub reais do projecto quando publicar.
 ```bash
 cd KernelBot
 chmod +x bin/*.sh
-./bin/staging-setup.sh      # uma vez — sobe MySQL staging + schema knowledge
+./bin/staging-setup.sh      # uma vez — E2E deve terminar com SIM
 ./bin/staging-serve.sh      # deixar aberto — http://127.0.0.1:8001
 ```
 
@@ -50,11 +51,33 @@ chmod +x bin/*.sh
 
 Guia completo: [TESTE-LOCAL.md](../../TESTE-LOCAL.md) · wiki [13-staging-testes.md](13-staging-testes.md).
 
+### Testes automatizados
+
+```bash
+cd KernelBot
+source .venv/bin/activate   # se aplicável
+pytest -q
+```
+
+Suites relevantes por área:
+
+| Área | Ficheiros (exemplos) |
+|------|----------------------|
+| Histórico de conversa | `tests/test_conversation_history.py` |
+| Pin / scope hints | `tests/test_scope_hint.py`, `tests/test_pin_context.py` |
+| Grounding anchored | `tests/test_post_generation_anchored.py` |
+| Chat provider | `tests/test_chat_provider_post_gen.py` |
+
 ---
 
 ## Smoke manual (browser)
 
-Depois de mudanças em retrieval, UI ou contexto, valide manualmente no chat — escopo/pin/advisory e memória multi-turno (vários turnos seguidos).
+Depois de mudanças em retrieval, UI ou contexto:
+
+| Bateria | Ficheiro | Foco |
+|---------|----------|------|
+| Escopo, pin, advisory | [PERGUNTAS-SMOKE-ESCOPO-PIN.md](../../PERGUNTAS-SMOKE-ESCOPO-PIN.md) | 10 turnos rápidos |
+| Memória multi-turno | [PERGUNTAS-SMOKE-HISTORICO-CHAT.md](../../PERGUNTAS-SMOKE-HISTORICO-CHAT.md) | 3 turnos H1–H3 |
 
 URL: http://127.0.0.1:8001 · hard refresh após deploy local.
 
@@ -81,7 +104,7 @@ Estrutura completa: [03-estrutura-codigo.md](03-estrutura-codigo.md).
 1. Editar Markdown em **ISS** (`content/<disciplina>/…`).
 2. Exportar JSON (`lesson-json-export.mjs`).
 3. Ingerir para MySQL (`ingest-knowledge.py` / `./bin/staging-ingest-iss.sh`).
-4. `/reload` no KernelBot (`POST /chat` com `message: "/reload"` + `Authorization: Bearer $ACL_RELOAD_BEARER_TOKEN`).
+4. `POST /reload` no KernelBot (token `ACL_RELOAD_TOKEN`).
 
 Pipeline: [10-integracao-iss-fase5b.md](10-integracao-iss-fase5b.md).
 
@@ -96,6 +119,8 @@ Documentos **meta** (sobre o bot, faculdade) — rascunhos em KernelPlanner `cor
 | Wiki técnica | `docs/wiki/` — actualizar índice em [README.md](README.md) |
 | Camada pública | `00-inicio-publico.md`, `18-contribuir.md`, `19-faq-usuario.md` |
 | Entrada curta na raiz | `documentation.md` (aponta para a wiki) |
+| Prompt agente doc (Fase 6) | [PROMPT-AGENTE-DOCUMENTACAO.md](../PROMPT-AGENTE-DOCUMENTACAO.md) |
+| Prompt agente deploy Railway | [PROMPT-AGENTE-DEPLOY-RAILWAY.md](../PROMPT-AGENTE-DEPLOY-RAILWAY.md) |
 
 Ao adicionar página nova: incluir no índice da wiki e, se for pública, linkar a partir de [00-inicio-publico.md](00-inicio-publico.md).
 
