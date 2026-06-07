@@ -57,4 +57,4 @@
 | 2026-05-25 | **Sempre LLM** — remover hard stops de retrieval; `ACL_RETRIEVAL_MODE` deprecado | Tokens, alucinação com chunks fracos |
 | 2026-06-02 | Histórico POC sem auth | Cliente pode forjar `history` |
 
-Registado em `.agent_history.md`. Plano espelho: KernelPlanner `PLAN.md`.
+Plano espelho: KernelPlanner `PLAN.md`.

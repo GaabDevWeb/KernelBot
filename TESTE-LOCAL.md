@@ -50,8 +50,6 @@ Com `ACL_GROUNDING_POLICY=anchored` no `.env` (ou omitido — default em código
 3. **A/B:** repetir a mesma pergunta com `ACL_GROUNDING_POLICY=strict` → resposta mais conservadora (sem extensão pedagógica rotulada).
 4. **Desambiguação:** com `ACL_DISAMBIGUATION_ENABLED=true`, comportamento de chips inalterado.
 
-`pytest tests/test_context_grounding.py tests/test_post_generation_anchored.py -q`
-
 ## O que o setup faz
 
 1. **Docker** — `kernelbot-mysql-staging` na porta `3307`
@@ -85,7 +83,7 @@ docker stop kernelbot-mysql-staging
 | `docker-compose.staging.yml` | MySQL Docker |
 | `bin/staging-setup.sh` | Setup automático |
 | `bin/staging-serve.sh` | Bot + UI com DB staging |
-| `scripts/staging/` | Seed e testes E2E |
+| `docker/init-knowledge.sql` | Schema `knowledge` (init MySQL staging) |
 
 ## Problemas comuns
 
@@ -98,7 +96,7 @@ newgrp docker   # ou logout/login
 **`Table 'kernelbot_staging.knowledge' doesn't exist`** — o container foi criado antes do schema existir. Corrige com:
 ```bash
 ./bin/staging-apply-schema.sh
-./bin/staging-setup.sh   # ou só: .venv/bin/python scripts/staging/seed_mixed_mass.py
+./bin/staging-setup.sh
 ```
 
 **`Connection refused` na porta 3307** — corre `./bin/staging-setup.sh` de novo.

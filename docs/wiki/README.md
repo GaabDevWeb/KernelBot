@@ -48,9 +48,6 @@ Para **alunos**, **curiosos** e **primeiro contacto** — linguagem directa, sem
 |----------|-----|
 | [TESTE-LOCAL.md](../../TESTE-LOCAL.md) | Comandos copy-paste para subir staging |
 | [documentation.md](../../documentation.md) | Índice curto na raiz do repo |
-| [PERGUNTAS-SMOKE-ESCOPO-PIN.md](../../PERGUNTAS-SMOKE-ESCOPO-PIN.md) | Smoke pin / escopo / advisory |
-| [PERGUNTAS-SMOKE-HISTORICO-CHAT.md](../../PERGUNTAS-SMOKE-HISTORICO-CHAT.md) | Smoke memória multi-turno |
-| [_GITHUB-WIKI-HOME.md](_GITHUB-WIKI-HOME.md) | Pacote copy-paste para a aba Wiki do GitHub (Home + FAQ + Contribuir) |
 | Repositório **ISS** — `documentation.md` | Pipeline Jobs 1–5, ingest Job 2 |
 
 ---

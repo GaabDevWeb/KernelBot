@@ -61,7 +61,7 @@ Detalhe e exemplos: [FAQ — utilizador](19-faq-usuario.md).
 |--------|---------|---------|
 | **Pública** | 00, 18, 19 | Todos |
 | **Técnica** | 01–17 | Devs, operadores, RAG |
-| **Operacional** | [TESTE-LOCAL.md](../../TESTE-LOCAL.md), [PERGUNTAS-SMOKE-*.md](../../PERGUNTAS-SMOKE-ESCOPO-PIN.md) | Quem valida releases |
+| **Operacional** | [TESTE-LOCAL.md](../../TESTE-LOCAL.md) | Quem valida releases |
 
 ## Estado do projecto (junho/2026)
 

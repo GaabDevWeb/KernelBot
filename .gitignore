@@ -1,20 +1,29 @@
 .env
+.env.*
+!.env.example
+!.env.*.example
 
-.pytest_cache/
-
-**/__pycache__/
+__pycache__/
 *.py[cod]
 *$py.class
 *.so
-
-content/
-.venv/
-.venv_readme_check/
+.pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.venv/
+.venv_readme_check/
+venv/
 dist/
 build/
 *.egg-info/
+
+content/
 scripts/
 
 .agent_history.md
+agent.md
+logs.txt
+results.md
+Features.canvas
+docs/PROMPT-AGENTE-*.md
+tests/

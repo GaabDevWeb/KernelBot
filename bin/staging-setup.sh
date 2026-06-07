@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Sobe MySQL staging, popula massa mista (legacy + B2) e corre teste E2E.
+# Sobe MySQL staging e garante o schema knowledge.
+# Nota: o seed de massa mista e o teste E2E de dev foram removidos da main pública.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -25,7 +26,7 @@ if [[ ! -f .env.staging.local ]]; then
   exit 1
 fi
 
-echo "==> 1/4 MySQL staging (porta 3307)"
+echo "==> 1/2 MySQL staging (porta 3307)"
 if docker compose version >/dev/null 2>&1; then
   docker compose -f docker-compose.staging.yml up -d
   for i in $(seq 1 60); do
@@ -40,22 +41,15 @@ else
   "$ROOT/bin/staging-docker-up.sh"
 fi
 
-# Init SQL só corre na 1ª criação do volume — aplicar schema sempre antes do seed.
-echo "==> 2/4 Garantir schema knowledge"
+# Init SQL só corre na 1ª criação do volume — aplicar schema sempre.
+echo "==> 2/2 Garantir schema knowledge"
 chmod +x "$ROOT/bin/staging-apply-schema.sh"
 "$ROOT/bin/staging-apply-schema.sh"
 
-echo "==> 3/4 Python venv + dependências"
-if [[ ! -d .venv ]]; then
-  python3 -m venv .venv
-fi
-.venv/bin/pip install -q -r requirements.txt
-
-echo "==> 4/4 Seed + E2E"
-.venv/bin/python scripts/staging/seed_mixed_mass.py
-.venv/bin/python scripts/staging/run_e2e_reload.py
+# O seed de massa mista (seed_mixed_mass.py) e o E2E de reload (run_e2e_reload.py)
+# faziam parte de scripts/ (dev only) e foram removidos da main pública.
 
 echo ""
-echo "Staging OK. Próximo passo:"
+echo "Staging OK (MySQL + schema). Próximo passo:"
 echo "  ./bin/staging-serve.sh"
 echo "  Abre http://127.0.0.1:8001 e testa no chat."

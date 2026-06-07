@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONTAINER="kernelbot-mysql-staging"
-SQL="$ROOT/scripts/staging/init-knowledge.sql"
+SQL="$ROOT/docker/init-knowledge.sql"
 
 if ! docker ps --format '{{.Names}}' | grep -qx "$CONTAINER"; then
   echo "ERRO: container $CONTAINER não está a correr. Corre: ./bin/staging-docker-up.sh"

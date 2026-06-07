@@ -4,7 +4,7 @@
 
 Documentação de **engenharia de prompts** do KernelBot: arquitetura actual dos ficheiros em `core/systemPrompt/`, inventário do corpus de referência **CL4R1T4S** (repositório irmão, tipicamente `../CL4R1T4S`) e padrões reutilizáveis para agentes retrieval-first.
 
-**Origem:** análise orquestrada a partir de `agent.md` (maio/2026). Histórico de decisões em `.agent_history.md` na raiz do repo.
+**Origem:** análise orquestrada de engenharia de prompts (maio/2026).
 
 ---
 
@@ -217,7 +217,6 @@ Repositório de **prompts de referência** (vazamentos / documentação pública
 |----|------|-------|
 | P1 | Injectar `sticky_instruction` quando pin activo | `Settings.sticky_instruction` + `{name}` ← `pin.display_name` |
 | P2 | ~~Modo `assistive` opcional~~ | **Feito** como `grounding_anchored.txt` + `ACL_GROUNDING_POLICY` |
-| P3 | Testes `tests/test_context_grounding.py` | `_select_grounding`, formatação `[Fonte N]`, `build_decision` fallback/disambiguation |
 | P4 | Sincronizar esta página quando mudar `core/systemPrompt/` | — |
 
 Itens relacionados no backlog geral: [16-backlog.md](16-backlog.md) (B4 meta no prompt).
@@ -232,5 +231,4 @@ Itens relacionados no backlog geral: [16-backlog.md](16-backlog.md) (B4 meta no 
 | [02-arquitetura.md](02-arquitetura.md) | Fluxo retrieval → prompt → OpenRouter |
 | [06-gates-e-decisoes.md](06-gates-e-decisoes.md) | Thresholds e hard stop |
 | [09-fluxos-operacionais.md](09-fluxos-operacionais.md) | Pin, comandos, reload |
-| `agent.md` (raiz) | Brief de auditoria / reescrita de prompts |
 | Repositório **CL4R1T4S** | Corpus de referência (não versionado dentro do KernelBot) |

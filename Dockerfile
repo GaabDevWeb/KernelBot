@@ -23,7 +23,6 @@ COPY app/ ./app/
 COPY core/ ./core/
 COPY engine/ ./engine/
 COPY frontend/ ./frontend/
-COPY jsons/ ./jsons/
 COPY templates/ ./templates/
 COPY main.py .
 
