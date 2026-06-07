@@ -19,7 +19,7 @@
 </head>
 
 <body>
-    <div class="app">
+    <div class="app overflow-hidden">
 
         <header class="header">
             <div class="context-pin-badge" id="context-pin-badge" hidden aria-live="polite"></div>
@@ -28,6 +28,8 @@
 
         <main class="chat-box" id="chat" role="log" aria-live="polite" aria-label="Histórico de mensagens">
             <div class="empty-state" id="empty-state">
+                <img id="logo" src="/assets/images/logo.svg" alt="">
+
                 <!-- <div class="empty-state-icon">🗂️</div> -->
                 <div class="empty-state-title">Opa, sou o Kernel! O que precisa hoje?</div>
 
@@ -40,8 +42,8 @@
             </div>
         </main>
 
-        <footer class="input-area rounded-full mb-3">
-            <div class="silo-pill" id="silo-pill" hidden aria-live="polite"></div>
+        <footer class="input-area rounded-4xl mb-3">
+            <div class="silo-pill min-h-8 flex items-center px-6 bg-neutral-600 rounded-t-3xl rounded-b-sm" id="silo-pill" hidden aria-live="polite"></div>
             <!-- <div class="input-hint">
                 <span>Enter</span> envia · <span>Shift+Enter</span> nova linha ·
                 <span>/python</span> · <span>/visualizacao-sql</span> · <span>/projeto-bloco</span> ·

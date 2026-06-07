@@ -59,7 +59,7 @@ export function init() {
             inputArea.classList.add("input-area--silo", SILO_CLASS_PREFIX + suffix);
             siloPill.hidden = false;
             const name = siloDisplayName(input.value);
-            siloPill.textContent = name ? `Silo: ${name}` : "";
+            siloPill.textContent = name ? `Contexto: ${name}` : "";
         } else if (siloPill) {
             siloPill.hidden = true;
             siloPill.textContent = "";
