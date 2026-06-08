@@ -110,6 +110,20 @@ Pipeline: [10-integracao-iss-fase5b.md](10-integracao-iss-fase5b.md).
 
 Documentos **meta** (sobre o bot, faculdade) — rascunhos em KernelPlanner `corpus-meta/`; mesma pipeline quando prontos.
 
+### Wiki do bot (silo `/doc`)
+
+SSOT: `docs/wiki/*.md`. Ingest para MySQL (como as outras disciplinas):
+
+```bash
+# Staging (MySQL local 3307)
+KERNELBOT_ENV=staging ./bin/ingest-wiki-doc.sh
+
+# Produção — DB_* no .env apontando para Aiven/Railway
+./bin/ingest-wiki-doc.sh
+```
+
+Depois: reiniciar o bot ou `POST /chat` com `message=/reload` (Bearer `ACL_RELOAD_BEARER_TOKEN`). No chat: `/doc O que é o KernelBot?` → fontes `db:doc/…`.
+
 ---
 
 ## Documentação
@@ -121,6 +135,7 @@ Documentos **meta** (sobre o bot, faculdade) — rascunhos em KernelPlanner `cor
 | Entrada curta na raiz | `documentation.md` (aponta para a wiki) |
 | Prompt agente doc (Fase 6) | [PROMPT-AGENTE-DOCUMENTACAO.md](../PROMPT-AGENTE-DOCUMENTACAO.md) |
 | Prompt agente deploy Railway | [PROMPT-AGENTE-DEPLOY-RAILWAY.md](../PROMPT-AGENTE-DEPLOY-RAILWAY.md) |
+| Prompt agente produto & features | [PROMPT-AGENTE-PRODUTO-FEATURES.md](../PROMPT-AGENTE-PRODUTO-FEATURES.md) |
 
 Ao adicionar página nova: incluir no índice da wiki e, se for pública, linkar a partir de [00-inicio-publico.md](00-inicio-publico.md).
 

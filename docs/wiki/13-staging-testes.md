@@ -20,7 +20,16 @@ cd /home/gaab/Documentos/gitHub/KernelBot
 ./bin/staging-setup.sh
 ```
 
-Esperado: `E2E: SIM` no final (schema + seed + rebuild BM25).
+Esperado: MySQL healthy + ingest wiki doc (`Ingest OK: N página(s)`).
+
+### Silo `/doc` (wiki no MySQL)
+
+O `staging-setup.sh` corre `bin/ingest-wiki-doc.sh` — upserta `docs/wiki/*.md` em `knowledge` com `discipline=doc`. Após editar a wiki:
+
+```bash
+KERNELBOT_ENV=staging ./bin/ingest-wiki-doc.sh
+./bin/staging-serve.sh   # ou POST /reload no chat (com bearer)
+```
 
 ### Passo 2 — Servidor (deixar a correr)
 

@@ -107,6 +107,7 @@ KernelBot/
 | `staging-setup.sh` | Schema + seed + E2E |
 | `staging-serve.sh` | Bot com `KERNELBOT_ENV=staging` |
 | `staging-ingest-iss.sh` | Ingest ISS completo no MySQL local |
+| `ingest-wiki-doc.sh` | UPSERT `docs/wiki/*.md` → `knowledge` (discipline=doc) |
 
 ## Código legado / não integrado
 

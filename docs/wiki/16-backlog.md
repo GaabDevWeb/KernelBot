@@ -20,7 +20,7 @@
 | B1 | `LIMIT` / paginação no `SELECT` MySQL | OOM em catálogo grande | `engine/database.py` |
 | B2 | Deploy coordenado ISS → `/reload` | Índice desatualizado em prod | workflow ISS, `api/routes.py` |
 | B11 | README raiz do repo | Porta de entrada GitHub fraca | `README.md` |
-| B12 | Indexar silo `/doc` no MySQL | Meta do bot só na wiki, não no RAG | ISS `content/doc/`, ingest |
+| B12 | Indexar silo `/doc` no MySQL | Feito — `engine/wiki_doc.py` + `bin/ingest-wiki-doc.sh` (UPSERT `docs/wiki/` → `knowledge`) | `bin/ingest-wiki-doc.sh`, `/reload` |
 
 ## Prioridade média
 

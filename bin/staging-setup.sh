@@ -42,14 +42,19 @@ else
 fi
 
 # Init SQL só corre na 1ª criação do volume — aplicar schema sempre.
-echo "==> 2/2 Garantir schema knowledge"
+echo "==> 2/3 Garantir schema knowledge"
 chmod +x "$ROOT/bin/staging-apply-schema.sh"
 "$ROOT/bin/staging-apply-schema.sh"
+
+echo "==> 3/3 Ingest wiki → MySQL (silo doc)"
+chmod +x "$ROOT/bin/ingest-wiki-doc.sh"
+export KERNELBOT_ENV=staging
+"$ROOT/bin/ingest-wiki-doc.sh"
 
 # O seed de massa mista (seed_mixed_mass.py) e o E2E de reload (run_e2e_reload.py)
 # faziam parte de scripts/ (dev only) e foram removidos da main pública.
 
 echo ""
-echo "Staging OK (MySQL + schema). Próximo passo:"
+echo "Staging OK (MySQL + schema + wiki doc). Próximo passo:"
 echo "  ./bin/staging-serve.sh"
 echo "  Abre http://127.0.0.1:8001 e testa no chat."

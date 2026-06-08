@@ -148,8 +148,7 @@ class SearchEngine:
         discipline_ids: frozenset[str] = frozenset()
         if self._settings is not None:
             discipline_ids = fetch_db_discipline_ids(self._settings)
-        if not discipline_ids:
-            discipline_ids = frozenset(chunks_by_silo.keys())
+        discipline_ids = discipline_ids | frozenset(chunks_by_silo.keys())
 
         elapsed = (time.perf_counter() - t0) * 1000
         with self._lock:

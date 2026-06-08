@@ -70,7 +70,7 @@ Detalhe e exemplos: [FAQ — utilizador](19-faq-usuario.md).
 | RAG BM25 + grounding `anchored` | Estável |
 | Pin de tema + hints de escopo | Estável |
 | Memória de conversa (POC) | `localStorage` + campo `history` na API |
-| Silo `/doc` indexado | Planeado (wiki ainda não no MySQL) |
+| Silo `/doc` indexado | Wiki em MySQL (`discipline=doc`) — ingest `bin/ingest-wiki-doc.sh` |
 | README da raiz | Pendente (próximo passo) |
 
 ## Ver também

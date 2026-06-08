@@ -925,6 +925,15 @@ class ContextManager:
         else:
             effective_discipline = None
 
+        doc_rag_active = False
+        if force_doc:
+            has_doc_silo = any(
+                c.get("discipline") == "doc" for c in self._search_engine.chunks
+            )
+            if has_doc_silo:
+                doc_rag_active = True
+                effective_discipline = self._sanitize_discipline("doc")
+
         skip_pin_update = _should_skip_pin_update(query, did_reset=did_reset)
 
         history_in = conversation_history or []
@@ -966,106 +975,16 @@ class ContextManager:
             },
         )
 
-        # --- Caso /doc: injeção determinística do silo "doc".
-        # Esse fluxo preserva o comportamento do comando `/doc` — ele já é
-        # um "pin explícito" da documentação; a decisão de retrieval não se
-        # aplica aqui porque a fonte é fixa.
-        if force_doc:
-            doc_chunks = [c for c in self._search_engine.chunks if c.get("discipline") == "doc"]
-            if doc_chunks:
-                log_event(
-                    log,
-                    logging.INFO,
-                    ACL_MOD_CONTEXT,
-                    "doc_injection",
-                    "injecao deterministica silo doc",
-                    metadata={"chunk_count": len(doc_chunks)},
-                )
-                catalog_result = self._catalog_match(query)
-                catalog_section = (
-                    self._lesson_catalog.build_prompt_section(catalog_result)
-                    if self._lesson_catalog and catalog_result
-                    else ""
-                )
-                doc_candidates = tuple(
-                    RetrievalCandidate(
-                        source=str(c["source"]),
-                        chunk_id=f"doc-{i}",
-                        text=str(c["text"]),
-                        discipline="doc",
-                        raw_score=1.0,
-                        normalized_score=1.0,
-                        matched_terms=(),
-                    )
-                    for i, c in enumerate(doc_chunks)
-                )
-                doc_decision = RetrievalDecision(
-                    allow_generation=True,
-                    reason="ok",
-                    confidence="high",
-                    selected_candidates=doc_candidates,
-                    trace=RetrievalTrace(
-                        query=query,
-                        normalized_query=query,
-                        informative_terms=(),
-                        mode=mode,
-                    ),
-                )
-                doc_selected = [
-                    {"source": str(c["source"]), "text": str(c["text"])}
-                    for c in doc_chunks
-                ]
-                merged_doc = _merge_pin_and_retrieval_chunks(
-                    pin,
-                    doc_selected,
-                    self._settings.pinned_max_chars,
-                )
-                ctx = _join_chunks_for_prompt(merged_doc)
-                grounding = _select_grounding(doc_decision, self._settings)
-                sticky_block = _sticky_block_for_pin(self._settings, pin)
-                pin_used = bool(pin and pin.chunks)
-                system_content = _assemble_system_content(
-                    sp,
-                    self._settings.catalog_router_prompt,
-                    catalog_section,
-                    grounding,
-                    ctx,
-                    sticky_block=sticky_block,
-                )
-                trace_sources = [d["source"] for d in merged_doc]
-                pin_chunks = [{"source": d["source"], "text": d["text"]} for d in merged_doc]
-                if not skip_pin_update:
-                    self._save_pin(session_id, "doc", pin_chunks, trace_sources)
-                scope_psk, scope_hint, scope_cmd, sources_note = _build_scope_ui_hints(
-                    pin,
-                    query,
-                    discipline_from_command,
-                    pin_used,
-                    sources_mix_this_turn=_retrieval_adds_sources_beyond_pin(
-                        pin, doc_selected
-                    ),
-                )
-                trace = ContextTrace(
-                    label="Documentação (doc)",
-                    sources=_dedupe_sources(trace_sources),
-                    pinned_active=self._pin_active(session_id),
-                    pinned_display=self._pin_display(session_id),
-                    pin_chunks_used=pin_used,
-                    pinned_scope_key=scope_psk,
-                    scope_hint=scope_hint,
-                    suggested_scope_command=scope_cmd,
-                    sources_note=sources_note,
-                    mode=mode,
-                    decision="answer",
-                    reason="ok",
-                    confidence="high",
-                )
-                return BuildMessagesResult(
-                    messages=_merge_messages_with_history(
-                        system_content, history_truncated, query
-                    ),
-                    trace=trace,
-                )
+        if force_doc and doc_rag_active:
+            log_event(
+                log,
+                logging.INFO,
+                ACL_MOD_CONTEXT,
+                "doc_rag",
+                "RAG restrito ao silo doc (MySQL)",
+                metadata={"query": query},
+            )
+        elif force_doc:
             log_event(
                 log,
                 logging.INFO,
@@ -1104,7 +1023,8 @@ class ContextManager:
                     )
 
         if (
-            self._lesson_catalog
+            not doc_rag_active
+            and self._lesson_catalog
             and catalog_result
             and self._lesson_catalog.is_strict_confident(catalog_result)
         ):
@@ -1179,17 +1099,20 @@ class ContextManager:
             sticky_block=sticky_block,
         )
 
-        if effective_discipline is not None:
+        if doc_rag_active:
+            label = "Documentação (doc)"
+        elif effective_discipline is not None:
             label = _trace_label_for_discipline(effective_discipline)
-        elif force_rag:
-            label = _global_scope_label(self._settings)
         else:
             label = _global_scope_label(self._settings)
 
         trace_sources = [d["source"] for d in merged_chunks]
-        scope_key = self._scope_key_for_hit(
-            force_rag, discipline_from_command, effective_discipline
-        )
+        if doc_rag_active:
+            scope_key = "doc"
+        else:
+            scope_key = self._scope_key_for_hit(
+                force_rag, discipline_from_command, effective_discipline
+            )
         if not skip_pin_update:
             self._save_pin(
                 session_id,
