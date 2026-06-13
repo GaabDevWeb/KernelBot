@@ -14,7 +14,7 @@
   <p>
     <strong>Se você é um recrutador:</strong> O código fala mais que mil palavras. Olhe a pasta <code>engine/</code>.<br />
     <strong>Se você é um curioso:</strong> Volte em breve. Ou dê um <code>python main.py</code> e descubra.
-
-  
+  </p>
+  E não esqueça do <code>pip install -r requirements.txt</code>, o <code><code>npm install</code> e o <code>npm run watch:css</code>
   <br clear="all" />
 </div>

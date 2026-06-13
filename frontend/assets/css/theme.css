@@ -55,19 +55,56 @@ body {
 /* ===== Header ===== */
 .header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     gap: 12px;
     padding: 8px 24px 0;
     background: transparent;
 }
 
+/* Gray panel holding the silo pill + pinned-context badge in a column. */
+.context-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 6px;
+    max-width: 100%;
+    /* width: fit-content; */
+}
+
+.context-stack[hidden] {
+    display: none;
+}
+
+/* The panel owns the spacing now — drop the pill's own bottom margin. */
+.context-stack .silo-pill {
+    margin-bottom: 0;
+}
+
+/* Pinned-context badge — same look as the silo: gray bg, white icon + text. */
 .context-pin-badge {
-    flex: 1;
-    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
     font-size: 11px;
     font-weight: 500;
-    color: var(--accent);
+    color: inherit;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The `hidden` attribute must still win over inline-flex. */
+.context-pin-badge[hidden] {
+    display: none;
+}
+
+.context-pin-icon {
+    flex: 0 0 auto;
+}
+
+.context-pin-label {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -80,7 +117,7 @@ body {
     border: 1px solid var(--border);
     color: var(--text-muted);
     text-transform: uppercase;
-    border-radius: var(--radius);
+    border-radius: var(--radius-2xl);
 }
 
 .header-badge.online {
@@ -140,7 +177,7 @@ body {
 }
 
 .message.user {
-    background: var(--user-bg);
+    background: var(--color-red-900);
     color: #fff;
     font-size: 14.5px;
 }
@@ -215,7 +252,7 @@ body {
     font-size: 13px;
     background: var(--surface-2);
     padding: 2px 5px;
-    color: #93C5FD;
+    color: var(--color-red-400);
     border-radius: var(--radius);
 }
 
@@ -263,9 +300,9 @@ body {
 }
 
 .silo-pill {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--accent);
+    font-size: 12px;
+    font-weight: 400;
+    /* color: var(--accent); */
     margin-bottom: 6px;
     letter-spacing: 0.02em;
 }
@@ -276,6 +313,7 @@ body {
     color: var(--text-muted);
     padding: 4px 4px 2px;
     max-width: 82%;
+    height: 30px;
     transition:
         opacity 0.28s ease,
         visibility 0.28s ease,
@@ -514,7 +552,7 @@ body {
 }
 
 .scope-option-cmd {
-    color: var(--accent);
+    color: var(--color-red-500);
     font-family: var(--font-mono);
 }
 

@@ -16,32 +16,54 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
     <link rel="stylesheet" href="/assets/css/output.css" />
     <link rel="stylesheet" href="/assets/css/theme.css" />
+    <link rel="stylesheet" href="/assets/css/entrance.css" />
 </head>
 
 <body>
+    <!-- Full-screen low-poly globe: the entrance backdrop, behind the whole app. -->
+    <canvas id="globe" aria-hidden="true"></canvas>
+
     <div class="app">
 
         <header class="header">
-            <div class="context-pin-badge" id="context-pin-badge" hidden aria-live="polite"></div>
-            <div class="header-badge online !rounded-2xl" id="status-badge">Online</div>
+            <div class="header-badge online entrance-init-hidden" id="status-badge">Online</div>
         </header>
 
         <main class="chat-box" id="chat" role="log" aria-live="polite" aria-label="Histórico de mensagens">
             <div class="empty-state" id="empty-state">
-                <!-- <div class="empty-state-icon">🗂️</div> -->
-                <div class="empty-state-title">Opa, sou o Kernel! O que precisa hoje?</div>
+                <!-- Animated title + cycling command suggestion (entrance.js). -->
+                <div class="entrance-content">
+                    <p class="entrance-eyebrow">KERNEL ASSISTANT</p>
+                    <h1 class="entrance-headline">
+                        <span class="entrance-title-text"></span><span class="entrance-caret" aria-hidden="true"></span>
+                    </h1>
 
-                <div class="suggestion-cards">
-                    <button class="suggestion-card" type="button" data-prompt="/python Como listas funcionam?">/python Como listas funcionam?</button>
-                    <button class="suggestion-card" type="button" data-prompt="/sql Como usar GROUP BY?">/sql Como usar GROUP BY?</button>
-                    <button class="suggestion-card" type="button" data-prompt="/carreira Como montar um portfólio?">/carreira Como montar um portfólio?</button>
-                    <button class="suggestion-card" type="button" data-prompt="/doc Como o sistema funciona?">/doc Como o sistema funciona?</button>
+                    <div class="entrance-suggestion-wrap">
+                        <span class="entrance-suggestion" aria-live="polite" title="Clique para usar esta sugestão">
+                            <span class="entrance-suggestion-text"></span><span class="entrance-suggestion-caret" aria-hidden="true"></span>
+                        </span>
+                    </div>
                 </div>
             </div>
         </main>
 
-        <footer class="input-area rounded-full mb-3">
-            <div class="silo-pill" id="silo-pill" hidden aria-live="polite"></div>
+        <footer class="input-area rounded-full mb-3 entrance-init-hidden">
+            <!-- Silo + pinned context share one gray panel, stacked in a column. -->
+            <div class="context-stack px-6 py-2 bg-zinc-700 text-neutral-200 rounded-t-4xl rounded-b-sm" id="context-stack" hidden>
+                <div class="silo-pill" id="silo-pill" hidden aria-live="polite"></div>
+
+                <!-- Pinned context: eye icon + aula: "<label>" -->
+                <div class="context-pin-badge" id="context-pin-badge" hidden aria-live="polite">
+                    <svg class="context-pin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <span class="context-pin-label"></span>
+                </div>
+            </div>
+
             <!-- <div class="input-hint">
                 <span>Enter</span> envia · <span>Shift+Enter</span> nova linha ·
                 <span>/python</span> · <span>/visualizacao-sql</span> · <span>/projeto-bloco</span> ·
@@ -111,7 +133,7 @@
 
                 <textarea class="rounded-2xl" id="message-input" rows="1" placeholder="O que vamos revisar hoje?"
                     autocomplete="off" aria-label="Campo de mensagem"></textarea>
-                <button class="bg-blue-500 rounded-full p-3" id="send-button" aria-label="Enviar mensagem" title="Enviar">
+                <button class="bg-red-500 rounded-full p-3" id="send-button" aria-label="Enviar mensagem" title="Enviar">
                     <!-- ➤ -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-4"
                         viewBox="0 0 384 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
@@ -124,6 +146,9 @@
 
     </div>
 
+    <!-- GSAP powers the entrance animation (globe + typed title + pill). -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script type="module" src="/src/entrance.js"></script>
     <script type="module" src="/src/main.js"></script>
     <script>
         (function () {

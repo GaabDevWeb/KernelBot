@@ -54,15 +54,16 @@ export function appendMessageRow(chatBox, opts) {
     const meta = document.createElement("div");
     meta.className = "message-meta";
     const now = new Date();
-    meta.textContent = role === "user" ? `Você · ${fmt(now)}` : `ACL · ${fmt(now)}`;
+    // meta.textContent = role === "user" ? `Você · ${fmt(now)}` : `ACL · ${fmt(now)}`;
+    meta.textContent = role === "user" ? `Você · ${fmt(now)}` : '';
 
-    const breadcrumbs = document.createElement("div");
-    breadcrumbs.className = "message-breadcrumbs";
-    if (role === "bot" && !isError) {
-        setBreadcrumbsContent(breadcrumbs, sources);
-    } else {
-        breadcrumbs.hidden = true;
-    }
+    // const breadcrumbs = document.createElement("div");
+    // breadcrumbs.className = "message-breadcrumbs";
+    // if (role === "bot" && !isError) {
+    //     setBreadcrumbsContent(breadcrumbs, sources);
+    // } else {
+    //     breadcrumbs.hidden = true;
+    // }
 
     const bubble = document.createElement("div");
     bubble.classList.add("message", role);
@@ -75,7 +76,7 @@ export function appendMessageRow(chatBox, opts) {
     }
 
     row.appendChild(meta);
-    if (role === "bot") row.appendChild(breadcrumbs);
+    // if (role === "bot") row.appendChild(breadcrumbs);
     row.appendChild(bubble);
     chatBox.appendChild(row);
     scrollBottom();
@@ -90,21 +91,22 @@ export function createStreamingBotRow(chatBox, scrollBottom) {
     const row = document.createElement("div");
     row.classList.add("message-row", "bot");
 
-    const meta = document.createElement("div");
-    meta.className = "message-meta";
-    meta.textContent = `ACL · ${fmt(new Date())}`;
+    // const meta = document.createElement("div");
+    // meta.className = "message-meta";
+    // meta.textContent = `ACL · ${fmt(new Date())}`;
 
-    const breadcrumbs = document.createElement("div");
-    breadcrumbs.className = "message-breadcrumbs";
-    breadcrumbs.hidden = true;
+    // const breadcrumbs = document.createElement("div");
+    // breadcrumbs.className = "message-breadcrumbs";
+    // breadcrumbs.hidden = true;
 
     const bubble = document.createElement("div");
     bubble.classList.add("message", "bot", "cursor-blink");
 
-    row.appendChild(meta);
-    row.appendChild(breadcrumbs);
+    // row.appendChild(meta);
+    // row.appendChild(breadcrumbs);
     row.appendChild(bubble);
     chatBox.appendChild(row);
     scrollBottom();
-    return { row, bubble, breadcrumbs };
+    return { row, bubble };
+    // return { row, bubble, breadcrumbs };
 }
