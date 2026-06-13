@@ -30,6 +30,21 @@
     50% { background-position: 100% 50%; }
 }
 
+@keyframes fade-in-down {
+    from { opacity: 0; transform: translateY(-14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
 html,
 body {
     height: 100%;
@@ -60,6 +75,7 @@ body {
     gap: 12px;
     padding: 8px 24px 0;
     background: transparent;
+    animation: fade-in-down 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* Gray panel holding the silo pill + pinned-context badge in a column. */
@@ -289,10 +305,11 @@ body {
 
 /* ===== Input Area ===== */
 .input-area {
-    padding: 16px 24px;
+    padding: 10px;
     /* border-top: 1px solid var(--border); */
     background: var(--surface);
     transition: box-shadow 0.2s ease;
+    animation: fade-in-up 1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
 }
 
 .input-area.input-area--silo {
@@ -425,6 +442,11 @@ body {
     gap: 12px;
     color: var(--text-muted);
     text-align: center;
+    animation: fade-in 1s ease 0.1s both;
+}
+
+.empty-state#logo {
+    animation: fade-in 0.7s ease 0.1s both;
 }
 
 .empty-state-icon {
@@ -435,6 +457,7 @@ body {
     font-size: 2.2rem;
     font-weight: 600;
     color: var(--text);
+    animation: fade-in-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
 }
 
 .empty-state-sub {
@@ -464,7 +487,13 @@ body {
     text-align: left;
     backdrop-filter: blur(6px);
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    animation: fade-in-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+.suggestion-card:nth-child(1) { animation-delay: 0.32s; }
+.suggestion-card:nth-child(2) { animation-delay: 0.42s; }
+.suggestion-card:nth-child(3) { animation-delay: 0.52s; }
+.suggestion-card:nth-child(4) { animation-delay: 0.62s; }
 
 .suggestion-card:hover {
     background: rgba(91, 136, 178, 0.15);
@@ -569,12 +598,22 @@ body {
     .chat-box {
         padding: 16px;
     }
-
+/* 
     .input-area {
-        padding: 12px 16px 12px 16px;
-    }
+        padding:8px;
+    } */
 
     .message {
         max-width: 94%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .header,
+    .empty-state,
+    .empty-state-title,
+    .suggestion-card,
+    .input-area {
+        animation: none;
     }
 }
