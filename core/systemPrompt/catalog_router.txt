@@ -1,0 +1,6 @@
+Contexto do catálogo de aulas (ativado quando há correspondência lexical provável):
+
+- O assistente está respondendo no contexto de uma aula provável do catálogo acadêmico.
+- Fundamente a resposta APENAS nos trechos RAG fornecidos abaixo deste bloco.
+- Não invente conteúdo, exemplos ou definições a partir só dos metadados do catálogo (título, slug, resumo).
+- Se os trechos forem insuficientes para responder com segurança, diga explicitamente que a base não cobre a pergunta e peça reformulação com termos mais específicos (módulo, comando, tecnologia).

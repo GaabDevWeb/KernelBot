@@ -5,6 +5,7 @@ import logging
 from importlib import import_module
 
 from core.structured_log import ACL_MOD_DATABASE, log_event
+from engine.lesson_catalog import normalize_lesson_key
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -176,4 +177,94 @@ def fetch_db_discipline_ids(settings: Settings) -> frozenset[str]:
                 metadata={"error": str(e)},
             )
             log.warning("fetch_db_discipline_ids detail", exc_info=True)
+        return frozenset()
+
+
+def fetch_indexed_lesson_keys(settings: "Settings") -> frozenset[str]:
+    """
+    Chaves `discipline:slug` ativas no MySQL (knowledge), normalizadas como o catálogo.
+    Retorna frozenset vazio com warning se o DB estiver indisponível.
+    """
+    if not all([settings.db_host, settings.db_name, settings.db_user]):
+        log_event(
+            log,
+            logging.DEBUG,
+            ACL_MOD_DATABASE,
+            "indexed_keys_skipped",
+            "DB_* incompleto — sem chaves indexadas",
+            metadata={},
+        )
+        return frozenset()
+
+    try:
+        pymysql = import_module("pymysql")
+        cursors_mod = import_module("pymysql.cursors")
+    except ImportError:
+        log_event(
+            log,
+            logging.WARNING,
+            ACL_MOD_DATABASE,
+            "indexed_keys_pymysql_missing",
+            "PyMySQL nao instalado — chaves indexadas vazias",
+            metadata={},
+        )
+        return frozenset()
+
+    sql = (
+        "SELECT DISTINCT discipline, slug FROM knowledge "
+        "WHERE active = 1 AND content IS NOT NULL AND TRIM(content) <> ''"
+    )
+
+    try:
+        conn = pymysql.connect(
+            host=settings.db_host,
+            port=settings.db_port,
+            database=settings.db_name,
+            user=settings.db_user,
+            password=settings.db_password,
+            charset="utf8mb4",
+            cursorclass=cursors_mod.DictCursor,
+            connect_timeout=5,
+            read_timeout=10,
+        )
+        with conn:
+            with conn.cursor() as cursor:
+                cursor.execute(sql)
+                rows = cursor.fetchall()
+
+        keys = frozenset(
+            normalize_lesson_key(str(row["discipline"]), str(row["slug"]))
+            for row in rows
+            if row.get("discipline") and row.get("slug")
+        )
+        log_event(
+            log,
+            logging.INFO,
+            ACL_MOD_DATABASE,
+            "indexed_keys_ok",
+            "chaves de aula indexadas carregadas",
+            metadata={"key_count": len(keys)},
+        )
+        return keys
+
+    except Exception as e:
+        if getattr(e, "args", None) and e.args and e.args[0] == 2003:
+            log_event(
+                log,
+                logging.WARNING,
+                ACL_MOD_DATABASE,
+                "indexed_keys_unreachable",
+                "MySQL inacessivel — boot sem chaves indexadas",
+                metadata={"host": settings.db_host, "port": settings.db_port},
+            )
+        else:
+            log_event(
+                log,
+                logging.WARNING,
+                ACL_MOD_DATABASE,
+                "indexed_keys_error",
+                "falha ao listar discipline/slug",
+                metadata={"error": str(e)},
+            )
+            log.warning("fetch_indexed_lesson_keys detail", exc_info=True)
         return frozenset()

@@ -20,3 +20,5 @@ CLAUDE.md
 
 node_modules/
 frontend/assets/css/output.css
+
+.agent_history.md
