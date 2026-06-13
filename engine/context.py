@@ -488,8 +488,12 @@ def _pin_inherited_discipline_filter(
     return explicit
 
 
-def _should_skip_pin_update(query: str, *, did_reset: bool) -> bool:
+def _should_skip_pin_update(
+    query: str, *, did_reset: bool, doc_rag_active: bool = False
+) -> bool:
     """Evita fixar pin após reset, confirmação de reset ou turnos adversariais."""
+    if doc_rag_active:
+        return True
     if did_reset:
         return True
     if "contexto fixado foi removido" in query.lower():
@@ -934,7 +938,9 @@ class ContextManager:
                 doc_rag_active = True
                 effective_discipline = self._sanitize_discipline("doc")
 
-        skip_pin_update = _should_skip_pin_update(query, did_reset=did_reset)
+        skip_pin_update = _should_skip_pin_update(
+            query, did_reset=did_reset, doc_rag_active=doc_rag_active
+        )
 
         history_in = conversation_history or []
         history_truncated = _truncate_conversation_history(
@@ -1041,6 +1047,11 @@ class ContextManager:
             candidate_k=self._settings.retrieval_candidate_k,
             discipline_filter=effective_discipline,
         )
+        max_per_source = (
+            1
+            if doc_rag_active
+            else self._settings.retrieval_max_chunks_per_source
+        )
         decision = build_decision(
             query=query,
             candidates=candidates,
@@ -1051,7 +1062,7 @@ class ContextManager:
             min_coverage_weighted=self._settings.retrieval_min_coverage_weighted,
             min_terms=self._settings.retrieval_min_terms,
             top_k=self._settings.retrieval_top_k,
-            max_per_source=self._settings.retrieval_max_chunks_per_source,
+            max_per_source=max_per_source,
             acl_retrieval_mode=self._settings.retrieval_mode,
             disambiguation_enabled=self._settings.disambiguation_enabled,
         )

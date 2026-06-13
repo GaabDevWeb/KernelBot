@@ -68,7 +68,7 @@ Executado em `chat_provider.py` após o LLM responder.
 |------|-------------------|
 | `missing_informative_terms` | Resposta não contém termos informativos da query (`anchored`: só se `reason=ok`) |
 | `missing_source_entities` | Não menciona fonte nem termos longos dos chunks (`anchored`/`hybrid`: omitido se há marcador de extensão pedagógica) |
-| `introduced_unsupported_terms` | >25 (strict) ou >35 (anchored/hybrid) termos técnicos longos sem suporte nos chunks |
+| `introduced_unsupported_terms` | >25 (strict) ou >50 (anchored/hybrid) termos técnicos longos sem suporte nos chunks — ver `unsupported_limit` em `engine/retrieval.py` (`post_generation_flags`) |
 
 | `ACL_GROUNDING_POLICY` | Se há flags |
 |------------------------|-------------|

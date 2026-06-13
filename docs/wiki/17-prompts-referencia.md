@@ -20,8 +20,9 @@ Função `_assemble_system_content()` em `engine/context.py`:
 1. system_prompt.txt          — identidade, tom, precedência, segurança
 2. catalog_router.txt         — só se existir secção de catálogo (match lexical)
 3. catalog_section            — dinâmico (LessonCatalog.build_prompt_section)
-4. grounding (condicional)      — strict | anchored | permissive | disambiguation — ver §1.1
-5. Trechos RAG                — [Fonte: path | Score: n.nn] ou [Fonte 1: …] em desambiguação
+4. sticky_instruction.txt     — só com pin activo (`_sticky_block_for_pin`, `{name}` ← display do pin)
+5. grounding (condicional)    — strict | anchored | permissive | disambiguation — ver §1.1
+6. Trechos RAG                — [Fonte: path | Score: n.nn] ou [Fonte 1: …] em desambiguação
 ```
 
 ```mermaid
@@ -29,11 +30,13 @@ flowchart TD
   SP[system_prompt.txt]
   CR[catalog_router.txt]
   CS[catalog_section dinâmico]
+  ST[sticky_instruction.txt]
   GS[grounding condicional]
   RAG[trechos Fonte RAG]
   SP --> ASM[_assemble_system_content]
   CR --> ASM
   CS --> ASM
+  ST --> ASM
   GS --> ASM
   RAG --> ASM
   ASM --> LLM[OpenRouter sempre]
@@ -73,7 +76,7 @@ Variáveis: `ACL_GROUNDING_POLICY` (default `anchored`), `ACL_DISAMBIGUATION_ENA
 | `grounding_permissive.txt` | Sim | Extensão pedagógica sem chunks (`hybrid` sem hits) |
 | `grounding_disambiguation.txt` | Sim | Resolução de ambiguidade multi-fonte (`ACL_DISAMBIGUATION_ENABLED`) |
 | `catalog_router.txt` | Sim | Meta de catálogo ≠ prova; orienta quando há match ISS |
-| `sticky_instruction.txt` | Sim (carregado) | Template `{name}` para sessão com contexto fixado — **ainda não injectado** em `context.py` (ver [Backlog](#6-backlog-e-manutenção)) |
+| `sticky_instruction.txt` | Sim | Template `{name}` injectado via `_sticky_block_for_pin()` quando há pin activo (entre catálogo e grounding) |
 
 Carregamento: `core/config.py` → `Settings.load()`; falha de boot se algum ficheiro obrigatório faltar.
 
@@ -112,7 +115,7 @@ Problemas corrigidos na reescrita modular:
 | Problema | Efeito no modelo | Mitigação actual |
 |----------|------------------|------------------|
 | Grounding duplicado em `system_prompt.txt` e string hardcoded em `context.py` | Drift e prioridade ambígua | Única fonte: `grounding_strict.txt` |
-| `sticky_instruction` permitia “conhecimento geral” | Bypass do modo estrito | Texto alinhado ao strict; wiring pendente |
+| `sticky_instruction` permitia “conhecimento geral” | Bypass do modo estrito | Texto alinhado ao strict; injectado com pin activo |
 | Tom didático misturado com regras operacionais | “Ser útil” > “não inventar” | Secções separadas; grounding sobrepõe tom |
 | `catalog_router` curto | Uso de título/resumo como factos | Regras explícitas: meta só orienta escopo |
 
@@ -215,7 +218,7 @@ Repositório de **prompts de referência** (vazamentos / documentação pública
 
 | ID | Item | Notas |
 |----|------|-------|
-| P1 | Injectar `sticky_instruction` quando pin activo | `Settings.sticky_instruction` + `{name}` ← `pin.display_name` |
+| P1 | ~~Injectar `sticky_instruction` quando pin activo~~ | **Feito** — `_sticky_block_for_pin()` em `context.py` |
 | P2 | ~~Modo `assistive` opcional~~ | **Feito** como `grounding_anchored.txt` + `ACL_GROUNDING_POLICY` |
 | P4 | Sincronizar esta página quando mudar `core/systemPrompt/` | — |
 

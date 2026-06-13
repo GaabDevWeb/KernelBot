@@ -17,6 +17,8 @@ dist/
 build/
 *.egg-info/
 
+.cursor-chat-workspace/
+
 content/
 scripts/
 

@@ -19,6 +19,7 @@ import json
 import logging
 import time
 from collections.abc import AsyncGenerator
+from pathlib import Path
 
 import httpx
 
@@ -452,13 +453,24 @@ class ChatProvider:
             yield "data: [DONE]\n\n"
             return
 
+        cursor_workspace = self._cursor_workspace()
+        local_opts = self._cursor_local_agent_options(cursor_workspace)
+        if self._settings.cursor_chat_only:
+            log_event(
+                log,
+                logging.INFO,
+                ACL_MOD_PROVIDER,
+                "cursor_chat_only",
+                "Cursor SDK em workspace vazio (sem repo/rules)",
+                metadata={"workspace": str(cursor_workspace)},
+            )
         t_start = time.perf_counter()
         try:
-            async with await AsyncClient.launch_bridge(workspace=str(self._settings.project_root)) as client:
+            async with await AsyncClient.launch_bridge(workspace=str(cursor_workspace)) as client:
                 async with await client.agents.create(
                     model=self._settings.cursor_model,
                     api_key=self._settings.cursor_api_key,
-                    local=LocalAgentOptions(cwd=str(self._settings.project_root)),
+                    local=local_opts,
                 ) as agent:
                     run = await agent.send(prompt)
                     async for chunk in run.iter_text():
@@ -529,6 +541,21 @@ class ChatProvider:
             yield piece
         yield "data: [DONE]\n\n"
 
+    def _cursor_workspace(self) -> Path:
+        """Workspace do Cursor SDK: repo completo (agente) ou pasta vazia (chat-only)."""
+        if self._settings.cursor_chat_only:
+            ws = self._settings.project_root / ".cursor-chat-workspace"
+            ws.mkdir(exist_ok=True)
+            return ws
+        return self._settings.project_root
+
+    def _cursor_local_agent_options(self, workspace: Path) -> object:
+        from cursor_sdk import LocalAgentOptions
+
+        if self._settings.cursor_chat_only:
+            return LocalAgentOptions(cwd=str(workspace), setting_sources=[])
+        return LocalAgentOptions(cwd=str(workspace))
+
     # --- Meta pós-stream: desambiguação estruturada + sanity check ---------
 
     async def _finalize_generation_meta(
@@ -570,7 +597,11 @@ class ChatProvider:
             from engine.disambiguation_parse import parse_incomplete_ambiguity_options
 
             options = parse_incomplete_ambiguity_options(answer_text)
-        if not options and decision.selected_candidates:
+        if (
+            not options
+            and decision.selected_candidates
+            and self._settings.disambiguation_enabled
+        ):
             options = candidates_from_retrieval(decision.selected_candidates)
         if not options:
             return

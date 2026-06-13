@@ -8,6 +8,17 @@ Perguntas para validar o comando `/doc` após `bin/ingest-wiki-doc.sh` + `/reloa
 
 **Pré-requisitos:** `./bin/staging-setup.sh` (ou ingest em produção) + `./bin/staging-serve.sh`.
 
+## Protocolo de execução (obrigatório)
+
+Antes de **cada** pergunta (ou no máximo a cada 3 se estiveres a testar continuidade de sessão):
+
+1. Clica **Nova conversa** no UI (não uses só `/reset` — isso limpa o pin no servidor mas **não** zera o `history` em `localStorage` nem o `session_id` visual).
+2. Aguarda o badge do header voltar a **Online** e o stream anterior terminar com `data: [DONE]` (não envies a pergunta seguinte enquanto o composer estiver desactivado).
+3. Envia a pergunta com prefixo `/doc`.
+4. Não abras múltiplas abas na mesma sessão nem dispares perguntas em paralelo.
+
+O silo `/doc` **não persiste pin** entre turnos (consulta wiki); o protocolo acima evita histórico residual a mascarar fontes no cabeçalho.
+
 ---
 
 ## Nível 1 — Básico (utilizador / curioso)
@@ -122,7 +133,7 @@ Perguntas para validar o comando `/doc` após `bin/ingest-wiki-doc.sh` + `/reloa
 |-------|----------|
 | **Pergunta** | `/doc Existe uma rota POST /reload separada? Como reconstruo o índice BM25?` |
 | **Páginas esperadas** | `07-apis-e-sse`, `09-fluxos-operacionais` |
-| **Referência wiki** | **Não** existe `POST /reload` dedicado. `/reload` é **mensagem** no corpo de `POST /chat` (`message: "/reload"`) com **Bearer** `ACL_RELOAD_BEARER_TOKEN`. Reinício do processo também reconstrói o índice. |
+| **Referência wiki** | **Não** existe `POST /reload` dedicado. `/reload` é **mensagem** no corpo de `POST /chat` (`message: "/reload"`) com **Bearer** `ACL_RELOAD_BEARER_TOKEN`. Reinício do processo também reconstrói o índice. **Smoke:** validar o Bearer numa **Nova conversa** isolada (curl/Postman ou DevTools), não misturar com perguntas de conteúdo na mesma sessão. |
 
 ### 14. `index_gap` e catálogo
 
@@ -144,7 +155,7 @@ Perguntas para validar o comando `/doc` após `bin/ingest-wiki-doc.sh` + `/reloa
 
 ## Nível 4 — Expert (arquitetura, SSE, gates, CI)
 
-> **Dica:** neste nível usa **Nova conversa** a cada 3–5 perguntas (ou antes de mudar de tema) para evitar pin acumulado a mascarar as fontes no cabeçalho. O conteúdo das respostas continua válido mesmo com pin activo.
+> **Dica:** neste nível segue o [protocolo](#protocolo-de-execução-obrigatório) — **Nova conversa** antes de cada pergunta (máx. 3 na mesma sessão só para teste de continuidade). O silo `/doc` não persiste pin; o histórico residual no browser ainda pode afectar `history` enviado à API.
 
 ### 16. Política `hybrid` vs `anchored`
 
@@ -160,7 +171,7 @@ Perguntas para validar o comando `/doc` após `bin/ingest-wiki-doc.sh` + `/reloa
 |-------|----------|
 | **Pergunta** | `/doc Quais flags dispara post_generation_flags após o LLM responder, qual o limiar de termos não suportados em strict vs anchored, e quando anchored_post_generation_advisory_flags suprime o advisory amarelo?` |
 | **Páginas esperadas** | `06-gates-e-decisoes`, `08-frontend-ui` |
-| **Referência wiki** | Flags: `missing_informative_terms`, `missing_source_entities`, `introduced_unsupported_terms`. Limiares: **>25** termos longos (strict), **>35** (anchored/hybrid). Em `anchored`, advisory suprimido se há `[Fonte:`, declaração de lacuna/recusa, ou bloco *Extensão pedagógica*. `strict` → override destrutivo `post_generation_misalignment`; `anchored` → `post_generation_advisory` suave, resposta mantida. |
+| **Referência wiki** | Flags: `missing_informative_terms`, `missing_source_entities`, `introduced_unsupported_terms`. Limiares: **>25** termos longos (strict), **>50** (anchored/hybrid) — `unsupported_limit` em `engine/retrieval.py`. Em `anchored`, advisory suprimido se há `[Fonte:`, declaração de lacuna/recusa, ou bloco *Extensão pedagógica*. `strict` → override destrutivo `post_generation_misalignment`; `anchored` → `post_generation_advisory` suave, resposta mantida. |
 
 ### 18. Dois eventos `[ACL_META]` no SSE
 
@@ -184,7 +195,7 @@ Perguntas para validar o comando `/doc` após `bin/ingest-wiki-doc.sh` + `/reloa
 |-------|----------|
 | **Pergunta** | `/doc Como funciona o merge entre chunks fixados (pin) e a busca BM25 do turno actual, e quando aparece sources_note na UI?` |
 | **Páginas esperadas** | `06-gates-e-decisoes`, `08-frontend-ui`, `12-configuracao` |
-| **Referência wiki** | `PinnedSessionStore` por `session_id`; TTL `ACL_PINNED_MAX_TURNS` (default 5), limite `ACL_PINNED_MAX_CHARS`. Turno combina pin + retrieval; meta `pin_chunks_used: true` → badge «Continuando». `sources_note` quando fontes do turno **≠** só pin — nota informativa no rodapé (`.message-sources-note`), não é advisory amarelo. Copy orienta `/reset` ou comando de disciplina. |
+| **Referência wiki** | `PinnedSessionStore` por `session_id`; TTL `ACL_PINNED_MAX_TURNS` (default 5), limite `ACL_PINNED_MAX_CHARS`. Turno combina pin + retrieval; meta `pin_chunks_used: true` → badge «Continuando». `sources_note` quando fontes do turno **≠** só pin — nota informativa no rodapé (`.message-sources-note`), não é advisory amarelo. Copy orienta `/reset` ou comando de disciplina. **Nota smoke:** com `ACL_DISAMBIGUATION_ENABLED=false` (default), `ambiguous_retrieval` **não** deve mostrar chips — só texto + breadcrumb; chips só com a flag `true` ou XML explícito do modelo. |
 
 ### 21. Campo `history` na API (POC)
 
@@ -240,7 +251,7 @@ Perguntas para validar o comando `/doc` após `bin/ingest-wiki-doc.sh` + `/reloa
 |-------|----------|
 | **Pergunta** | `/doc O ficheiro sticky_instruction.txt é injectado no prompt quando há pin activo? Onde está definido e qual o estado actual segundo a wiki?` |
 | **Páginas esperadas** | `17-prompts-referencia`, `03-estrutura-codigo`, `12-configuracao` |
-| **Referência wiki** | Carregado em `Settings.load()` (boot falha se faltar), template com `{name}` para contexto fixado — mas **ainda não injectado** em `context.py` (item de backlog na wiki §17). Pin actual usa merge de chunks + badges UI, não o texto sticky no system prompt. |
+| **Referência wiki** | Carregado em `Settings.load()` (boot falha se faltar). Injectado via `_sticky_block_for_pin()` em `context.py` quando há pin activo (template `{name}` ← display do pin), entre catálogo e grounding. Silo `/doc` não persiste pin — sticky só em tutoria com pin ISS. |
 
 ### 28. Segurança: tokens, logs e `provider_error`
 
@@ -264,11 +275,13 @@ Perguntas para validar o comando `/doc` após `bin/ingest-wiki-doc.sh` + `/reloa
 |-------|----------|
 | **Pergunta** | `/doc Qual a ordem exacta de _assemble_system_content no system prompt, e qual a precedência semântica entre grounding_strict, catálogo e trechos RAG segundo a wiki de prompts?` |
 | **Páginas esperadas** | `17-prompts-referencia`, `03-estrutura-codigo`, `06-gates-e-decisoes` |
-| **Referência wiki** | Ordem: (1) `system_prompt.txt`; (2) `catalog_router.txt` se há secção catálogo; (3) `catalog_section` dinâmico; (4) grounding condicional (`_select_grounding`); (5) trechos RAG `[Fonte: …]`. Precedência: grounding factual > catálogo > evidência RAG > identidade/tom > dados do utilizador. Função em `engine/context.py`. |
+| **Referência wiki** | Ordem: (1) `system_prompt.txt`; (2) `catalog_router.txt` se há secção catálogo; (3) `catalog_section` dinâmico; (4) `sticky_instruction.txt` se pin activo; (5) grounding condicional (`_select_grounding`); (6) trechos RAG `[Fonte: …]`. Precedência: grounding factual > catálogo > evidência RAG > identidade/tom > dados do utilizador. Função em `engine/context.py`. |
 
 ---
 
 ## Checklist rápido pós-rodada
+
+**Passo 0 (cada pergunta):** Nova conversa → badge **Online** → enviar pergunta → aguardar `[DONE]`.
 
 | # | Passou? | Citou `db:doc/…`? | Notas |
 |---|---------|-------------------|-------|
@@ -308,5 +321,7 @@ Perguntas para validar o comando `/doc` após `bin/ingest-wiki-doc.sh` + `/reloa
 - Pergunta **fora** do silo doc com `/doc` activo não deve misturar fontes de aulas (`db:python/…`) sem aviso.
 - Pergunta **sem** `/doc` sobre «o que é o Kernel» pode cair no RAG global — comportamento esperado, não falha do silo doc.
 - Pergunta de **uma palavra** (`/doc KernelBot`) pode gerar `underspecified_query` (`MIN_TERMS=2`) — preferir as perguntas completas desta lista.
-- Nível **expert** (16–30): usar **Nova conversa** periodicamente; pin longo repete os mesmos chips no cabeçalho sem invalidar o conteúdo da resposta.
+- Nível **expert** (16–30): **Nova conversa** antes de cada pergunta (ver protocolo).
 - Perguntas **19** e **17** assumem leitura da wiki — não exigem `ACL_DISAMBIGUATION_ENABLED=true` no teu `.env` para passar no conteúdo; validam conhecimento documentado.
+- Pergunta **20** com `ACL_DISAMBIGUATION_ENABLED=false`: sem chips de desambiguação (só texto); margem BM25 baixa entre páginas doc é esperada.
+- Aguardar **`[DONE]`** antes da pergunta seguinte; pedidos paralelos distorcem latência e meta SSE.

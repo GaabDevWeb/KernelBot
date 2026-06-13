@@ -1,13 +1,13 @@
-# Testar KernelBot + Opção B2 localmente
+# Testar KernelBot localmente (staging)
 
-Ambiente **offline** com MySQL em Docker (porta **3307**). O teu `.env` de produção (Aiven) **não é alterado**.
+Ambiente com MySQL em Docker (porta **3307**). O teu `.env` de produção (Aiven) **não é alterado**.
 
 ## Pré-requisitos
 
 - Docker (utilizador no grupo `docker`, ou `sudo` nos comandos abaixo)
-- Python 3
-- Repositório ISS em `../ISS` (já tens)
-- `.env` no KernelBot com `OPENROUTER_API_KEY` (para o chat responder)
+- Python 3 + `.venv` (criado pelo setup)
+- `.env` no KernelBot com chave LLM (`OPENROUTER_API_KEY` ou `CURSOR_API_KEY` conforme `ACL_LLM_PROVIDER`)
+- `.env.staging.local` (copia de `.env.staging.example`)
 
 ## Passo a passo (2 terminais)
 
@@ -16,8 +16,10 @@ Ambiente **offline** com MySQL em Docker (porta **3307**). O teu `.env` de produ
 ```bash
 cd /home/gaab/Documentos/gitHub/KernelBot
 chmod +x bin/*.sh
-./bin/staging-setup.sh    # deve terminar com E2E: SIM
+./bin/staging-setup.sh
 ```
+
+O setup sobe MySQL staging, aplica o schema `knowledge`, e ingere a wiki em `discipline=doc` via `bin/ingest-wiki-doc.sh`.
 
 **Terminal 2 — servidor (deixar aberto):**
 
@@ -30,37 +32,49 @@ Abre o browser **só quando** o terminal mostrar `Uvicorn running on http://127.
 
 http://127.0.0.1:8001
 
-**Não uses** `python main.py` direto — lê o Aiven do `.env`, falha ao ligar e **não abre** a porta → `ERR_CONNECTION_REFUSED`.
+**Não uses** `python main.py` directo sem `KERNELBOT_ENV=staging` — lê o Aiven do `.env`, falha ao ligar ou aponta para produção por engano.
 
-**`comando não encontrado` ao correr staging-serve** — o `.env` tem linhas que o bash não consegue interpretar com `source`. Usa sempre `./bin/staging-serve.sh` actualizado (não faz `source .env`).
+**`comando não encontrado` ao correr staging-serve** — o `.env` tem linhas que o bash não consegue interpretar com `source`. Usa sempre `./bin/staging-serve.sh` (não faz `source .env` no bash; LLM keys vêm do Python via dotenv).
 
-No chat, escolhe disciplina **`_staging`** (se o UI filtrar) ou pergunta em modo global:
+## Smoke do silo `/doc`
+
+Ver [`PERGUNTAS-SMOKE-DOC-WIKI.md`](PERGUNTAS-SMOKE-DOC-WIKI.md) — 30 perguntas com protocolo:
+
+1. **Nova conversa** antes de cada pergunta (não só `/reset`).
+2. Aguardar badge **Online** e `data: [DONE]` antes da seguinte.
+3. Prefixo `/doc` em cada mensagem.
+
+Após editar ficheiros em `docs/wiki/`, re-ingest:
+
+```bash
+KERNELBOT_ENV=staging ./bin/ingest-wiki-doc.sh
+# reiniciar staging-serve ou POST /chat com message=/reload + Bearer
+```
+
+## Testes rápidos no chat
 
 | Teste | Pergunta sugerida |
 |-------|------------------|
-| Aula legada (sem meta) | `Quais são os quatro níveis de integridade do modelo relacional?` |
-| Keyword B2 (chunk 0) | `transformers` ou `O que são transformers em IA generativa?` |
+| Wiki doc | `/doc O que é o KernelBot?` |
+| Fontes doc | `/doc Quais comandos posso usar no início da mensagem?` |
 
 ## Checklist grounding `anchored` (default)
 
 Com `ACL_GROUNDING_POLICY=anchored` no `.env` (ou omitido — default em código):
 
-1. **On-corpus** (`reason=ok`): pergunta da tabela acima → resposta cita `[Fonte: …]` e pode incluir bloco *Extensão pedagógica (fora do material indexado):* **sem** override `post_generation_misalignment` no fim.
-2. **Off-corpus** (pergunta fora do índice, 2+ termos): aviso de lacuna ou nota permissiva — **sem** inventar comandos do ACL.
-3. **A/B:** repetir a mesma pergunta com `ACL_GROUNDING_POLICY=strict` → resposta mais conservadora (sem extensão pedagógica rotulada).
-4. **Desambiguação:** com `ACL_DISAMBIGUATION_ENABLED=true`, comportamento de chips inalterado.
+1. **On-corpus** (`reason=ok`): resposta cita `[Fonte: …]` e pode incluir bloco *Extensão pedagógica* sem override `post_generation_misalignment`.
+2. **Off-corpus** (pergunta fora do índice, 2+ termos): aviso de lacuna — sem inventar comandos do ACL.
+3. **Desambiguação:** chips só com `ACL_DISAMBIGUATION_ENABLED=true`; com `false`, `ambiguous_retrieval` gera texto sem chips automáticos.
 
 ## O que o setup faz
 
 1. **Docker** — `kernelbot-mysql-staging` na porta `3307`
-2. **Seed** — 2 linhas em `knowledge`:
-   - `_staging/legacy-modelagem` — markdown antigo **sem** bloco de metadados
-   - `_staging/fluencia-b2` — output do ingest ISS **com** `====== FIM DOS METADADOS ======`
-3. **E2E** — confirma `E2E: SIM` no terminal (BM25 + queries)
+2. **Schema** — tabela `knowledge` via `docker/init-knowledge.sql`
+3. **Ingest wiki** — páginas `docs/wiki/*.md` → `discipline=doc`
 
-## Ingestão completa (opcional)
+## Ingestão ISS completa (opcional)
 
-Para carregar **todas** as aulas do ISS no MySQL staging:
+Para carregar aulas do ISS no MySQL staging:
 
 ```bash
 ./bin/staging-ingest-iss.sh
@@ -71,7 +85,7 @@ Para carregar **todas** as aulas do ISS no MySQL staging:
 
 ```bash
 docker stop kernelbot-mysql-staging
-# ou, se tiveres docker compose:
+# ou:
 # docker compose -f docker-compose.staging.yml down
 ```
 
@@ -83,17 +97,20 @@ docker stop kernelbot-mysql-staging
 | `docker-compose.staging.yml` | MySQL Docker |
 | `bin/staging-setup.sh` | Setup automático |
 | `bin/staging-serve.sh` | Bot + UI com DB staging |
-| `docker/init-knowledge.sql` | Schema `knowledge` (init MySQL staging) |
+| `bin/ingest-wiki-doc.sh` | Wiki → MySQL `doc` |
+| `docker/init-knowledge.sql` | Schema `knowledge` |
 
 ## Problemas comuns
 
-**`permission denied` no Docker** — adiciona o teu user ao grupo docker e reinicia sessão:
+**`permission denied` no Docker** — adiciona o teu user ao grupo docker:
+
 ```bash
 sudo usermod -aG docker "$USER"
 newgrp docker   # ou logout/login
 ```
 
-**`Table 'kernelbot_staging.knowledge' doesn't exist`** — o container foi criado antes do schema existir. Corrige com:
+**`Table 'kernelbot_staging.knowledge' doesn't exist`:**
+
 ```bash
 ./bin/staging-apply-schema.sh
 ./bin/staging-setup.sh
@@ -101,29 +118,13 @@ newgrp docker   # ou logout/login
 
 **`Connection refused` na porta 3307** — corre `./bin/staging-setup.sh` de novo.
 
-**`OPENROUTER_API_KEY ausente`** — preenche o `.env` principal (só a chave LLM; o DB vem do staging).
+**Chave LLM ausente** — preenche o `.env` principal conforme `ACL_LLM_PROVIDER`.
 
-**Chat sem resposta / hard stop** — queries de **uma palavra** podem falhar nos gates (`ACL_RETRIEVAL_MIN_TERMS=2`). Usa 2+ termos: ex. `transformers IA generativa`.
+**Chat sem resposta / hard stop** — queries de **uma palavra** podem falhar nos gates (`ACL_RETRIEVAL_MIN_TERMS=2`). Usa 2+ termos.
 
-## Smoke test de latência (browser)
+## Testes automatizados
 
-Requer `staging-serve` activo e DevTools (F12).
-
-1. **Rede lenta:** DevTools → Network → Throttling → **Slow 3G** (ou Fast 3G).
-2. **Desambiguação com geração:** no `.env` usado pelo staging, `ACL_DISAMBIGUATION_ENABLED=true`. Reinicia `./bin/staging-serve.sh`.
-3. Envia pergunta ambígua (2+ hits no índice mínimo), ex.: `níveis integridade relacional transformers`.
-4. **Balão vazio (regressão):** durante o stream só com `<ambiguity_options>`, o balão deve mostrar o placeholder *«A preparar opções de escolha…»* (barra lateral azul), **não** ficar em branco até ao fim.
-5. **Verificar durante o stream:**
-   - Não aparece texto cru `<ambiguity_options>` na bolha.
-   - Se o modelo/camada emitir opções, surgem **chips** (`.disambiguation-chips`) como no hard stop.
-   - Breadcrumb: hint cinza “Várias fontes próximas…”.
-6. **Hard-cut (Offline):** DevTools → **Offline** a meio do XML — abort imediato; mensagem de interrupção ou chips parciais válidos.
-6b. **Rede pendurada (Slow 3G):** deixa o stream parar de enviar bytes **sem** Offline; após **~15s** (`DEFAULT_STREAM_INACTIVITY_MS` em `api.js`) deve aparecer aviso de inatividade — **não** placeholder infinito.
-6c. **Texto antes do XML:** intro em `.stream-prose`, placeholder em `.stream-ambiguity-slot` (sem apagar o parágrafo).
-6d. **Texto depois do XML:** frase após `</ambiguity_options>` deve aparecer em **`.stream-post-ambiguity`**, **abaixo** dos chips (ordem: intro → chips → pós-texto).
-6e. **Chips incrementais:** cada `<option …/>` completa deve aparecer no slot **sem** esperar o fim do stream; opções incompletas ficam ocultas.
-6f. **CLS:** ao fechar `</ambiguity_options>`, o placeholder some **antes** do texto em `.stream-post-ambiguity`; o texto inferior não deve saltar quando os chips terminam de montar.
-6g. **Timeout no meio do XML:** com 2+ `<option/>` já recebidas e rede pendurada ~15s → chips visíveis + nota “opções recuperadas”, **não** placeholder eterno.
-7. **Verificar meta tardio (opcional):** na aba Network, resposta `POST /chat` → eventos `data: [ACL_META]` — pode haver meta com `disambiguation_options` ou override `post_generation_override`.
-8. **Override pós-geração:** se o sanity check disparar, o hint passa a **amarelo** (misalignment) e o header mostra **Revisão** — chips removidos/invalidados.
-9. **Abort / falha:** interromper o carregamento da página ou fechar o separador a meio do stream → badge do header volta a **Online**; `finalizeAmbiguityStreamDisplay` não deixa bolha zumbi vazia.
+```bash
+cd /home/gaab/Documentos/gitHub/KernelBot
+PYTHONPATH=. .venv/bin/pytest tests/ -q
+```

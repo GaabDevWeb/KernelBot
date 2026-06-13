@@ -35,6 +35,7 @@ class Settings:
     openrouter_api_key: str
     cursor_api_key: str
     cursor_model: str
+    cursor_chat_only: bool
     project_root: Path
     content_dir: Path
     bm25_score_threshold: float
@@ -115,6 +116,12 @@ class Settings:
         openrouter_key = (os.getenv("OPENROUTER_API_KEY") or "").strip()
         cursor_key = (os.getenv("CURSOR_API_KEY") or "").strip()
         cursor_model = (os.getenv("ACL_CURSOR_MODEL") or "composer-2.5").strip()
+        cursor_chat_only = (os.getenv("ACL_CURSOR_CHAT_ONLY") or "").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
 
         if llm_provider == "openrouter" and not openrouter_key:
             raise RuntimeError("OPENROUTER_API_KEY ausente no .env — impossível iniciar (provider=openrouter).")
@@ -322,6 +329,7 @@ class Settings:
             openrouter_api_key=openrouter_key,
             cursor_api_key=cursor_key,
             cursor_model=cursor_model,
+            cursor_chat_only=cursor_chat_only,
             project_root=project_root,
             content_dir=content_dir,
             bm25_score_threshold=0.7,
