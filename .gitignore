@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 .env
 
 .pytest_cache/
@@ -17,25 +16,9 @@ dist/
 build/
 *.egg-info/
 scripts/
-=======
-.env
+CLAUDE.md
 
-.pytest_cache/
+node_modules/
+frontend/assets/css/output.css
 
-**/__pycache__/
-*.py[cod]
-*$py.class
-*.so
-
-content/
-.venv/
-.venv_readme_check/
-.ruff_cache/
-.mypy_cache/
-dist/
-build/
-*.egg-info/
-scripts/
-
->>>>>>> 124ae17972dd35902cec901ff1819bd5be55891f
 .agent_history.md
