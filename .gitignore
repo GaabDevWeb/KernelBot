@@ -22,3 +22,12 @@ node_modules/
 frontend/assets/css/output.css
 
 .agent_history.md
+.env.ex
+.env.staging.local
+package-lock.json
+.vscode/settings.json
+docs/PROMPT-AGENTE-DEPLOY-RAILWAY.md
+docs/PROMPT-AGENTE-PRODUTO-FEATURES.md
+tests/test_chat_provider_disambiguation.py
+tests/test_context_doc.py
+tests/test_wiki_doc.py
