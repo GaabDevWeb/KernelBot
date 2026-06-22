@@ -40,12 +40,6 @@ export function createChatView({ chatBox, emptyState, renderMarkdown }) {
         );
     }
 
-    function clearChat() {
-        chatBox.querySelectorAll(".message-row").forEach((el) => el.remove());
-        chatBox.querySelectorAll(".context-search-status").forEach((el) => el.remove());
-        if (emptyState) emptyState.style.display = "";
-    }
-
     function startBotStream() {
         hideEmptyState();
         return createStreamingBotRow(chatBox, scrollBottom);
@@ -54,7 +48,6 @@ export function createChatView({ chatBox, emptyState, renderMarkdown }) {
     return {
         appendMessage,
         renderSavedHistory,
-        clearChat,
         startBotStream,
         scrollBottom,
         hideEmptyState,

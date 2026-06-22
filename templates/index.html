@@ -4,72 +4,205 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kernel — assistente de estudo</title>
-    <meta name="description" content="Kernel: assistente de estudo com busca nas aulas do curso (BM25 + material indexado)." />
+    <title>ACL — Agente de Contexto Local</title>
+    <meta name="description" content="Chatbot RAG local de alta performance com busca BM25 sobre arquivos Markdown." />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet" />
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+    <link rel="stylesheet" href="/assets/css/output.css" />
     <link rel="stylesheet" href="/assets/css/theme.css" />
+    <link rel="stylesheet" href="/assets/css/entrance.css" />
 </head>
 
 <body>
+    <!-- Full-screen low-poly globe: the entrance backdrop, behind the whole app. -->
+    <canvas id="globe" aria-hidden="true"></canvas>
+
     <div class="app">
 
         <header class="header">
-            <div class="context-pin-badge" id="context-pin-badge" hidden aria-live="polite"></div>
-            <button type="button" class="header-new-chat" id="new-chat-button" title="Limpar histórico e contexto fixado">
-                Nova conversa
-            </button>
-            <div class="header-badge online" id="status-badge">Online</div>
+            <div class="header-badge online entrance-init-hidden" id="status-badge">Online</div>
         </header>
 
         <main class="chat-box" id="chat" role="log" aria-live="polite" aria-label="Histórico de mensagens">
             <div class="empty-state" id="empty-state">
-                <div class="empty-state-icon" aria-hidden="true">◉</div>
-                <div class="empty-state-title">Oi, sou o Kernel</div>
-                <p class="empty-state-intro">
-                    Assistente de estudo das <strong>suas aulas</strong> — o que está indexado manda; o resto eu digo
-                    na cara ou marco como extensão, sem inventar material do curso.
-                </p>
-                <p class="empty-state-sub">
-                    Pergunte com disciplina e tema, ou use um prefixo:
-                    <code>/python</code> · <code>/visualizacao-sql</code> · <code>/projeto-bloco</code> ·
-                    <code>/planejamento-curso-carreira</code> · <code>/doc</code> · <code>/content</code>
-                </p>
-                <div class="cmd-pills">
-                    <span class="cmd-pill">/python o que são listas?</span>
-                    <span class="cmd-pill">/visualizacao-sql explique GROUP BY</span>
-                    <span class="cmd-pill">Por que aprender Python?</span>
-                    <span class="cmd-pill">/projeto-bloco integrar Python e SQL</span>
-                    <span class="cmd-pill">/content diferença ML e DL</span>
+                <!-- Animated title + cycling command suggestion (entrance.js). -->
+                <div class="entrance-content">
+                    <p class="entrance-eyebrow">KERNEL ASSISTANT</p>
+                    <h1 class="entrance-headline">
+                        <span class="entrance-title-text"></span><span class="entrance-caret" aria-hidden="true"></span>
+                    </h1>
+
+                    <div class="entrance-suggestion-wrap">
+                        <span class="entrance-suggestion" aria-live="polite" title="Clique para usar esta sugestão">
+                            <span class="entrance-suggestion-text"></span><span class="entrance-suggestion-caret" aria-hidden="true"></span>
+                        </span>
+                    </div>
                 </div>
             </div>
         </main>
 
-        <footer class="input-area">
-            <div class="silo-pill" id="silo-pill" hidden aria-live="polite"></div>
-            <div class="input-hint">
+        <footer class="input-area rounded-full mb-3 entrance-init-hidden">
+            <!-- Silo + pinned context share one gray panel, stacked in a column. -->
+            <div class="context-stack px-6 py-2 bg-zinc-700 text-neutral-200 rounded-t-4xl rounded-b-sm" id="context-stack" hidden>
+                <div class="silo-pill" id="silo-pill" hidden aria-live="polite"></div>
+
+                <!-- Pinned context: eye icon + aula: "<label>" -->
+                <div class="context-pin-badge" id="context-pin-badge" hidden aria-live="polite">
+                    <svg class="context-pin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <span class="context-pin-label"></span>
+                </div>
+            </div>
+
+            <!-- <div class="input-hint">
                 <span>Enter</span> envia · <span>Shift+Enter</span> nova linha ·
                 <span>/python</span> · <span>/visualizacao-sql</span> · <span>/projeto-bloco</span> ·
                 <span>/planejamento-curso-carreira</span> · <span>/doc</span> · <span>/content</span>
                 · <span>/reload</span> para reconstruir o índice
-            </div>
+            </div> -->
             <div class="input-row">
-                <textarea id="message-input" rows="1" placeholder="Digite sua mensagem..." autocomplete="off"
-                    aria-label="Campo de mensagem"></textarea>
-                <button id="send-button" aria-label="Enviar mensagem" title="Enviar">
-                    ➤
+
+                <!-- Scope selector -->
+                <div class="relative flex-shrink-0" id="scope-selector">
+                    <button id="scope-btn" type="button"
+                        class="rounded-full p-3 flex items-center justify-center cursor-pointer"
+                        aria-label="Selecionar escopo da busca" title="Selecionar escopo" aria-haspopup="true"
+                        aria-expanded="false">
+                        <!-- <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5 rotate-60"
+                            viewBox="0 0 576 512">
+                            <path fill="rgb(255, 255, 255)"
+                                d="M7-25c9.4-9.4 24.6-9.4 33.9 0L569 503c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0L7 9C-2.3-.4-2.3-15.6 7-25z" />
+                        </svg> -->
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                            <rect x="1" y="1" width="6" height="6" rx="1"/>
+                            <rect x="9" y="1" width="6" height="6" rx="1"/>
+                            <rect x="1" y="9" width="6" height="6" rx="1"/>
+                            <rect x="9" y="9" width="6" height="6" rx="1"/>
+                        </svg>
+                    </button>
+
+                    <div id="scope-menu" role="menu" aria-labelledby="scope-btn"
+                        class="absolute left-0 z-50 rounded-2xl overflow-hidden">
+                        <div class="!p-4">
+                            <p
+                                class="px-4 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-widest scope-menu-label">
+                                Escopo da busca
+                            </p>
+
+                            <button type="button" role="menuitem" data-cmd="/python"
+                                class="scope-option rounded-xl w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
+                                <span class="text-sm font-semibold scope-option-cmd">/python</span>
+                                <span class="text-xs leading-snug scope-option-desc">Consultas sobre Python e
+                                    programação</span>
+                            </button>
+
+                            <button type="button" role="menuitem" data-cmd="/visualizacao-sql"
+                                class="scope-option rounded-xl w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
+                                <span class="text-sm font-semibold scope-option-cmd">/sql</span>
+                                <span class="text-xs leading-snug scope-option-desc">Visualização SQL e consultas de
+                                    banco de dados</span>
+                            </button>
+
+                            <button type="button" role="menuitem" data-cmd="/planejamento-curso-carreira"
+                                class="scope-option rounded-xl w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
+                                <span class="text-sm font-semibold scope-option-cmd">/carreira</span>
+                                <span class="text-xs leading-snug scope-option-desc">Planejamento de curso e carreira
+                                    profissional</span>
+                            </button>
+
+                            <button type="button" role="menuitem" data-cmd="/doc"
+                                class="scope-option rounded-xl w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
+                                <span class="text-sm font-semibold scope-option-cmd">/doc</span>
+                                <span class="text-xs leading-snug scope-option-desc">Documentação e arquivos internos do
+                                    sistema</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- End scope selector -->
+
+                <textarea class="rounded-2xl" id="message-input" rows="1" placeholder="O que vamos revisar hoje?"
+                    autocomplete="off" aria-label="Campo de mensagem"></textarea>
+                <button class="bg-red-500 rounded-full p-3" id="send-button" aria-label="Enviar mensagem" title="Enviar">
+                    <!-- ➤ -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4"
+                        viewBox="0 0 384 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+                        <path fill="rgb(255, 255, 255)"
+                            d="M214.6 9.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 109.3 160 480c0 17.7 14.3 32 32 32s32-14.3 32-32l0-370.7 105.4 105.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z" />
+                    </svg>
                 </button>
             </div>
         </footer>
 
     </div>
 
+    <!-- GSAP powers the entrance animation (globe + typed title + pill). -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script type="module" src="/src/entrance.js"></script>
     <script type="module" src="/src/main.js"></script>
+    <script>
+        (function () {
+            var btn = document.getElementById('scope-btn');
+            var menu = document.getElementById('scope-menu');
+            var input = document.getElementById('message-input');
+
+            function openMenu() {
+                menu.classList.add('open');
+                btn.setAttribute('aria-expanded', 'true');
+            }
+            function closeMenu() {
+                menu.classList.remove('open');
+                btn.setAttribute('aria-expanded', 'false');
+            }
+
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                menu.classList.contains('open') ? closeMenu() : openMenu();
+            });
+
+            menu.querySelectorAll('.scope-option').forEach(function (opt) {
+                opt.addEventListener('click', function () {
+                    var cmd = opt.dataset.cmd + ' ';
+                    var current = input.value.trim();
+                    var stripped = current.replace(/^\/[a-z\-]+\s*/, '');
+                    input.value = stripped ? cmd + stripped : cmd;
+                    input.dispatchEvent(new Event('input'));
+                    closeMenu();
+                    input.focus();
+                    input.selectionStart = input.selectionEnd = input.value.length;
+                });
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!document.getElementById('scope-selector').contains(e.target)) {
+                    closeMenu();
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closeMenu();
+            });
+
+            document.querySelectorAll('.suggestion-card').forEach(function (card) {
+                card.addEventListener('click', function () {
+                    input.value = card.dataset.prompt;
+                    input.dispatchEvent(new Event('input'));
+                    input.focus();
+                    input.selectionStart = input.selectionEnd = input.value.length;
+                });
+            });
+        })();
+    </script>
 </body>
 
 </html>
