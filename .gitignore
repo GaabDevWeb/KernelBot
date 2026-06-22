@@ -3,6 +3,7 @@
 !.env.example
 !.env.*.example
 
+node_modules/
 __pycache__/
 *.py[cod]
 *$py.class

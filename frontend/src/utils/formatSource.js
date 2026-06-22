@@ -4,27 +4,46 @@
  * @returns {string}
  */
 export function formatSourceLabel(raw) {
+    const parts = parseSourceParts(raw);
+    if (!parts) return "";
+    if (parts.discipline && parts.lesson) {
+        return `${parts.discipline} · ${parts.lesson}`;
+    }
+    return parts.lesson || parts.discipline || parts.raw;
+}
+
+/**
+ * @param {string} raw
+ * @returns {{ raw: string, discipline: string, lesson: string } | null}
+ */
+export function parseSourceParts(raw) {
     const s = String(raw || "").trim();
-    if (!s) return "";
+    if (!s) return null;
 
     if (s.startsWith("db:")) {
         const path = s.slice(3);
         const parts = path.split("/").filter(Boolean);
         if (parts.length >= 2) {
-            const discipline = humanizeSegment(parts[0]);
-            const slug = humanizeSlug(parts.slice(1).join("/"));
-            return `${discipline} · ${slug}`;
+            return {
+                raw: s,
+                discipline: humanizeSegment(parts[0]),
+                lesson: humanizeSlug(parts.slice(1).join("/")),
+            };
         }
         if (parts.length === 1) {
-            return humanizeSlug(parts[0]);
+            return { raw: s, discipline: "", lesson: humanizeSlug(parts[0]) };
         }
     }
 
     const segments = s.replace(/\\/g, "/").split("/").filter(Boolean);
     if (segments.length >= 2) {
-        return `${humanizeSegment(segments[segments.length - 2])} · ${humanizeSlug(segments[segments.length - 1])}`;
+        return {
+            raw: s,
+            discipline: humanizeSegment(segments[segments.length - 2]),
+            lesson: humanizeSlug(segments[segments.length - 1]),
+        };
     }
-    return humanizeSlug(s);
+    return { raw: s, discipline: "", lesson: humanizeSlug(s) };
 }
 
 /**
@@ -38,7 +57,12 @@ function humanizeSegment(segment) {
         _staging: "Staging",
         legacy: "Legado",
         fluencia: "Fluência IA",
-        "fluencia-ia": "Fluência IA",
+        "fluencia-ia": "Fluência em IA",
+        "python-processamento-dados": "Python — PPD",
+        "sql-modelagem-relacional": "SQL — modelagem",
+        "visualizacao-sql": "Visualização SQL",
+        "planejamento-curso-carreira": "Planejamento de carreira",
+        "projeto-bloco": "Projeto bloco",
     };
     const key = segment.toLowerCase();
     if (map[key]) return map[key];

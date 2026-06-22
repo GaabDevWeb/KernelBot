@@ -54,7 +54,42 @@ Abrir: **http://127.0.0.1:8001**
 
 Requer repo ISS no path esperado pelo script. Depois: restart ou `POST /reload`.
 
+### Ingest local via `jsons/` (dev/staging)
+
+Quando o script ISS não está disponível no checkout:
+
+```bash
+KERNELBOT_ENV=staging ./bin/ingest-jsons.sh
+```
+
+UPSERT de `jsons/<discipline>/*.json` → `knowledge` (meta B2 + body). Depois: `/reload` ou restart.
+
 ## Bateria de testes no chat
+
+### Novas disciplinas (após ingest + reload)
+
+| Comando + pergunta | Critério |
+|--------------------|----------|
+| `/fluencia-ia diferença ML e DL` | Fontes `db:fluencia-ia/...` apenas |
+| `/python-processamento-dados try except` | Fontes `db:python-processamento-dados/...` apenas |
+| `/sql-modelagem-relacional normalização 3FN` | Fontes `db:sql-modelagem-relacional/...` apenas |
+
+### Anti-vazamento entre silos
+
+| Comando | Query | Não deve trazer |
+|---------|-------|-----------------|
+| `/visualizacao-sql` | modelagem MER DER | `db:sql-modelagem-relacional/...` |
+| `/sql-modelagem-relacional` | dashboard Looker | `db:visualizacao-sql/...` |
+| `/python` | listas for | `db:python-processamento-dados/...` |
+
+### Regressão — disciplinas existentes
+
+| Comando | Smoke |
+|---------|-------|
+| `/python` | listas, for, enumerate |
+| `/visualizacao-sql` | GROUP BY, Looker |
+| `/projeto-bloco` | CRUD, mini-projeto |
+| `/planejamento-curso-carreira` | currículo, SWOT |
 
 ### Devem passar (retrieval + resposta)
 

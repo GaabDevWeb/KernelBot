@@ -12,7 +12,13 @@
     --error: #F87171;
     --error-bg: #3E1C1C;
     --success: #4ADE80;
+    --warning: #FBBF24;
+    --warning-bg: #422006;
+    --radius-sm: 4px;
+    --radius-md: 8px;
     --radius: 0;
+    --radius-xl: 12px;
+    --radius-2xl: 16px;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
@@ -78,6 +84,24 @@ body {
     animation: fade-in-down 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.header-new-chat {
+    margin-right: auto;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.header-new-chat:hover {
+    color: var(--text);
+    border-color: var(--accent);
+}
+
 /* Gray panel holding the silo pill + pinned-context badge in a column. */
 .context-stack {
     display: flex;
@@ -139,6 +163,53 @@ body {
 .header-badge.online {
     border-color: var(--success);
     color: var(--success);
+}
+
+.header-badge.warning {
+    border-color: var(--warning);
+    color: var(--warning);
+    background: var(--warning-bg);
+}
+
+/* ===== Disciplina activa (header) ===== */
+.active-discipline-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: min(52vw, 320px);
+    padding: 4px 10px;
+    border: 1px solid var(--accent);
+    background: rgba(91, 136, 178, 0.12);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text);
+    overflow: hidden;
+}
+
+.active-discipline-badge[hidden] {
+    display: none;
+}
+
+.active-discipline-badge__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(91, 136, 178, 0.65);
+}
+
+.active-discipline-badge__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.active-discipline-badge__cmd {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    flex-shrink: 0;
 }
 
 /* ===== Chat Area ===== */
@@ -319,9 +390,34 @@ body {
 .silo-pill {
     font-size: 12px;
     font-weight: 400;
-    /* color: var(--accent); */
     margin-bottom: 6px;
     letter-spacing: 0.02em;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.silo-pill__label {
+    color: var(--text-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.silo-pill__name {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.silo-pill__cmd {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-muted);
+    border-radius: var(--radius-sm);
 }
 
 /* ===== Estado intermédio (análise de contexto) ===== */
@@ -543,6 +639,11 @@ body {
     color: var(--accent);
 }
 
+#scope-btn.scope-btn--active {
+    color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(91, 136, 178, 0.35);
+}
+
 #scope-menu {
     bottom: calc(100% + 10px);
     min-width: 252px;
@@ -587,6 +688,357 @@ body {
 
 .scope-option-desc {
     color: var(--text-muted);
+}
+
+/* ===== Onboarding ===== */
+.onboarding-banner {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 0 10px 8px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    border-radius: var(--radius-xl);
+}
+
+.onboarding-banner__title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.onboarding-banner__steps {
+    margin: 0;
+    padding-left: 1.2em;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.55;
+}
+
+.onboarding-banner__steps li {
+    margin: 0.25em 0;
+}
+
+.onboarding-banner__steps kbd {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.onboarding-banner__dismiss {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+}
+
+.onboarding-banner__dismiss:hover {
+    background: rgba(91, 136, 178, 0.15);
+}
+
+/* ===== Fontes (cards) ===== */
+.message-sources {
+    margin-top: 2px;
+}
+
+.message-sources__heading {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin: 0 0 6px;
+}
+
+.message-sources__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.source-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    border-radius: var(--radius-md);
+}
+
+.source-card::before {
+    content: "";
+    width: 3px;
+    align-self: stretch;
+    border-radius: 2px;
+    background: var(--accent);
+    flex-shrink: 0;
+}
+
+.source-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.source-card__discipline {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+}
+
+.source-card__lesson {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.message-sources__toggle {
+    margin-top: 6px;
+    padding: 0;
+    border: none;
+    background: none;
+    font-size: 11px;
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.message-sources-note {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: 1.45;
+}
+
+/* ===== Hints e badges de contexto ===== */
+.message-hint-badge {
+    font-size: 11px;
+    line-height: 1.45;
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-muted);
+}
+
+.message-hint-badge--disambiguation {
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+.message-hint-badge--misalignment {
+    border-color: var(--error);
+    background: var(--error-bg);
+    color: var(--error);
+}
+
+.message-hint-badge--advisory {
+    border-color: var(--warning);
+    background: var(--warning-bg);
+    color: var(--warning);
+}
+
+.message-hint-badge--scope {
+    border-color: var(--border);
+}
+
+.message-context-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.message-context-badge {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+}
+
+.message-context-badge--course {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.message-context-badge--pedagogy {
+    border-color: var(--warning);
+    color: var(--warning);
+}
+
+/* ===== Desambiguação (chips) ===== */
+.disambiguation-chips {
+    margin: 10px 0;
+    padding: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    border-radius: var(--radius-xl);
+}
+
+.disambiguation-chips__lead {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+    line-height: 1.45;
+}
+
+.disambiguation-chips__grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.disambiguation-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.disambiguation-chip:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: rgba(91, 136, 178, 0.1);
+}
+
+.disambiguation-chip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.disambiguation-chip__title {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.disambiguation-chip__meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.disambiguation-chips--frozen .disambiguation-chip {
+    opacity: 0.72;
+    cursor: default;
+}
+
+.disambiguation-chips--invalidated {
+    border-color: var(--error);
+}
+
+.disambiguation-chips--rescued {
+    border-color: var(--warning);
+}
+
+/* ===== Index gap ===== */
+.index-gap-alert {
+    padding: 12px 14px;
+    border: 1px solid var(--warning);
+    background: var(--warning-bg);
+    border-radius: var(--radius-xl);
+    color: var(--text);
+}
+
+.index-gap-alert__title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--warning);
+    margin: 0 0 6px;
+}
+
+.index-gap-alert__body {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+    line-height: 1.45;
+}
+
+.index-gap-alert__meta {
+    margin: 0 0 10px;
+    font-size: 11px;
+}
+
+.index-gap-alert__row {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 8px;
+    padding: 4px 0;
+    border-top: 1px solid var(--border);
+}
+
+.index-gap-alert__row dt {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.index-gap-alert__row dd {
+    margin: 0;
+    font-family: var(--font-mono);
+    word-break: break-word;
+}
+
+.index-gap-alert__hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.45;
+}
+
+/* ===== Stream / ambiguidade ===== */
+.stream-truncated-msg,
+.ambiguity-stream-placeholder {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin: 8px 0;
+    line-height: 1.45;
+}
+
+.stream-truncated-msg--inline {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+}
+
+/* ===== Focus global ===== */
+button:focus-visible,
+textarea:focus-visible,
+.scope-option:focus-visible,
+.message-sources__toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 
 /* ===== Responsividade ===== */

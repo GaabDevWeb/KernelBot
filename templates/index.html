@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ACL — Agente de Contexto Local</title>
-    <meta name="description" content="Chatbot RAG local de alta performance com busca BM25 sobre arquivos Markdown." />
+    <title>Kernel — Assistente de Estudo</title>
+    <meta name="description" content="Assistente de estudo com busca nas aulas indexadas — Python, SQL, carreira e mais." />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
@@ -26,6 +26,15 @@
     <div class="app">
 
         <header class="header">
+            <button type="button" class="header-new-chat entrance-init-hidden" id="new-chat-button"
+                title="Limpar histórico e contexto fixado">
+                Nova conversa
+            </button>
+            <div class="active-discipline-badge" id="active-discipline-badge" hidden>
+                <span class="active-discipline-badge__dot" aria-hidden="true"></span>
+                <span class="active-discipline-badge__label"></span>
+                <code class="active-discipline-badge__cmd"></code>
+            </div>
             <div class="header-badge online entrance-init-hidden" id="status-badge">Online</div>
         </header>
 
@@ -64,12 +73,10 @@
                 </div>
             </div>
 
-            <!-- <div class="input-hint">
-                <span>Enter</span> envia · <span>Shift+Enter</span> nova linha ·
-                <span>/python</span> · <span>/visualizacao-sql</span> · <span>/projeto-bloco</span> ·
-                <span>/planejamento-curso-carreira</span> · <span>/doc</span> · <span>/content</span>
-                · <span>/reload</span> para reconstruir o índice
-            </div> -->
+            <div class="input-hint px-4 pb-2" id="input-hint">
+                <span>Enter</span> envia · <span>Shift+Enter</span> nova linha · escolha a matéria no botão
+                <span aria-hidden="true">⊞</span> à esquerda
+            </div>
             <div class="input-row">
 
                 <!-- Scope selector -->
@@ -96,36 +103,9 @@
                         <div class="!p-4">
                             <p
                                 class="px-4 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-widest scope-menu-label">
-                                Escopo da busca
+                                Matéria da busca
                             </p>
-
-                            <button type="button" role="menuitem" data-cmd="/python"
-                                class="scope-option rounded-xl w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
-                                <span class="text-sm font-semibold scope-option-cmd">/python</span>
-                                <span class="text-xs leading-snug scope-option-desc">Consultas sobre Python e
-                                    programação</span>
-                            </button>
-
-                            <button type="button" role="menuitem" data-cmd="/visualizacao-sql"
-                                class="scope-option rounded-xl w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
-                                <span class="text-sm font-semibold scope-option-cmd">/sql</span>
-                                <span class="text-xs leading-snug scope-option-desc">Visualização SQL e consultas de
-                                    banco de dados</span>
-                            </button>
-
-                            <button type="button" role="menuitem" data-cmd="/planejamento-curso-carreira"
-                                class="scope-option rounded-xl w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
-                                <span class="text-sm font-semibold scope-option-cmd">/carreira</span>
-                                <span class="text-xs leading-snug scope-option-desc">Planejamento de curso e carreira
-                                    profissional</span>
-                            </button>
-
-                            <button type="button" role="menuitem" data-cmd="/doc"
-                                class="scope-option rounded-xl w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
-                                <span class="text-sm font-semibold scope-option-cmd">/doc</span>
-                                <span class="text-xs leading-snug scope-option-desc">Documentação e arquivos internos do
-                                    sistema</span>
-                            </button>
+                            <div id="scope-menu-list"></div>
                         </div>
                     </div>
                 </div>
@@ -150,59 +130,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script type="module" src="/src/entrance.js"></script>
     <script type="module" src="/src/main.js"></script>
-    <script>
-        (function () {
-            var btn = document.getElementById('scope-btn');
-            var menu = document.getElementById('scope-menu');
-            var input = document.getElementById('message-input');
-
-            function openMenu() {
-                menu.classList.add('open');
-                btn.setAttribute('aria-expanded', 'true');
-            }
-            function closeMenu() {
-                menu.classList.remove('open');
-                btn.setAttribute('aria-expanded', 'false');
-            }
-
-            btn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                menu.classList.contains('open') ? closeMenu() : openMenu();
-            });
-
-            menu.querySelectorAll('.scope-option').forEach(function (opt) {
-                opt.addEventListener('click', function () {
-                    var cmd = opt.dataset.cmd + ' ';
-                    var current = input.value.trim();
-                    var stripped = current.replace(/^\/[a-z\-]+\s*/, '');
-                    input.value = stripped ? cmd + stripped : cmd;
-                    input.dispatchEvent(new Event('input'));
-                    closeMenu();
-                    input.focus();
-                    input.selectionStart = input.selectionEnd = input.value.length;
-                });
-            });
-
-            document.addEventListener('click', function (e) {
-                if (!document.getElementById('scope-selector').contains(e.target)) {
-                    closeMenu();
-                }
-            });
-
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') closeMenu();
-            });
-
-            document.querySelectorAll('.suggestion-card').forEach(function (card) {
-                card.addEventListener('click', function () {
-                    input.value = card.dataset.prompt;
-                    input.dispatchEvent(new Event('input'));
-                    input.focus();
-                    input.selectionStart = input.selectionEnd = input.value.length;
-                });
-            });
-        })();
-    </script>
 </body>
 
 </html>

@@ -86,8 +86,12 @@ import { createGlobe } from "./globe.js";
     const input = document.getElementById("message-input");
     const items = [
       "/python Como listas funcionam?",
-      "/sql Como usar GROUP BY?",
-      "/carreira Como montar um portfólio?",
+      "/visualizacao-sql Como usar GROUP BY?",
+      "/planejamento-curso-carreira Como montar um portfólio?",
+      "/fluencia-ia Qual a diferença entre ML e DL?",
+      "/python-processamento-dados Como funciona try except?",
+      "/sql-modelagem-relacional O que é normalização 3FN?",
+      "/projeto-bloco Como estruturar o mini-projeto?",
       "/doc Como o sistema funciona?",
     ];
 

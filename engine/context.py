@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from core.config import Settings
+from core.disciplines import command_prefixes, query_markers_by_discipline, trace_label_by_discipline
 from core.structured_log import ACL_MOD_CONTEXT, log_event
 from engine.lesson_catalog import CatalogMatchResult, LessonCatalog, LessonEntry
 from engine.pinned_store import PinnedContext, PinnedSessionStore
@@ -42,21 +43,10 @@ _CATALOG_RESCUE_REASONS: frozenset[str] = frozenset({"ambiguous_retrieval"})
 log = logging.getLogger(f"kernelbots.{__name__}")
 
 # Mais longo primeiro; exige espaço ou fim após o prefixo (evita `/pythonfoo`).
-_DISCIPLINE_COMMAND_PREFIXES: tuple[tuple[str, str], ...] = (
-    ("/planejamento-curso-carreira", "planejamento-curso-carreira"),
-    ("/visualizacao-sql", "visualizacao-sql"),
-    ("/projeto-bloco", "projeto-bloco"),
-    ("/python", "python"),
-)
+# SSOT: core/disciplines.json
+_DISCIPLINE_COMMAND_PREFIXES: tuple[tuple[str, str], ...] = command_prefixes()
 
-_TRACE_LABEL_BY_DISCIPLINE: dict[str, str] = {
-    "python": "Python",
-    "visualizacao-sql": "Visualização SQL",
-    "projeto-bloco": "Projeto bloco",
-    "planejamento-curso-carreira": "Planejamento de carreira",
-    "doc": "Documentação (doc)",
-    "geral": "Base geral",
-}
+_TRACE_LABEL_BY_DISCIPLINE: dict[str, str] = trace_label_by_discipline()
 
 _SOURCES_CAP = 20
 
@@ -373,73 +363,7 @@ def _relax_weak_reason_for_pinned_follow_up(
     return reason
 
 
-_PYTHON_QUERY_MARKERS = (
-    "jupyter",
-    "variável",
-    "variavel",
-    "f-string",
-    "fstring",
-    "python",
-    "elif",
-    "snake_case",
-    "nameerror",
-    "enumerate",
-    "lista",
-    "laço",
-    "laco",
-    "print(",
-    "for ",
-)
-
-_SQL_QUERY_MARKERS = (
-    "looker",
-    "group by",
-    "groupby",
-    "dashboard",
-    "having",
-    " duplicata",
-    "sql",
-    " join ",
-    "select ",
-    "cafeteria",
-)
-
-_CARREIRA_QUERY_MARKERS = (
-    "competência",
-    "competencia",
-    "avaliação por",
-    "avaliacao por",
-    "carreira",
-    "estágio",
-    "estagio",
-    "linkedin",
-    "rubrica",
-    "entrevista",
-    "currículo",
-    "curriculo",
-    "oratória",
-    "oratoria",
-    "soft skill",
-    "estágio de",
-)
-
-_PROJETO_BLOCO_QUERY_MARKERS = (
-    "placeholder",
-    "commit()",
-    "crud",
-    "mini-projeto",
-    "mini projeto",
-    "projeto de bloco",
-    "projeto-bloco",
-    "ingestão csv",
-    "ingestao csv",
-    "postgresql",
-    "mysql",
-    "sql server",
-    "modelagem conceitual",
-    "ecommerce",
-    "e-commerce",
-)
+_QUERY_MARKERS_BY_DISCIPLINE: dict[str, tuple[str, ...]] = query_markers_by_discipline()
 
 _PIN_POISONING_RE = re.compile(
     r"(ignore\s+(todas\s+as\s+)?regras|ignore\s+suas\s+instru|developer\s+mode|"
@@ -455,12 +379,10 @@ def _infer_query_discipline_from_text(query: str) -> str | None:
     """Heurística leve: disciplina provável da pergunta (sem LLM)."""
     q = query.lower()
     scores: dict[str, int] = {
-        "python": sum(1 for m in _PYTHON_QUERY_MARKERS if m in q),
-        "visualizacao-sql": sum(1 for m in _SQL_QUERY_MARKERS if m in q),
-        "planejamento-curso-carreira": sum(1 for m in _CARREIRA_QUERY_MARKERS if m in q),
-        "projeto-bloco": sum(1 for m in _PROJETO_BLOCO_QUERY_MARKERS if m in q),
+        disc: sum(1 for m in markers if m in q)
+        for disc, markers in _QUERY_MARKERS_BY_DISCIPLINE.items()
     }
-    best_score = max(scores.values())
+    best_score = max(scores.values()) if scores else 0
     if best_score < 1:
         return None
     winners = [disc for disc, n in scores.items() if n == best_score]

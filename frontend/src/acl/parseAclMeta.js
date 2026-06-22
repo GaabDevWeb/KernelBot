@@ -1,4 +1,6 @@
 /** Razões de hard_stop que usam UI estruturada (sem markdown streaming). */
+import { scopePrefixForDiscipline as _scopePrefix } from "../config/disciplines.js";
+
 export const STRUCTURED_HARD_STOP_REASONS = ["index_gap", "ambiguous_retrieval"];
 
 /**
@@ -25,22 +27,12 @@ export function isDisambiguationGeneration(meta) {
     return allowsGeneration(meta) && String(meta?.reason || "") === "ambiguous_retrieval";
 }
 
-/** Mapa discipline → prefixo de comando (espelha `engine/context.py`). */
-const DISCIPLINE_TO_COMMAND = {
-    python: "/python",
-    "visualizacao-sql": "/visualizacao-sql",
-    "projeto-bloco": "/projeto-bloco",
-    "planejamento-curso-carreira": "/planejamento-curso-carreira",
-};
-
 /**
  * @param {string | undefined} discipline
  * @returns {string} ex.: `/python `
  */
 export function scopePrefixForDiscipline(discipline) {
-    const key = (discipline || "").trim().toLowerCase();
-    const cmd = DISCIPLINE_TO_COMMAND[key];
-    return cmd ? `${cmd} ` : "";
+    return _scopePrefix(discipline);
 }
 
 /**
