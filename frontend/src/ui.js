@@ -3,6 +3,9 @@ import {
     disambiguationOptionsFromMeta,
     stripAmbiguityMarkupFromText,
 } from "./acl/parseAmbiguityOptions.js";
+import { buildTurnMeta } from "./chat/restoreTurn.js";
+import { createComposerController } from "./chat/ComposerController.js";
+import { createMetaRenderer } from "./chat/MetaRenderer.js";
 import {
     buildDisambiguationFollowUp,
     isDisambiguationGeneration,
@@ -11,11 +14,13 @@ import {
     isStructuredHardStop,
     normalizeHardStopPayload,
     resolveTurnHintVariant,
-    scopeHintFromMeta,
     sourcesNoteFromMeta,
     shouldMountDisambiguationChips,
     shouldMountIndexGap,
 } from "./acl/parseAclMeta.js";
+import { createSlashCommandMenu } from "./components/SlashCommandMenu.js";
+import { createConversationSidebar } from "./components/ConversationSidebar.js";
+import { createContextWindowNotice } from "./components/ContextWindowNotice.js";
 import { createComposer } from "./components/Composer.js";
 import { createChatView } from "./components/ChatView.js";
 import {
@@ -36,17 +41,18 @@ import { mountIndexGapAlert } from "./components/IndexGapAlert.js";
 import { createStatusBadge } from "./components/StatusBadge.js";
 import {
     setBreadcrumbsContent,
-    setContextBadges,
     setTurnHintBadge,
 } from "./components/MessageRow.js";
 import { groundingPolicyLabel, reasonLabel } from "./acl/reasonLabel.js";
-import { siloClassSuffix, siloDisplayName, immediateContextLabel, activeDisciplineFromInput } from "./utils/contextLabel.js";
+import { immediateContextLabel } from "./utils/contextLabel.js";
 import {
-    clearConversation,
     getHistoryForApi,
+    loadConversation,
     loadHistory,
     saveHistory,
 } from "./utils/history.js";
+import { createConversation, getActiveConversation } from "./utils/conversations.js";
+import { applyDisciplineDeepLink } from "./utils/deepLink.js";
 import { getOrCreateSessionId, regenerateSessionId } from "./utils/sessionId.js";
 import { highlightCodeBlocks, renderMarkdown } from "./utils/markdown.js";
 import { createGlobe } from "./globe.js";
@@ -64,6 +70,13 @@ export function init() {
     const newChatBtn = document.getElementById("new-chat-button");
     const activeDisciplineBadge = document.getElementById("active-discipline-badge");
     const scopeBtn = document.getElementById("scope-btn");
+    const contextWindowNoticeEl = document.getElementById("context-window-notice");
+    const composerWrap = document.getElementById("composer-wrap");
+    const sidebarEl = document.getElementById("conversation-sidebar");
+    const conversationList = document.getElementById("conversation-list");
+    const sidebarOverlay = document.getElementById("sidebar-overlay");
+    const sidebarToggle = document.getElementById("sidebar-toggle");
+    const sidebarNewBtn = document.getElementById("sidebar-new-chat");
     let sessionId = getOrCreateSessionId();
 
     if (!chatBox || !input || !sendBtn || !statusBadge) {
@@ -73,15 +86,57 @@ export function init() {
 
     const chatService = new ChatService();
     const status = createStatusBadge(statusBadge);
-    const chatView = createChatView({ chatBox, emptyState, renderMarkdown });
+    const contextWindowNotice = createContextWindowNotice(contextWindowNoticeEl);
+
+    function refreshContextWindowNotice(turnCount) {
+        contextWindowNotice.refresh(turnCount);
+    }
+
+    function pinFromSource(detail) {
+        const followUp = buildDisambiguationFollowUp({
+            discipline: String(detail?.discipline || ""),
+            slug: String(detail?.slug || ""),
+            title: String(detail?.lesson_title || ""),
+        });
+        input.value = followUp;
+        input.dispatchEvent(new Event("input"));
+        refreshSiloUi();
+        if (sending) {
+            pendingChipFollowUp = followUp;
+            return;
+        }
+        void sendMessage(followUp);
+    }
+
+    const sourceHandlers = { onPinSource: pinFromSource };
+
+    function chipSelectFromRestore(candidate) {
+        const followUp = buildDisambiguationFollowUp(candidate);
+        input.value = followUp;
+        input.dispatchEvent(new Event("input"));
+        refreshSiloUi();
+        if (sending) {
+            pendingChipFollowUp = followUp;
+            return;
+        }
+        void sendMessage(followUp);
+    }
+
+    const chipHandlers = { onSelect: chipSelectFromRestore };
+
+    const chatView = createChatView({
+        chatBox,
+        emptyState,
+        renderMarkdown,
+        sourceHandlers,
+        chipHandlers,
+    });
 
     let sending = false;
     /** @type {string | null} */
     let pendingChipFollowUp = null;
     /** @type {ReturnType<typeof createComposer>} */
     let composer;
-
-    const SILO_CLASS_PREFIX = "input-area--silo-";
 
     function refreshContextStack() {
         if (!contextStack) return;
@@ -90,137 +145,50 @@ export function init() {
         contextStack.hidden = !(siloVisible || pinVisible);
     }
 
+    const metaRenderer = createMetaRenderer({ pinBadge, contextStack, refreshContextStack });
+    const {
+        refreshPinBadge,
+        hidePinBadge,
+        applyTurnHintFromMeta,
+        refreshStreamContextUi,
+    } = metaRenderer;
+
+    const { refreshSiloUi } = createComposerController({
+        input,
+        inputArea,
+        siloPill,
+        activeDisciplineBadge,
+        scopeBtn,
+        contextStack,
+        refreshContextStack,
+    });
+
     function clearStructuredUiArtifacts() {
         document.querySelectorAll(".disambiguation-chips").forEach((el) => el.remove());
         document.querySelectorAll(".index-gap-alert").forEach((el) => el.remove());
     }
 
-    function refreshPinBadge(meta) {
-        if (!pinBadge) return;
-        const labelEl = pinBadge.querySelector(".context-pin-label");
-        const active = Boolean(meta?.pinned_active);
-        const label = typeof meta?.pinned_display === "string" ? meta.pinned_display.trim() : "";
-        if (active && label) {
-            pinBadge.hidden = false;
-            const continuing = meta?.pin_chunks_used === true;
-            let text = continuing ? `Continuando: ${label}` : `aula: "${label}"`;
-            const cmd =
-                typeof meta?.suggested_scope_command === "string"
-                    ? meta.suggested_scope_command.trim()
-                    : "";
-            if (continuing && cmd) {
-                text += ` — experimente ${cmd}`;
-            }
-            if (labelEl) labelEl.textContent = text;
-            const hint = scopeHintFromMeta(meta);
-            if (hint) pinBadge.title = hint;
-            else pinBadge.removeAttribute("title");
-        } else {
-            pinBadge.hidden = true;
-            if (labelEl) labelEl.textContent = "";
-            pinBadge.removeAttribute("title");
-        }
-        refreshContextStack();
-    }
+    /** @type {ReturnType<typeof createConversationSidebar> | null} */
+    let sidebar = null;
 
-    /**
-     * @param {Record<string, unknown> | null | undefined} meta
-     * @param {HTMLElement | null | undefined} breadcrumbsEl
-     */
-    function applyTurnHintFromMeta(meta, breadcrumbsEl) {
-        const { variant, text } = resolveTurnHintVariant(meta);
-        setTurnHintBadge(breadcrumbsEl, variant, text ?? undefined);
-    }
-
-    /**
-     * @param {Record<string, unknown> | null | undefined} meta
-     * @param {string} [answerText]
-     * @param {HTMLElement | null | undefined} breadcrumbsEl
-     */
-    function refreshStreamContextUi(meta, answerText = "", breadcrumbsEl) {
-        refreshPinBadge(meta);
-        if (!meta || !breadcrumbsEl) return;
-        const pedagogy = /extens[aã]o pedag[oó]gica\s*\(fora do material indexado\)/i.test(
-            answerText,
-        );
-        setContextBadges(breadcrumbsEl, {
-            groundingPolicy: groundingPolicyLabel(String(meta.grounding_policy || "")),
-            reason: reasonLabel(String(meta.reason || "")),
-            pedagogy: pedagogy && !isPostGenerationOverride(meta),
-        });
-    }
-
-    function hidePinBadge() {
-        if (!pinBadge) return;
-        const labelEl = pinBadge.querySelector(".context-pin-label");
-        pinBadge.hidden = true;
-        if (labelEl) labelEl.textContent = "";
-        pinBadge.removeAttribute("title");
-        refreshContextStack();
+    function reloadConversationView() {
+        sessionId = getOrCreateSessionId();
+        chatView.clearChat();
+        chatView.renderSavedHistory(loadHistory());
+        refreshContextWindowNotice(loadConversation().turns.length);
+        hidePinBadge();
+        refreshSiloUi();
+        sidebar?.render();
     }
 
     function finishConversationReset() {
-        clearConversation();
+        createConversation({ activate: true });
         sessionId = regenerateSessionId();
         chatView.clearChat();
         hidePinBadge();
         refreshSiloUi();
-    }
-
-    function refreshSiloUi() {
-        if (!inputArea) return;
-        [...inputArea.classList].forEach((c) => {
-            if (c === "input-area--silo" || c.startsWith(SILO_CLASS_PREFIX)) {
-                inputArea.classList.remove(c);
-            }
-        });
-        const active = activeDisciplineFromInput(input.value);
-        const suffix = siloClassSuffix(input.value);
-
-        if (suffix && siloPill) {
-            inputArea.classList.add("input-area--silo", SILO_CLASS_PREFIX + suffix);
-            siloPill.hidden = false;
-            const name = siloDisplayName(input.value);
-            if (active?.command) {
-                siloPill.innerHTML =
-                    `<span class="silo-pill__label">Disciplina ativa:</span> ` +
-                    `<span class="silo-pill__name">${name || active.label}</span> ` +
-                    `<code class="silo-pill__cmd">${active.command}</code>`;
-            } else {
-                siloPill.textContent = name ? `Disciplina ativa: ${name}` : "";
-            }
-        } else if (siloPill) {
-            siloPill.hidden = true;
-            siloPill.textContent = "";
-        }
-
-        if (activeDisciplineBadge) {
-            const labelEl = activeDisciplineBadge.querySelector(".active-discipline-badge__label");
-            const cmdEl = activeDisciplineBadge.querySelector(".active-discipline-badge__cmd");
-            if (active) {
-                activeDisciplineBadge.hidden = false;
-                if (labelEl) labelEl.textContent = active.label;
-                if (cmdEl) cmdEl.textContent = active.command;
-                activeDisciplineBadge.title = `Buscando em: ${active.label}`;
-            } else {
-                activeDisciplineBadge.hidden = true;
-                if (labelEl) labelEl.textContent = "";
-                if (cmdEl) cmdEl.textContent = "";
-                activeDisciplineBadge.removeAttribute("title");
-            }
-        }
-
-        if (scopeBtn) {
-            scopeBtn.classList.toggle("scope-btn--active", Boolean(active));
-            scopeBtn.setAttribute(
-                "aria-label",
-                active
-                    ? `Matéria: ${active.label}. Abrir seletor de escopo`
-                    : "Selecionar matéria da busca",
-            );
-        }
-
-        refreshContextStack();
+        refreshContextWindowNotice(0);
+        sidebar?.render();
     }
 
     /**
@@ -261,11 +229,13 @@ export function init() {
 
         const thinkingGlobe = createGlobe(thinkingCanvas, {
             sizeTo: "self",
+            variant: "thinking",
             formed: true,
             spin: true,
+            spinSpeed: 0.55,
             particles: false,
         });
-        thinkingGlobe.state.scale = 1.35;
+        thinkingGlobe.state.scale = 1.18;
 
         const {
             bubble,
@@ -276,6 +246,8 @@ export function init() {
         } = chatView.startBotStream();
 
         let streamSources = [];
+        /** @type {Array<Record<string, unknown>>} */
+        let streamSourceDetails = [];
         /** @type {'markdown' | 'structured' | 'disambiguation_chips'} */
         let turnMode = "markdown";
         let structuredHistoryLabel = "";
@@ -288,6 +260,39 @@ export function init() {
         let pendingMetaOptions = null;
         /** Chips montados após abort/timeout de inatividade (nova pesquisa autónoma no clique). */
         let turnRescuedFromStream = false;
+        /** @type {Record<string, unknown> | null} */
+        let indexGapPayload = null;
+        /** @type {Array<{ title: string, discipline: string, slug: string }>} */
+        let savedDisambiguationCandidates = [];
+
+        function buildBotTurnMeta(answerText = "") {
+            return buildTurnMeta({
+                turnMode,
+                lastMeta,
+                chipsMounted,
+                chipsInvalidated,
+                turnRescuedFromStream,
+                disambiguationCandidates: savedDisambiguationCandidates,
+                indexGapPayload,
+                answerText,
+                groundingPolicyLabel,
+                reasonLabel,
+                sourcesNoteFromMeta: metaSourcesNote,
+                resolveTurnHintVariant,
+                isPostGenerationOverride,
+            });
+        }
+
+        function botHistoryEntry(text, answerText = "") {
+            const turnMeta = buildBotTurnMeta(answerText);
+            return {
+                role: "bot",
+                text,
+                ...(streamSources.length ? { sources: streamSources } : {}),
+                ...(streamSourceDetails.length ? { sourceDetails: streamSourceDetails } : {}),
+                ...(turnMeta ? { turnMeta } : {}),
+            };
+        }
 
         function ambiguityPlaceholderHtml() {
             return `<p class="ambiguity-stream-placeholder">${AMBIGUITY_STREAM_PLACEHOLDER}</p>`;
@@ -346,6 +351,7 @@ export function init() {
                 structuredHistoryLabel = rescued
                     ? "[Desambiguação recuperada — escolha uma aula]"
                     : "[Desambiguação — escolha uma aula]";
+                savedDisambiguationCandidates = options;
             }
         }
 
@@ -496,6 +502,13 @@ export function init() {
             chipsMounted = true;
             turnMode = "disambiguation_chips";
             structuredHistoryLabel = "[Desambiguação — escolha uma aula]";
+            savedDisambiguationCandidates = Array.isArray(payload.suggested_candidates)
+                ? payload.suggested_candidates.map((c) => ({
+                      title: String(c?.title || c?.slug || "Aula"),
+                      discipline: String(c?.discipline || ""),
+                      slug: String(c?.slug || ""),
+                  }))
+                : [];
         }
 
         /**
@@ -521,10 +534,15 @@ export function init() {
                 applyTurnHintFromMeta(meta, breadcrumbs);
                 status.setWarning("Revisão");
                 streamSources = Array.isArray(meta?.sources) ? meta.sources : [];
+                streamSourceDetails = Array.isArray(meta?.source_details)
+                    ? meta.source_details
+                    : [];
                 setBreadcrumbsContent(
                     breadcrumbs,
                     streamSources,
                     sourcesNoteFromMeta(meta),
+                    streamSourceDetails,
+                    sourceHandlers,
                 );
                 refreshStreamContextUi(meta, "", breadcrumbs);
                 return;
@@ -534,10 +552,15 @@ export function init() {
                 turnMode = "markdown";
                 applyTurnHintFromMeta(meta, breadcrumbs);
                 streamSources = Array.isArray(meta?.sources) ? meta.sources : [];
+                streamSourceDetails = Array.isArray(meta?.source_details)
+                    ? meta.source_details
+                    : [];
                 setBreadcrumbsContent(
                     breadcrumbs,
                     streamSources,
                     sourcesNoteFromMeta(meta),
+                    streamSourceDetails,
+                    sourceHandlers,
                 );
                 refreshStreamContextUi(meta, "", breadcrumbs);
                 return;
@@ -551,6 +574,7 @@ export function init() {
 
                 if (shouldMountIndexGap(reason, payload, meta)) {
                     mountIndexGapAlert(bubble, payload);
+                    indexGapPayload = payload;
                     const lesson = /** @type {{ title?: string }} */ (payload?.expected_lesson);
                     structuredHistoryLabel = `[Index gap] ${lesson?.title || "aula"}`;
                 } else if (shouldMountDisambiguationChips(reason, payload, meta)) {
@@ -564,10 +588,15 @@ export function init() {
                 thinkingLabel.textContent = `Analisando resumos de ${meta.label}...`;
             }
             streamSources = Array.isArray(meta?.sources) ? meta.sources : [];
+            streamSourceDetails = Array.isArray(meta?.source_details)
+                ? meta.source_details
+                : streamSourceDetails;
             setBreadcrumbsContent(
                 breadcrumbs,
                 streamSources,
                 sourcesNoteFromMeta(meta),
+                streamSourceDetails,
+                sourceHandlers,
             );
             refreshStreamContextUi(meta, "", breadcrumbs);
             applyTurnHintFromMeta(meta, breadcrumbs);
@@ -645,10 +674,9 @@ export function init() {
             bubble.textContent = result.fullText;
             history.push({ role: "bot", text: result.fullText });
         } else if (turnMode === "structured" || turnMode === "disambiguation_chips") {
-            history.push({
-                role: "bot",
-                text: structuredHistoryLabel || "[Resposta estruturada]",
-            });
+            history.push(
+                botHistoryEntry(structuredHistoryLabel || "[Resposta estruturada]"),
+            );
         } else {
             const finalized = finalizeTurnFromStream(result.fullText || streamFullText);
             refreshStreamContextUi(lastMeta, result.fullText || streamFullText, breadcrumbs);
@@ -656,6 +684,8 @@ export function init() {
                 breadcrumbs,
                 streamSources,
                 sourcesNoteFromMeta(lastMeta),
+                streamSourceDetails,
+                sourceHandlers,
             );
             applyTurnHintFromMeta(lastMeta, breadcrumbs);
             const finalText = isPostGenerationOverride(lastMeta)
@@ -666,19 +696,21 @@ export function init() {
             if (!finalized.streamTruncated || chipsMounted) {
                 highlightCodeBlocks(bubble);
             }
-            history.push({
-                role: "bot",
-                text: chipsMounted
-                    ? structuredHistoryLabel || finalText
-                    : finalText || STREAM_TRUNCATED_AMBIGUITY_MSG,
-                ...(streamSources.length ? { sources: streamSources } : {}),
-            });
+            history.push(
+                botHistoryEntry(
+                    chipsMounted
+                        ? structuredHistoryLabel || finalText
+                        : finalText || STREAM_TRUNCATED_AMBIGUITY_MSG,
+                    finalText || result.fullText || "",
+                ),
+            );
         }
 
         if (isResetCmd && result.ok) {
             finishConversationReset();
         } else {
             saveHistory(history);
+            refreshContextWindowNotice(history.length);
         }
 
         thinkingGlobe.stop();
@@ -707,6 +739,23 @@ export function init() {
         pillsRoot: document,
     });
 
+    if (composerWrap) {
+        createSlashCommandMenu(input, composerWrap);
+    }
+
+    sidebar = createConversationSidebar({
+        sidebar: sidebarEl,
+        listEl: conversationList,
+        overlay: sidebarOverlay,
+        toggleBtn: sidebarToggle,
+        newBtn: sidebarNewBtn,
+        getActiveId: () => getActiveConversation().id,
+        onSelect: () => reloadConversationView(),
+        onNew: () => finishConversationReset(),
+    });
+
+    applyDisciplineDeepLink(input, () => refreshSiloUi());
+
     if (newChatBtn) {
         newChatBtn.addEventListener("click", () => {
             if (sending) return;
@@ -720,5 +769,7 @@ export function init() {
     refreshContextStack();
 
     chatView.renderSavedHistory(loadHistory());
+    refreshContextWindowNotice(loadConversation().turns.length);
+    sidebar.render();
     composer.focus();
 }

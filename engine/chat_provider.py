@@ -117,6 +117,8 @@ def _build_meta(
         meta["suggested_scope_command"] = trace.suggested_scope_command
     if trace.sources_note:
         meta["sources_note"] = trace.sources_note
+    if trace.source_details:
+        meta["source_details"] = [dict(d) for d in trace.source_details]
     return meta
 
 

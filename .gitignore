@@ -27,6 +27,7 @@ scripts/
 agent.md
 logs.txt
 results.md
+results/
 Features.canvas
 docs/PROMPT-AGENTE-*.md
 tests/

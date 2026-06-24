@@ -1,4 +1,10 @@
-/** @typedef {{ role: 'user' | 'bot', text: string, sources?: string[], ts?: number }} ConversationTurn */
+/** @typedef {{ role: 'user' | 'bot', text: string, sources?: string[], sourceDetails?: Array<Record<string, unknown>>, turnMeta?: import('../chat/restoreTurn.js').TurnMeta, ts?: number }} ConversationTurn */
+
+import {
+    clearAllConversations,
+    getActiveConversation,
+    updateActiveConversation,
+} from "./conversations.js";
 
 export const CONVERSATION_KEY = "acl_conversation_v1";
 export const LEGACY_SESSION_KEY = "acl_session_id";
@@ -9,79 +15,38 @@ export const MAX_CHARS = 200_000;
 /** Máximo enviado ao servidor por turno (servidor re-trunca). */
 export const MAX_API_MESSAGES = 12;
 
+/**
+ * Verifica se o histórico excede a janela enviada ao modelo.
+ * @param {number} [turnCount] — se omitido, usa turnos persistidos
+ */
+export function exceedsApiWindow(turnCount) {
+    const count =
+        typeof turnCount === "number"
+            ? turnCount
+            : loadConversation().turns.length;
+    return count > MAX_API_MESSAGES;
+}
+
 /** @returns {{ session_id: string | null, turns: ConversationTurn[] }} */
 function emptyConversation() {
     return { session_id: null, turns: [] };
-}
-
-let legacyMigrated = false;
-
-function migrateLegacyStorage() {
-    if (legacyMigrated) return;
-    legacyMigrated = true;
-    try {
-        if (localStorage.getItem(CONVERSATION_KEY)) return;
-        const legacyHist = sessionStorage.getItem(LEGACY_HISTORY_KEY);
-        const legacySid = sessionStorage.getItem(LEGACY_SESSION_KEY);
-        if (!legacyHist && !legacySid) return;
-        /** @type {ConversationTurn[]} */
-        let turns = [];
-        if (legacyHist) {
-            const parsed = JSON.parse(legacyHist);
-            if (Array.isArray(parsed)) {
-                turns = parsed
-                    .filter((t) => t && (t.role === "user" || t.role === "bot") && t.text)
-                    .map((t) => ({
-                        role: t.role,
-                        text: String(t.text),
-                        ...(Array.isArray(t.sources) ? { sources: t.sources } : {}),
-                        ts: Date.now(),
-                    }));
-            }
-        }
-        saveConversation({
-            session_id: typeof legacySid === "string" ? legacySid : null,
-            turns,
-        });
-        sessionStorage.removeItem(LEGACY_HISTORY_KEY);
-        sessionStorage.removeItem(LEGACY_SESSION_KEY);
-    } catch {
-        /* ignora migração corrompida */
-    }
 }
 
 /**
  * @returns {{ session_id: string | null, turns: ConversationTurn[] }}
  */
 export function loadConversation() {
-    migrateLegacyStorage();
-    try {
-        const raw = localStorage.getItem(CONVERSATION_KEY);
-        if (!raw) return emptyConversation();
-        const parsed = JSON.parse(raw);
-        const turns = Array.isArray(parsed?.turns)
-            ? parsed.turns.filter(
-                  (t) =>
-                      t &&
-                      (t.role === "user" || t.role === "bot") &&
-                      typeof t.text === "string",
-              )
-            : [];
-        return {
-            session_id:
-                typeof parsed?.session_id === "string" ? parsed.session_id : null,
-            turns,
-        };
-    } catch {
-        return emptyConversation();
-    }
+    const conv = getActiveConversation();
+    return {
+        session_id: conv.session_id ?? null,
+        turns: Array.isArray(conv.turns) ? conv.turns : [],
+    };
 }
 
 /**
  * @param {{ session_id?: string | null, turns: ConversationTurn[] }} conv
  */
 export function saveConversation(conv) {
-    migrateLegacyStorage();
     let turns = [...(conv.turns || [])];
     let totalChars = turns.reduce((n, t) => n + (t.text?.length || 0), 0);
     while (turns.length > MAX_TURNS || totalChars > MAX_CHARS) {
@@ -89,45 +54,29 @@ export function saveConversation(conv) {
         if (!removed) break;
         totalChars -= removed.text?.length || 0;
     }
-    try {
-        localStorage.setItem(
-            CONVERSATION_KEY,
-            JSON.stringify({
-                session_id: conv.session_id ?? null,
-                turns,
-            }),
-        );
-    } catch {
-        /* quota exceeded */
-    }
+    updateActiveConversation({
+        session_id: conv.session_id ?? null,
+        turns,
+    });
 }
 
 export function clearConversation() {
-    try {
-        localStorage.removeItem(CONVERSATION_KEY);
-    } catch {
-        /* ignora */
-    }
-    legacyMigrated = true;
-    try {
-        sessionStorage.removeItem(LEGACY_HISTORY_KEY);
-        sessionStorage.removeItem(LEGACY_SESSION_KEY);
-    } catch {
-        /* ignora */
-    }
+    clearAllConversations();
 }
 
 /** Compatibilidade com ChatView — formato legado UI. */
 export function loadHistory() {
-    return loadConversation().turns.map(({ role, text, sources }) => ({
+    return loadConversation().turns.map(({ role, text, sources, sourceDetails, turnMeta }) => ({
         role,
         text,
         ...(sources?.length ? { sources } : {}),
+        ...(sourceDetails?.length ? { sourceDetails } : {}),
+        ...(turnMeta ? { turnMeta } : {}),
     }));
 }
 
 /**
- * @param {Array<{ role: string, text: string, sources?: string[] }>} history
+ * @param {Array<{ role: string, text: string, sources?: string[], sourceDetails?: Array<Record<string, unknown>>, turnMeta?: import('../chat/restoreTurn.js').TurnMeta }>} history
  */
 export function saveHistory(history) {
     const conv = loadConversation();
@@ -137,6 +86,10 @@ export function saveHistory(history) {
         ...(Array.isArray(h.sources) && h.sources.length
             ? { sources: h.sources }
             : {}),
+        ...(Array.isArray(h.sourceDetails) && h.sourceDetails.length
+            ? { sourceDetails: h.sourceDetails }
+            : {}),
+        ...(h.turnMeta && typeof h.turnMeta === "object" ? { turnMeta: h.turnMeta } : {}),
         ts: Date.now(),
     }));
     saveConversation(conv);
@@ -158,3 +111,18 @@ export function getHistoryForApi() {
     }
     return out.slice(-MAX_API_MESSAGES);
 }
+
+/**
+ * @param {string | null} sessionId
+ */
+export function persistSessionId(sessionId) {
+    const conv = loadConversation();
+    conv.session_id = sessionId;
+    saveConversation(conv);
+}
+
+export function getPersistedSessionId() {
+    return loadConversation().session_id;
+}
+
+export { emptyConversation };

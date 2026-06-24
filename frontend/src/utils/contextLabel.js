@@ -5,6 +5,7 @@
 import {
     DISCIPLINE_PREFIXES,
     DISCIPLINE_SILO_BY_COMMAND,
+    getDisciplines,
 } from "../config/disciplines.js";
 
 /**
@@ -89,23 +90,13 @@ export function activeDisciplineFromInput(raw) {
 }
 
 /**
- * Comando e rótulo da disciplina activa no input (null se busca geral).
+ * Id da disciplina activa (para deep links).
  * @param {string} raw
- * @returns {{ command: string, label: string } | null}
+ * @returns {string | null}
  */
-export function activeDisciplineFromInput(raw) {
-    const text = (raw || "").trimStart();
-    if (text.startsWith("/doc")) {
-        return { command: "/doc", label: "Documentação (doc)" };
-    }
-    if (text.startsWith("/content")) {
-        return { command: "/content", label: "Base geral" };
-    }
-    for (const [prefix, label] of DISCIPLINE_PREFIXES) {
-        if (!text.startsWith(prefix)) continue;
-        const tail = text.slice(prefix.length);
-        if (tail.length > 0 && !tail[0].match(/\s/)) continue;
-        return { command: prefix, label };
-    }
-    return null;
+export function activeDisciplineIdFromInput(raw) {
+    const active = activeDisciplineFromInput(raw);
+    if (!active) return null;
+    const row = getDisciplines().find((d) => d.command === active.command);
+    return row?.id ?? null;
 }

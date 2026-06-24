@@ -198,6 +198,7 @@ class ContextTrace:
 
     label: str
     sources: tuple[str, ...]
+    source_details: tuple[dict, ...] = ()
     pinned_active: bool = False
     pinned_display: str | None = None
     pin_chunks_used: bool = False
@@ -493,6 +494,75 @@ def _build_scope_ui_hints(
 def _display_name_from_source(source: str) -> str:
     stem = Path(source.replace("\\", "/")).stem
     return stem.replace("-", " ").strip() or source
+
+
+_LESSON_ORDER_RE = re.compile(r"__(\d+)__")
+
+
+def _lesson_sequence_label(slug: str) -> str | None:
+    m = _LESSON_ORDER_RE.search(slug or "")
+    if not m:
+        return None
+    return f"Aula {int(m.group(1))}"
+
+
+def _excerpt_for_ui(text: str, *, max_len: int = 220) -> str:
+    cleaned = re.sub(r"\s+", " ", (text or "").strip())
+    if not cleaned:
+        return ""
+    if len(cleaned) <= max_len:
+        return cleaned
+    cut = cleaned[:max_len].rsplit(" ", 1)[0]
+    return (cut or cleaned[:max_len]).strip() + "…"
+
+
+def _build_source_details_for_ui(
+    merged_chunks: list[dict[str, str]],
+    lesson_catalog: LessonCatalog | None,
+) -> tuple[dict, ...]:
+    """Metadados ricos para cards de fonte na UI (título, trecho, disciplina)."""
+    out: list[dict] = []
+    seen: set[str] = set()
+    for chunk in merged_chunks:
+        src = str(chunk.get("source") or "").strip()
+        if not src or src in seen:
+            continue
+        seen.add(src)
+        disc = ""
+        slug = ""
+        if src.startswith("db:"):
+            rest = src[3:]
+            parts = [p for p in rest.split("/") if p]
+            if len(parts) >= 2:
+                disc, slug = parts[0], parts[1].split("/", 1)[0]
+            elif len(parts) == 1:
+                slug = parts[0]
+
+        entry = lesson_catalog.entry_for_source(src) if lesson_catalog else None
+        lesson_title = (
+            (entry.title or entry.name).strip()
+            if entry
+            else _display_name_from_source(src)
+        )
+        chunk_excerpt = _excerpt_for_ui(chunk.get("text") or "")
+        catalog_excerpt = (entry.excerpt or "").strip() if entry else ""
+        excerpt = chunk_excerpt or _excerpt_for_ui(catalog_excerpt, max_len=220)
+
+        module = _lesson_sequence_label(slug or (entry.slug if entry else ""))
+        disc_label = _discipline_display_name(disc) if disc else "Material"
+
+        out.append(
+            {
+                "source": src,
+                "discipline": disc,
+                "discipline_label": disc_label,
+                "slug": slug or (entry.slug if entry else ""),
+                "lesson_title": lesson_title,
+                "module": module,
+                "excerpt": excerpt,
+            }
+        )
+    return tuple(out)
 
 
 def _trim_pin_chunks(
@@ -1068,6 +1138,9 @@ class ContextManager:
         trace = ContextTrace(
             label=label,
             sources=_dedupe_sources(trace_sources),
+            source_details=_build_source_details_for_ui(
+                merged_chunks, self._lesson_catalog
+            ),
             pinned_active=self._pin_active(session_id),
             pinned_display=self._pin_display(session_id),
             pin_chunks_used=pin_used,

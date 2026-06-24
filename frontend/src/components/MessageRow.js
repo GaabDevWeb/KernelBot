@@ -3,10 +3,6 @@ import { parseSourceParts } from "../utils/formatSource.js";
 
 const MAX_VISIBLE_SOURCES = 3;
 
-/**
- * @param {HTMLElement} breadcrumbsEl
- * @param {string[] | undefined} sources
- */
 const HINT_CLASS = "message-hint-badge";
 const HINT_VARIANTS = {
     disambiguation: "message-hint-badge--disambiguation",
@@ -19,7 +15,27 @@ const CONTEXT_BADGE_CLASS = "message-context-badge";
 const SOURCES_NOTE_CLASS = "message-sources-note";
 
 /**
- * Badges de reason / grounding_policy ao lado dos breadcrumbs.
+ * @param {string[] | undefined} sources
+ * @param {Array<Record<string, unknown>> | undefined} sourceDetails
+ * @returns {Array<Record<string, unknown>>}
+ */
+function normalizeSourceDetails(sources, sourceDetails) {
+    if (Array.isArray(sourceDetails) && sourceDetails.length) {
+        return sourceDetails;
+    }
+    return (sources || []).map((raw) => {
+        const p = parseSourceParts(raw);
+        return {
+            source: raw,
+            discipline_label: p?.discipline || "",
+            lesson_title: p?.lesson || raw,
+            module: null,
+            excerpt: "",
+        };
+    });
+}
+
+/**
  * @param {HTMLElement | null | undefined} breadcrumbsEl
  * @param {{ reason?: string, groundingPolicy?: string, pedagogy?: boolean }} opts
  */
@@ -55,10 +71,9 @@ export function setContextBadges(breadcrumbsEl, opts) {
 }
 
 /**
- * Badge informativo reactivo (desambiguação / override / advisory pós-geração).
  * @param {HTMLElement | null | undefined} breadcrumbsEl
  * @param {"none" | "disambiguation" | "misalignment" | "advisory" | "scope"} variant
- * @param {string} [hintText] — obrigatório para variant `scope` (meta.scope_hint)
+ * @param {string} [hintText]
  */
 export function setTurnHintBadge(breadcrumbsEl, variant, hintText) {
     if (!breadcrumbsEl) return;
@@ -102,13 +117,21 @@ export function setDisambiguationHint(breadcrumbsEl, show) {
  * @param {HTMLElement | null | undefined} breadcrumbsEl
  * @param {string[] | undefined} sources
  * @param {string | null | undefined} [sourcesNote]
+ * @param {Array<Record<string, unknown>> | undefined} [sourceDetails]
+ * @param {{ onPinSource?: (detail: Record<string, unknown>) => void }} [handlers]
  */
-export function setBreadcrumbsContent(breadcrumbsEl, sources, sourcesNote) {
+export function setBreadcrumbsContent(
+    breadcrumbsEl,
+    sources,
+    sourcesNote,
+    sourceDetails,
+    handlers = {},
+) {
     if (!breadcrumbsEl) return;
     const noteText = (sourcesNote || "").trim();
-    const list = Array.isArray(sources) ? sources.filter(Boolean) : [];
+    const details = normalizeSourceDetails(sources, sourceDetails);
 
-    if (!list.length && !noteText) {
+    if (!details.length && !noteText) {
         breadcrumbsEl.hidden = true;
         breadcrumbsEl.replaceChildren();
         return;
@@ -117,24 +140,26 @@ export function setBreadcrumbsContent(breadcrumbsEl, sources, sourcesNote) {
     breadcrumbsEl.hidden = false;
     breadcrumbsEl.replaceChildren();
 
-    if (list.length) {
+    if (details.length) {
         const block = document.createElement("div");
         block.className = "message-sources";
 
         const heading = document.createElement("p");
         heading.className = "message-sources__heading";
         heading.textContent =
-            list.length === 1 ? "Fonte consultada" : `Fontes consultadas (${list.length})`;
+            details.length === 1
+                ? "Material usado nesta resposta"
+                : `Materiais usados nesta resposta (${details.length})`;
         block.appendChild(heading);
 
         const ul = document.createElement("ul");
         ul.className = "message-sources__list";
 
-        const visible = list.slice(0, MAX_VISIBLE_SOURCES);
-        const hidden = list.slice(MAX_VISIBLE_SOURCES);
+        const visible = details.slice(0, MAX_VISIBLE_SOURCES);
+        const hidden = details.slice(MAX_VISIBLE_SOURCES);
 
-        for (const raw of visible) {
-            ul.appendChild(buildSourceCard(raw));
+        for (const detail of visible) {
+            ul.appendChild(buildRichSourceCard(detail, handlers));
         }
 
         if (hidden.length) {
@@ -143,8 +168,8 @@ export function setBreadcrumbsContent(breadcrumbsEl, sources, sourcesNote) {
             extraWrap.hidden = true;
             const extraUl = document.createElement("ul");
             extraUl.className = "message-sources__list message-sources__list--extra";
-            for (const raw of hidden) {
-                extraUl.appendChild(buildSourceCard(raw));
+            for (const detail of hidden) {
+                extraUl.appendChild(buildRichSourceCard(detail, handlers));
             }
             extraWrap.appendChild(extraUl);
             ul.appendChild(extraWrap);
@@ -153,6 +178,7 @@ export function setBreadcrumbsContent(breadcrumbsEl, sources, sourcesNote) {
             toggle.type = "button";
             toggle.className = "message-sources__toggle";
             toggle.textContent = `Ver mais ${hidden.length} fonte${hidden.length === 1 ? "" : "s"}`;
+            toggle.setAttribute("aria-expanded", "false");
             toggle.addEventListener("click", () => {
                 const open = !extraWrap.hidden;
                 extraWrap.hidden = open;
@@ -179,37 +205,90 @@ export function setBreadcrumbsContent(breadcrumbsEl, sources, sourcesNote) {
 }
 
 /**
- * @param {string} raw
+ * @param {Record<string, unknown>} detail
+ * @param {{ onPinSource?: (detail: Record<string, unknown>) => void }} handlers
  * @returns {HTMLLIElement}
  */
-function buildSourceCard(raw) {
-    const parts = parseSourceParts(raw);
+function buildRichSourceCard(detail, handlers) {
     const li = document.createElement("li");
-    li.className = "source-card";
+    li.className = "source-card source-card--rich";
 
-    const body = document.createElement("div");
-    body.className = "source-card__body";
+    const title = document.createElement("p");
+    title.className = "source-card__title";
+    const lessonTitle = String(detail.lesson_title || "Aula").trim();
+    title.textContent = `Aula: ${lessonTitle}`;
 
-    if (parts?.discipline) {
+    const metaRow = document.createElement("div");
+    metaRow.className = "source-card__meta-row";
+
+    const discLabel = String(detail.discipline_label || "").trim();
+    if (discLabel) {
         const disc = document.createElement("span");
-        disc.className = "source-card__discipline";
-        disc.textContent = parts.discipline;
-        body.appendChild(disc);
+        disc.className = "source-card__meta-item";
+        disc.innerHTML = `<span class="source-card__meta-k">Disciplina</span> ${discLabel}`;
+        metaRow.appendChild(disc);
     }
 
-    const lesson = document.createElement("span");
-    lesson.className = "source-card__lesson";
-    lesson.textContent = parts?.lesson || parts?.raw || raw;
-    body.appendChild(lesson);
+    const module = detail.module ? String(detail.module).trim() : "";
+    if (module) {
+        const mod = document.createElement("span");
+        mod.className = "source-card__meta-item";
+        mod.innerHTML = `<span class="source-card__meta-k">Sequência</span> ${module}`;
+        metaRow.appendChild(mod);
+    }
 
-    li.append(body);
+    li.appendChild(title);
+    if (metaRow.childElementCount) li.appendChild(metaRow);
+
+    const excerpt = String(detail.excerpt || "").trim();
+    if (excerpt) {
+        const exLabel = document.createElement("p");
+        exLabel.className = "source-card__excerpt-label";
+        exLabel.textContent = "Trecho encontrado";
+
+        const ex = document.createElement("blockquote");
+        ex.className = "source-card__excerpt";
+        ex.textContent = excerpt;
+
+        li.appendChild(exLabel);
+        li.appendChild(ex);
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "source-card__actions";
+
+    if (excerpt) {
+        const viewBtn = document.createElement("button");
+        viewBtn.type = "button";
+        viewBtn.className = "source-card__action source-card__action--secondary";
+        viewBtn.textContent = "Ver trecho";
+        viewBtn.setAttribute("aria-expanded", "false");
+        const excerptEl = li.querySelector(".source-card__excerpt");
+        viewBtn.addEventListener("click", () => {
+            if (!excerptEl) return;
+            const expanded = excerptEl.classList.toggle("source-card__excerpt--expanded");
+            viewBtn.textContent = expanded ? "Recolher" : "Ver trecho";
+            viewBtn.setAttribute("aria-expanded", expanded ? "true" : "false");
+        });
+        actions.appendChild(viewBtn);
+    }
+
+    if (handlers.onPinSource && (detail.slug || detail.discipline)) {
+        const pinBtn = document.createElement("button");
+        pinBtn.type = "button";
+        pinBtn.className = "source-card__action source-card__action--primary";
+        pinBtn.textContent = "Fixar contexto";
+        pinBtn.addEventListener("click", () => handlers.onPinSource?.(detail));
+        actions.appendChild(pinBtn);
+    }
+
+    if (actions.childElementCount) li.appendChild(actions);
     return li;
 }
 
 /**
  * @param {HTMLElement} chatBox
- * @param {{ role: 'user'|'bot', text: string, isError?: boolean, sources?: string[], renderMarkdown: (t: string) => string, animated?: boolean, scrollBottom: () => void }} opts
- * @returns {HTMLElement} bubble element
+ * @param {{ role: 'user'|'bot', text: string, isError?: boolean, sources?: string[], sourceDetails?: Array<Record<string, unknown>>, renderMarkdown: (t: string) => string, animated?: boolean, scrollBottom: () => void, sourceHandlers?: { onPinSource?: (d: Record<string, unknown>) => void } }} opts
  */
 export function appendMessageRow(chatBox, opts) {
     const {
@@ -217,9 +296,11 @@ export function appendMessageRow(chatBox, opts) {
         text,
         isError = false,
         sources,
+        sourceDetails,
         renderMarkdown,
         animated = true,
         scrollBottom,
+        sourceHandlers,
     } = opts;
 
     const row = document.createElement("div");
@@ -234,7 +315,7 @@ export function appendMessageRow(chatBox, opts) {
     const breadcrumbs = document.createElement("div");
     breadcrumbs.className = "message-breadcrumbs";
     if (role === "bot" && !isError) {
-        setBreadcrumbsContent(breadcrumbs, sources);
+        setBreadcrumbsContent(breadcrumbs, sources, undefined, sourceDetails, sourceHandlers);
     } else {
         breadcrumbs.hidden = true;
     }

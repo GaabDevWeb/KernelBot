@@ -23,9 +23,22 @@
     <!-- Full-screen low-poly globe: the entrance backdrop, behind the whole app. -->
     <canvas id="globe" aria-hidden="true"></canvas>
 
+    <div class="app-shell">
+        <aside class="conversation-sidebar" id="conversation-sidebar" aria-label="Histórico de conversas">
+            <div class="conversation-sidebar__head">
+                <span class="conversation-sidebar__title">Conversas</span>
+                <button type="button" class="conversation-sidebar__new" id="sidebar-new-chat">Nova</button>
+            </div>
+            <div class="conversation-sidebar__list" id="conversation-list" role="list"></div>
+        </aside>
+        <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
+
     <div class="app">
 
         <header class="header">
+            <button type="button" class="header-sidebar-toggle" id="sidebar-toggle" aria-label="Abrir conversas">
+                Conversas
+            </button>
             <button type="button" class="header-new-chat entrance-init-hidden" id="new-chat-button"
                 title="Limpar histórico e contexto fixado">
                 Nova conversa
@@ -52,16 +65,22 @@
                             <span class="entrance-suggestion-text"></span><span class="entrance-suggestion-caret" aria-hidden="true"></span>
                         </span>
                     </div>
+
+                    <div class="entrance-discipline-pills" aria-label="Atalhos de disciplinas">
+                        <button type="button" class="cmd-pill entrance-cmd-pill" data-cmd="/fluencia-ia">Fluência IA</button>
+                        <button type="button" class="cmd-pill entrance-cmd-pill" data-cmd="/python">Python</button>
+                        <button type="button" class="cmd-pill entrance-cmd-pill" data-cmd="/projeto-bloco">Projeto Bloco</button>
+                        <button type="button" class="cmd-pill entrance-cmd-pill" data-cmd="/sql-modelagem-relacional">SQL</button>
+                        <button type="button" class="cmd-pill entrance-cmd-pill" data-cmd="/doc">Documentação</button>
+                    </div>
                 </div>
             </div>
         </main>
 
-        <footer class="input-area rounded-full mb-3 entrance-init-hidden">
-            <!-- Silo + pinned context share one gray panel, stacked in a column. -->
-            <div class="context-stack px-6 py-2 bg-zinc-700 text-neutral-200 rounded-t-4xl rounded-b-sm" id="context-stack" hidden>
+        <footer class="input-area entrance-init-hidden">
+            <p id="context-window-notice" class="context-window-notice" hidden></p>
+            <div class="context-stack" id="context-stack" hidden>
                 <div class="silo-pill" id="silo-pill" hidden aria-live="polite"></div>
-
-                <!-- Pinned context: eye icon + aula: "<label>" -->
                 <div class="context-pin-badge" id="context-pin-badge" hidden aria-live="polite">
                     <svg class="context-pin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -73,17 +92,10 @@
                 </div>
             </div>
 
-            <div class="input-hint px-4 pb-2" id="input-hint">
-                <span>Enter</span> envia · <span>Shift+Enter</span> nova linha · escolha a matéria no botão
-                <span aria-hidden="true">⊞</span> à esquerda
-            </div>
             <div class="input-row">
-
-                <!-- Scope selector -->
-                <div class="relative flex-shrink-0" id="scope-selector">
+                <div class="scope-selector" id="scope-selector">
                     <button id="scope-btn" type="button"
-                        class="rounded-full p-3 flex items-center justify-center cursor-pointer"
-                        aria-label="Selecionar escopo da busca" title="Selecionar escopo" aria-haspopup="true"
+                        aria-label="Selecionar matéria da busca" title="Selecionar matéria" aria-haspopup="true"
                         aria-expanded="false">
                         <!-- <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5 rotate-60"
                             viewBox="0 0 576 512">
@@ -98,32 +110,28 @@
                         </svg>
                     </button>
 
-                    <div id="scope-menu" role="menu" aria-labelledby="scope-btn"
-                        class="absolute left-0 z-50 rounded-2xl overflow-hidden">
-                        <div class="!p-4">
-                            <p
-                                class="px-4 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-widest scope-menu-label">
-                                Matéria da busca
-                            </p>
+                    <div id="scope-menu" role="menu" aria-labelledby="scope-btn">
+                        <div class="scope-menu-inner">
+                            <p class="scope-menu-label">Matéria da busca</p>
                             <div id="scope-menu-list"></div>
                         </div>
                     </div>
                 </div>
-                <!-- End scope selector -->
 
-                <textarea class="rounded-2xl" id="message-input" rows="1" placeholder="O que vamos revisar hoje?"
-                    autocomplete="off" aria-label="Campo de mensagem"></textarea>
-                <button class="bg-red-500 rounded-full p-3" id="send-button" aria-label="Enviar mensagem" title="Enviar">
-                    <!-- ➤ -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4"
-                        viewBox="0 0 384 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
-                        <path fill="rgb(255, 255, 255)"
+                <div class="composer-wrap" id="composer-wrap">
+                <textarea id="message-input" rows="1" placeholder="O que vamos revisar hoje?"
+                    autocomplete="off" aria-label="Mensagem"></textarea>
+                </div>
+                <button type="button" id="send-button" aria-label="Enviar mensagem" title="Enviar (Enter)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 384 512" aria-hidden="true">
+                        <path fill="currentColor"
                             d="M214.6 9.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 109.3 160 480c0 17.7 14.3 32 32 32s32-14.3 32-32l0-370.7 105.4 105.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z" />
                     </svg>
                 </button>
             </div>
         </footer>
 
+    </div>
     </div>
 
     <!-- GSAP powers the entrance animation (globe + typed title + pill). -->

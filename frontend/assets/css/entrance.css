@@ -87,17 +87,41 @@
   color: #b91c1c;
 }
 
-/* Blinking caret following the typed title. */
+.entrance-subtitle {
+  margin: 12px 0 0;
+  font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+  line-height: 1.5;
+  font-weight: 400;
+  color: rgba(228, 228, 231, 0.88);
+  max-width: 42ch;
+}
+
+.entrance-discipline-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+  justify-content: flex-start;
+  pointer-events: auto;
+}
+
+.entrance-discipline-pills .cmd-pill {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: var(--text);
+  border-radius: var(--radius-xl);
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+.entrance-discipline-pills .cmd-pill:hover {
+  border-color: #b91c1c;
+  color: #fff;
+  background: rgba(185, 28, 28, 0.2);
+}
+
 .entrance-caret {
-  display: inline-block;
-  width: 3px;
-  height: 1em;
-  margin-left: 4px;
-  vertical-align: -0.12em;
-  background: #e6e7ea;
-  border-radius: 2px;
-  box-shadow: 0 0 12px #e6e7ea;
-  animation: entrance-blink 1s steps(1) infinite;
+  display: none;
 }
 
 /* -------- Cycling command suggestions (red pill, white text) -------- */
@@ -157,21 +181,13 @@
     text-align: center;
     max-width: 560px;
   }
+
+  .entrance-discipline-pills {
+    justify-content: center;
+  }
 }
 
-/* -------- "Thinking" indicator: a small globe spinner + label -------- */
-.thinking-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.thinking-globe {
-  width: 30px;
-  height: 30px;
-  display: block;
-  flex: 0 0 auto;
-}
+/* -------- "Thinking" indicator: styles live in theme.css -------- */
 
 @media (prefers-reduced-motion: reduce) {
   .entrance-caret,

@@ -8,6 +8,7 @@
 
    createGlobe(canvas, {
      sizeTo: "window" | "self",  // viewport, or the canvas' own CSS box
+     variant: "hero" | "thinking", // compact accent globe for loading state
      formed:  boolean,            // start fully assembled (no fly-in)
      spin:    boolean,            // self-rotate every frame
      spinSpeed: number,           // radians per second when spin is on
@@ -18,11 +19,17 @@
 export function createGlobe(canvas, opts = {}) {
   const {
     sizeTo = "window",
+    variant = "hero",
     formed = false,
     spin = false,
     spinSpeed = 0.7,
     particles: withParticles = true,
   } = opts;
+
+  const isThinking = variant === "thinking";
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const ctx = canvas.getContext("2d");
 
@@ -31,10 +38,10 @@ export function createGlobe(canvas, opts = {}) {
   let DPR = 1;
 
   function resize() {
-    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    DPR = Math.min(window.devicePixelRatio || 1, isThinking ? 2 : 2);
     if (sizeTo === "self") {
-      W = canvas.clientWidth || 32;
-      H = canvas.clientHeight || 32;
+      W = canvas.clientWidth || (isThinking ? 40 : 32);
+      H = canvas.clientHeight || (isThinking ? 40 : 32);
     } else {
       W = window.innerWidth;
       H = window.innerHeight;
@@ -45,8 +52,8 @@ export function createGlobe(canvas, opts = {}) {
   }
 
   /* ---------- geometry ---------- */
-  const LAT = 5;
-  const LON = 10;
+  const LAT = isThinking ? 4 : 5;
+  const LON = isThinking ? 9 : 10;
 
   const state = {
     rotY: -0.6,
@@ -105,9 +112,12 @@ export function createGlobe(canvas, opts = {}) {
     : [];
 
   /* ---------- projection ---------- */
-  const FOCAL = 2.7;
-  const PLATE_SCALE = 0.9;
-  const CORNER_R = 7;
+  const FOCAL = isThinking ? 2.4 : 2.7;
+  const PLATE_SCALE = isThinking ? 0.88 : 0.9;
+
+  const PALETTE = isThinking
+    ? { fill: [185, 28, 28], stroke: [220, 100, 100], vertex: [245, 200, 200] }
+    : { fill: [220, 222, 228], stroke: [235, 237, 242], vertex: [248, 249, 252] };
 
   function rotate(p) {
     const cy = Math.cos(state.rotY);
@@ -143,16 +153,31 @@ export function createGlobe(canvas, opts = {}) {
 
     const dt = (now - prev) / 1000;
     prev = now;
-    if (spin) state.rotY += spinSpeed * dt;
+    if (spin && !prefersReducedMotion) {
+      state.rotY += (isThinking ? spinSpeed * 0.85 : spinSpeed) * dt;
+    }
 
     const t = now - startTime;
     ctx.clearRect(0, 0, W, H);
 
-    const baseR = Math.min(W, H) * 0.28 * state.scale;
+    const sizeMin = Math.min(W, H);
+    const baseR = sizeMin * (isThinking ? 0.4 : 0.28) * state.scale;
+    const cornerR = isThinking
+      ? Math.max(0.28, sizeMin * 0.032)
+      : 7;
+    const lineW = isThinking
+      ? Math.max(0.28, sizeMin / 88)
+      : 1;
+    const vertexR = isThinking
+      ? Math.max(0.35, sizeMin / 48)
+      : 1.6;
     const cxPix = state.cx * W;
-    const bob = Math.sin(t * 0.0006) * 0.012 * H;
+    const bob = isThinking
+      ? Math.sin(t * 0.0012) * 0.008 * H
+      : Math.sin(t * 0.0006) * 0.012 * H;
     const cyPix = state.cy * H + bob;
 
+    if (isThinking) drawThinkingGlow(t, cxPix, cyPix, baseR);
     if (withParticles) drawParticles(t);
 
     const drawList = [];
@@ -177,7 +202,7 @@ export function createGlobe(canvas, opts = {}) {
       }
 
       const facing = faceFacing(rotated);
-      const plate = buildPlate(proj);
+      const plate = buildPlate(proj, cornerR);
       drawList.push({
         proj,
         shape: plate.pts,
@@ -192,40 +217,78 @@ export function createGlobe(canvas, opts = {}) {
 
     for (const d of drawList) {
       const front = (d.facing + 1) / 2;
-      const a = d.op * (0.05 + front * 0.18);
+      const fillMul = isThinking ? 0.06 : 0.18;
+      const a = d.op * (0.03 + front * fillMul);
       roundedPath(d.shape, d.radius);
-      ctx.fillStyle = `rgba(220, 222, 228, ${a})`;
+      const [fr, fg, fb] = PALETTE.fill;
+      ctx.fillStyle = `rgba(${fr}, ${fg}, ${fb}, ${a})`;
       ctx.fill();
     }
 
-    ctx.globalCompositeOperation = "lighter";
+    ctx.globalCompositeOperation = isThinking ? "source-over" : "lighter";
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     for (const d of drawList) {
       const front = (d.facing + 1) / 2;
-      const edgeA = d.op * (0.12 + front * 0.6);
+      const edgeMul = isThinking ? 0.38 : 0.6;
+      const edgeA = d.op * (0.08 + front * edgeMul);
 
       roundedPath(d.shape, d.radius);
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = `rgba(235, 237, 242, ${edgeA})`;
-      ctx.shadowColor = "rgba(255, 255, 255, 0.85)";
-      ctx.shadowBlur = front > 0.5 ? 8 : 0;
+      ctx.lineWidth = lineW;
+      const [sr, sg, sb] = PALETTE.stroke;
+      ctx.strokeStyle = `rgba(${sr}, ${sg}, ${sb}, ${edgeA})`;
+      if (!isThinking) {
+        ctx.shadowColor = "rgba(255, 255, 255, 0.85)";
+        ctx.shadowBlur = front > 0.5 ? 8 : 0;
+      }
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      if (front > 0.55) {
+      const vtxThreshold = isThinking ? 0.92 : 0.55;
+      if (!isThinking && front > vtxThreshold) {
+        const [vr, vg, vb] = PALETTE.vertex;
         for (const v of d.proj) {
           ctx.beginPath();
-          ctx.arc(v.x, v.y, 1.6, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(248, 249, 252, ${d.op * 0.55})`;
+          ctx.arc(v.x, v.y, vertexR, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${vr}, ${vg}, ${vb}, ${d.op * 0.55})`;
           ctx.fill();
         }
       }
     }
     ctx.globalCompositeOperation = "source-over";
+
+    if (isThinking) drawThinkingOrbit(t, cxPix, cyPix, baseR);
   }
 
-  function buildPlate(proj) {
+  function drawThinkingGlow(t, cxPix, cyPix, baseR) {
+    const pulse = 0.5 + 0.5 * Math.sin(t * 0.0028);
+    const glowR = baseR * (1.18 + pulse * 0.05);
+    const grd = ctx.createRadialGradient(cxPix, cyPix, 0, cxPix, cyPix, glowR);
+    grd.addColorStop(0, `rgba(185, 28, 28, ${0.14 + pulse * 0.06})`);
+    grd.addColorStop(0.6, `rgba(185, 28, 28, 0.04)`);
+    grd.addColorStop(1, "rgba(185, 28, 28, 0)");
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(cxPix, cyPix, glowR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawThinkingOrbit(t, cxPix, cyPix, baseR) {
+    const orbitR = baseR * 1.05;
+    ctx.globalCompositeOperation = "source-over";
+    for (let i = 0; i < 2; i++) {
+      const angle = t * 0.0014 + (i * Math.PI * 2) / 2;
+      const x = cxPix + Math.cos(angle) * orbitR;
+      const y = cyPix + Math.sin(angle) * orbitR * 0.35;
+      const tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 0.003 + i));
+      ctx.beginPath();
+      ctx.arc(x, y, 0.55, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(164, 196, 228, ${0.22 * tw})`;
+      ctx.fill();
+    }
+  }
+
+  function buildPlate(proj, cornerR) {
     const pts = dedupe(proj);
     let cx = 0;
     let cy = 0;
@@ -247,7 +310,7 @@ export function createGlobe(canvas, opts = {}) {
       const b = inset[(i + 1) % inset.length];
       minEdge = Math.min(minEdge, Math.hypot(a.x - b.x, a.y - b.y));
     }
-    const r = Math.max(1.2, Math.min(CORNER_R, minEdge * 0.42));
+    const r = Math.max(isThinking ? 0.35 : 1.2, Math.min(cornerR, minEdge * (isThinking ? 0.28 : 0.42)));
     return { pts: inset, r };
   }
 

@@ -18,6 +18,8 @@ export function createComposer({
         void onSend();
     });
     input.addEventListener("keydown", (e) => {
+        const slashMenu = document.getElementById("slash-command-menu");
+        if (slashMenu && !slashMenu.hidden) return;
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             void onSend();
@@ -26,7 +28,8 @@ export function createComposer({
 
     pillsRoot.querySelectorAll(".cmd-pill").forEach((pill) => {
         pill.addEventListener("click", () => {
-            input.value = pill.textContent ?? "";
+            const cmd = pill.dataset.cmd || pill.textContent || "";
+            input.value = cmd.endsWith(" ") ? cmd : `${cmd.trim()} `;
             input.dispatchEvent(new Event("input"));
             input.focus();
         });
