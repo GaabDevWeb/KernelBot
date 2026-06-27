@@ -11,7 +11,9 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 
 from collections.abc import AsyncGenerator
 
+from core.disciplines import trace_label_by_discipline
 from engine.context import ConversationHistoryError, _normalize_conversation_history
+from engine.lesson_catalog import normalize_lesson_key
 
 log = logging.getLogger("kernelbots.api.chat")
 
@@ -42,6 +44,57 @@ def _verify_reload_bearer(request: Request) -> None:
 async def health() -> dict[str, str]:
     """Liveness para Docker/Kubernetes (sem autenticação)."""
     return {"status": "ok"}
+
+
+@router.get("/api/curriculum")
+async def curriculum_all(request: Request) -> dict:
+    """Lista disciplinas com aulas no catálogo."""
+    services = request.app.state.services
+    catalog = services.lesson_catalog
+    if catalog is None:
+        raise HTTPException(status_code=503, detail="Catálogo indisponível")
+    labels = trace_label_by_discipline()
+    disciplines = []
+    for disc in catalog.list_disciplines():
+        lessons = catalog.lessons_for_discipline(disc)
+        disciplines.append(
+            {
+                "discipline": disc,
+                "label": labels.get(disc, disc),
+                "lesson_count": len(lessons),
+            }
+        )
+    return {"disciplines": disciplines}
+
+
+@router.get("/api/curriculum/{discipline_id}")
+async def curriculum_discipline(request: Request, discipline_id: str) -> dict:
+    """Aulas de uma disciplina para o painel curricular."""
+    services = request.app.state.services
+    catalog = services.lesson_catalog
+    if catalog is None:
+        raise HTTPException(status_code=503, detail="Catálogo indisponível")
+
+    disc_norm = normalize_lesson_key(discipline_id, "x").split(":", 1)[0]
+    lessons = catalog.lessons_for_discipline(disc_norm)
+    if not lessons:
+        all_discs = set(catalog.list_disciplines())
+        if disc_norm not in all_discs:
+            raise HTTPException(status_code=404, detail="Disciplina não encontrada no catálogo")
+
+    labels = trace_label_by_discipline()
+    return {
+        "discipline": disc_norm,
+        "label": labels.get(disc_norm, disc_norm),
+        "lessons": [
+            {
+                "slug": entry.slug,
+                "title": entry.title or entry.name,
+                "order": idx + 1,
+            }
+            for idx, entry in enumerate(lessons)
+        ],
+    }
 
 
 @router.get("/health/catalog")

@@ -1,0 +1,253 @@
+- generic [ref=e2]:
+  - complementary "Histórico de conversas" [ref=e3]:
+    - button "Expandir conversas" [ref=e5] [cursor=pointer]:
+      - img [ref=e6]
+  - generic [ref=e8]:
+    - banner [ref=e9]:
+      - generic [ref=e10]: Online
+    - log "Histórico de mensagens" [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]: Você · 22:17
+        - generic [ref=e14]: O que é uma lista em Python?
+      - generic [ref=e15]:
+        - generic [ref=e16]: Kernel · 22:17
+        - generic [ref=e17]:
+          - paragraph [ref=e18]:
+            - strong [ref=e19]: "Ideia central:"
+            - text: em Python, uma
+            - strong [ref=e20]: lista
+            - text: é uma
+            - strong [ref=e21]: coleção ordenada de elementos
+            - text: — como uma fila onde cada item tem uma posição fixa e você pode guardar vários valores num só lugar (notas, nomes, letras, etc.).
+          - heading "Modelo mental" [level=2] [ref=e22]
+          - paragraph [ref=e23]:
+            - text: Na aula de laços, a lista aparece como um
+            - strong [ref=e24]: carrossel de itens
+            - text: ": uma fila ordenada que o"
+            - code [ref=e25]: for
+            - text: "percorre um elemento de cada vez [Fonte: db:python/loops-for-range-listas]."
+          - paragraph [ref=e26]:
+            - text: Cada posição é acessada por um
+            - strong [ref=e27]: índice numérico
+            - text: ", começando em"
+            - strong [ref=e28]: "0"
+            - text: e indo até
+            - code [ref=e29]: len(lista) - 1
+            - text: ":"
+          - code [ref=e31]: "vogais = ['a', 'e', 'i', 'o', 'u'] print(vogais[0]) # 'a' print(vogais[2]) # 'i'"
+          - paragraph [ref=e32]:
+            - text: "Ou seja:"
+            - code [ref=e33]: vogais[0]
+            - text: é o primeiro item,
+            - code [ref=e34]: vogais[2]
+            - text: é o terceiro — não o segundo. Esse detalhe evita confusão depois.
+          - heading "O que dá para fazer com ela" [level=2] [ref=e35]
+          - list [ref=e36]:
+            - listitem [ref=e37]:
+              - strong [ref=e38]: Guardar vários valores
+              - text: do mesmo “tipo de uso” (notas de aluno, vendas do dia, caracteres).
+            - listitem [ref=e39]:
+              - strong [ref=e40]:
+                - text: Percorrer com
+                - code [ref=e41]: for
+              - text: ", sem repetir o mesmo código dezenas de vezes:"
+          - code [ref=e43]:
+            - text: "vogais = ['a', 'e', 'i', 'o', 'u'] for letra in vogais: print("
+            - generic [ref=e44]: "f\"Letra: {letra}\""
+            - text: )
+          - list [ref=e45]:
+            - listitem [ref=e46]:
+              - strong [ref=e47]:
+                - text: Combinar com
+                - code [ref=e48]: range()
+              - text: quando você precisa do índice
+              - emphasis [ref=e49]: e
+              - text: "do valor:"
+          - code [ref=e51]:
+            - text: "notas = [7.5, 8.0, 6.3, 9.2] for i in range(len(notas)): print("
+            - generic [ref=e52]:
+              - text: f"Prova
+              - generic [ref=e53]: "{i + 1}"
+              - text: ": nota = {notas[i]}\""
+            - text: )
+          - paragraph [ref=e54]:
+            - text: A aula também trata a lista como
+            - strong [ref=e55]: array unidimensional
+            - text: "— uma sequência em linha, não uma tabela com linhas e colunas [Fonte: db:python/loops-for-range-listas]."
+          - heading "Síntese" [level=2] [ref=e56]
+          - table [ref=e57]:
+            - rowgroup [ref=e58]:
+              - row "Aspecto Lista em Python" [ref=e59]:
+                - columnheader "Aspecto" [ref=e60]
+                - columnheader "Lista em Python" [ref=e61]
+            - rowgroup [ref=e62]:
+              - row "Natureza Coleção ordenada de elementos" [ref=e63]:
+                - cell "Natureza" [ref=e64]
+                - cell "Coleção ordenada de elementos" [ref=e65]:
+                  - text: Coleção
+                  - strong [ref=e66]: ordenada
+                  - text: de elementos
+              - row "Acesso Índice numérico (0 até len - 1)" [ref=e67]:
+                - cell "Acesso" [ref=e68]
+                - cell "Índice numérico (0 até len - 1)" [ref=e69]:
+                  - text: Índice numérico (
+                  - code [ref=e70]: "0"
+                  - text: até
+                  - code [ref=e71]: len - 1
+                  - text: )
+              - row "Iteração for item in lista" [ref=e72]:
+                - cell "Iteração" [ref=e73]
+                - cell "for item in lista" [ref=e74]:
+                  - code [ref=e75]: for item in lista
+              - row "Papel nos algoritmos Evitar código duplicado ao processar vários valores" [ref=e76]:
+                - cell "Papel nos algoritmos" [ref=e77]
+                - cell "Evitar código duplicado ao processar vários valores" [ref=e78]
+          - paragraph [ref=e79]:
+            - emphasis [ref=e80]: "Extensão pedagógica (fora do material indexado):"
+            - text: listas são
+            - strong [ref=e81]: mutáveis
+            - text: — você pode
+            - code [ref=e82]: append
+            - text: ", alterar um índice ou remover itens depois de criá-la. Isso não aparece nos trechos deste turno, mas é o próximo passo natural depois de entender índice e"
+            - code [ref=e83]: for
+            - text: .
+          - paragraph [ref=e84]:
+            - text: Quer que eu compare lista com
+            - code [ref=e85]: tuple
+            - text: ou string, ou prefere exercício prático com notas/provas?
+        - generic [ref=e86]:
+          - generic [ref=e87]: Várias fontes próximas — escolha uma aula abaixo ou continue no texto.
+          - generic [ref=e88]:
+            - generic [ref=e89]: Modo didático
+            - generic [ref=e90]: Várias aulas parecidas
+            - generic [ref=e91]: Complemento pedagógico
+          - group [ref=e92]:
+            - generic "4 materiais utilizados" [ref=e93] [cursor=pointer]
+      - generic [ref=e94]:
+        - generic [ref=e95]: Você · 22:17
+        - generic [ref=e96]: O que é uma lista em Python?
+      - generic [ref=e97]:
+        - generic [ref=e98]: Kernel · 22:17
+        - generic [ref=e99]:
+          - paragraph [ref=e100]:
+            - strong [ref=e101]: "Ideia central:"
+            - text: em Python, uma
+            - strong [ref=e102]: lista
+            - text: é uma
+            - strong [ref=e103]: coleção ordenada de elementos
+            - text: — como uma fila onde cada item tem uma posição fixa e você pode guardar vários valores num só lugar (notas, nomes, letras, etc.).
+          - heading "Modelo mental" [level=2] [ref=e104]
+          - paragraph [ref=e105]:
+            - text: Na aula de laços, a lista aparece como um
+            - strong [ref=e106]: carrossel de itens
+            - text: ": uma fila ordenada que o"
+            - code [ref=e107]: for
+            - text: "percorre um elemento de cada vez [Fonte: db:python/loops-for-range-listas]."
+          - paragraph [ref=e108]:
+            - text: Cada posição é acessada por um
+            - strong [ref=e109]: índice numérico
+            - text: ", começando em"
+            - strong [ref=e110]: "0"
+            - text: e indo até
+            - code [ref=e111]: len(lista) - 1
+            - text: ":"
+          - code [ref=e113]: "vogais = ['a', 'e', 'i', 'o', 'u'] print(vogais[0]) # 'a' print(vogais[2]) # 'i'"
+          - paragraph [ref=e114]:
+            - text: "Ou seja:"
+            - code [ref=e115]: vogais[0]
+            - text: é o primeiro item,
+            - code [ref=e116]: vogais[2]
+            - text: é o terceiro — não o segundo. Esse detalhe evita confusão depois.
+          - heading "O que dá para fazer com ela" [level=2] [ref=e117]
+          - list [ref=e118]:
+            - listitem [ref=e119]:
+              - strong [ref=e120]: Guardar vários valores
+              - text: do mesmo “tipo de uso” (notas de aluno, vendas do dia, caracteres).
+            - listitem [ref=e121]:
+              - strong [ref=e122]:
+                - text: Percorrer com
+                - code [ref=e123]: for
+              - text: ", sem repetir o mesmo código dezenas de vezes:"
+          - code [ref=e125]:
+            - text: "vogais = ['a', 'e', 'i', 'o', 'u'] for letra in vogais: print("
+            - generic [ref=e126]: "f\"Letra: {letra}\""
+            - text: )
+          - list [ref=e127]:
+            - listitem [ref=e128]:
+              - strong [ref=e129]:
+                - text: Combinar com
+                - code [ref=e130]: range()
+              - text: quando você precisa do índice
+              - emphasis [ref=e131]: e
+              - text: "do valor:"
+          - code [ref=e133]:
+            - text: "notas = [7.5, 8.0, 6.3, 9.2] for i in range(len(notas)): print("
+            - generic [ref=e134]:
+              - text: f"Prova
+              - generic [ref=e135]: "{i + 1}"
+              - text: ": nota = {notas[i]}\""
+            - text: )
+          - paragraph [ref=e136]:
+            - text: A aula também trata a lista como
+            - strong [ref=e137]: array unidimensional
+            - text: "— uma sequência em linha, não uma tabela com linhas e colunas [Fonte: db:python/loops-for-range-listas]."
+          - heading "Síntese" [level=2] [ref=e138]
+          - table [ref=e139]:
+            - rowgroup [ref=e140]:
+              - row "Aspecto Lista em Python" [ref=e141]:
+                - columnheader "Aspecto" [ref=e142]
+                - columnheader "Lista em Python" [ref=e143]
+            - rowgroup [ref=e144]:
+              - row "Natureza Coleção ordenada de elementos" [ref=e145]:
+                - cell "Natureza" [ref=e146]
+                - cell "Coleção ordenada de elementos" [ref=e147]:
+                  - text: Coleção
+                  - strong [ref=e148]: ordenada
+                  - text: de elementos
+              - row "Acesso Índice numérico (0 até len - 1)" [ref=e149]:
+                - cell "Acesso" [ref=e150]
+                - cell "Índice numérico (0 até len - 1)" [ref=e151]:
+                  - text: Índice numérico (
+                  - code [ref=e152]: "0"
+                  - text: até
+                  - code [ref=e153]: len - 1
+                  - text: )
+              - row "Iteração for item in lista" [ref=e154]:
+                - cell "Iteração" [ref=e155]
+                - cell "for item in lista" [ref=e156]:
+                  - code [ref=e157]: for item in lista
+              - row "Papel nos algoritmos Evitar código duplicado ao processar vários valores" [ref=e158]:
+                - cell "Papel nos algoritmos" [ref=e159]
+                - cell "Evitar código duplicado ao processar vários valores" [ref=e160]
+          - paragraph [ref=e161]:
+            - emphasis [ref=e162]: "Extensão pedagógica (fora do material indexado):"
+            - text: listas são
+            - strong [ref=e163]: mutáveis
+            - text: — você pode
+            - code [ref=e164]: append
+            - text: ", alterar um índice ou remover itens depois de criá-la. Isso não aparece nos trechos deste turno, mas é o próximo passo natural depois de entender índice e"
+            - code [ref=e165]: for
+            - text: .
+          - paragraph [ref=e166]:
+            - text: Quer que eu compare lista com
+            - code [ref=e167]: tuple
+            - text: ou string, ou prefere exercício prático com notas/provas?
+        - generic [ref=e168]:
+          - generic [ref=e169]: Várias fontes próximas — escolha uma aula abaixo ou continue no texto.
+          - generic [ref=e170]:
+            - generic [ref=e171]: Modo didático
+            - generic [ref=e172]: Várias aulas parecidas
+            - generic [ref=e173]: Complemento pedagógico
+          - group [ref=e174]:
+            - generic "4 materiais utilizados" [ref=e175] [cursor=pointer]
+    - contentinfo [ref=e176]:
+      - generic [ref=e178]:
+        - img [ref=e179]
+        - generic [ref=e182]: "aula: \"criando tabelas sqlite dml basica\""
+      - generic [ref=e183]:
+        - button "Selecionar matéria da busca" [ref=e185] [cursor=pointer]:
+          - img [ref=e186]
+        - textbox "Mensagem" [ref=e192]:
+          - /placeholder: O que vamos revisar hoje?
+        - button "Enviar mensagem" [ref=e193] [cursor=pointer]:
+          - img [ref=e194]

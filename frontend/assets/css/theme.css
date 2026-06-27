@@ -856,7 +856,59 @@ body {
     background: var(--brand-surface);
 }
 
-/* ===== Fontes (cards) ===== */
+/* ===== Fontes (cards) — rodapé colapsável ===== */
+.message-breadcrumbs {
+    margin-top: 8px;
+    padding-top: 4px;
+}
+
+.message-sources-collapsible {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.message-sources-collapsible__summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.message-sources-collapsible__summary::-webkit-details-marker {
+    display: none;
+}
+
+.message-sources-collapsible__summary::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(-45deg);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.message-sources-collapsible[open] .message-sources-collapsible__summary::before {
+    transform: rotate(45deg);
+}
+
+.message-sources-collapsible__summary:hover {
+    color: var(--text);
+}
+
+.message-sources-collapsible__panel {
+    padding: 0 12px 12px;
+}
+
 .message-sources {
     margin-top: 2px;
 }
@@ -1274,10 +1326,11 @@ body {
     max-width: 1100px;
     margin: 0 auto;
     width: 100%;
+    --sidebar-width: 240px;
 }
 
 .conversation-sidebar {
-    width: 240px;
+    width: var(--sidebar-width);
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -1285,6 +1338,72 @@ body {
     background: rgba(0, 0, 0, 0.22);
     padding: 12px 10px;
     gap: 8px;
+    transition: width 0.22s ease;
+    overflow: hidden;
+}
+
+.conversation-sidebar--collapsed {
+    width: 48px;
+    padding: 12px 6px;
+}
+
+.conversation-sidebar--collapsed .conversation-sidebar__title,
+.conversation-sidebar--collapsed .conversation-sidebar__new,
+.conversation-sidebar--collapsed .conversation-sidebar__search,
+.conversation-sidebar--collapsed .conversation-sidebar__list,
+.conversation-sidebar--collapsed .conversation-sidebar__empty {
+    display: none;
+}
+
+.conversation-sidebar--collapsed .conversation-sidebar__head {
+    justify-content: center;
+    padding: 0;
+}
+
+.conversation-sidebar--collapsed .conversation-sidebar__collapse svg {
+    transform: rotate(180deg);
+}
+
+.conversation-sidebar__collapse {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.conversation-sidebar__collapse:hover {
+    color: var(--text);
+    border-color: var(--brand-primary);
+}
+
+.conversation-sidebar__search {
+    width: 100%;
+    min-height: 36px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text);
+    font-size: 13px;
+}
+
+.conversation-sidebar__search::placeholder {
+    color: var(--text-muted);
+}
+
+.conversation-sidebar__empty {
+    margin: 8px 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
 }
 
 .conversation-sidebar__head {
@@ -1403,6 +1522,10 @@ body {
 @media (min-width: 769px) {
     .header-sidebar-toggle {
         display: none;
+    }
+
+    .conversation-sidebar__collapse {
+        display: inline-flex;
     }
 }
 

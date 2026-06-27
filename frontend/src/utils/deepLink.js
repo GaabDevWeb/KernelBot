@@ -1,7 +1,8 @@
 /**
- * Deep links ?d=python ou ?discipline=python
+ * Deep links ?d=python, ?c=<conversationId>
  */
 import { commandForDiscipline, getDisciplines } from "../config/disciplines.js";
+import { switchConversation } from "./conversations.js";
 
 /**
  * @returns {string | null} discipline id
@@ -15,6 +16,15 @@ export function disciplineIdFromUrl() {
     if (exact) return exact.id;
     const byCmd = items.find((d) => d.command === `/${raw}` || d.command.slice(1) === raw);
     return byCmd?.id ?? null;
+}
+
+/**
+ * @returns {string | null}
+ */
+export function conversationIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const raw = (params.get("c") || "").trim();
+    return raw || null;
 }
 
 /**
@@ -34,15 +44,46 @@ export function applyDisciplineDeepLink(input, onApplied) {
 }
 
 /**
+ * @param {() => void} onApplied
+ * @returns {boolean}
+ */
+export function applyConversationDeepLink(onApplied) {
+    const id = conversationIdFromUrl();
+    if (!id) return false;
+    const conv = switchConversation(id);
+    if (conv) onApplied?.();
+    return Boolean(conv);
+}
+
+/**
+ * @param {{ conversationId?: string | null, disciplineId?: string | null }} state
+ */
+export function syncUrlState(state) {
+    const url = new URL(window.location.href);
+    if ("conversationId" in state) {
+        if (state.conversationId) {
+            url.searchParams.set("c", state.conversationId);
+        } else {
+            url.searchParams.delete("c");
+        }
+    }
+    if ("disciplineId" in state) {
+        if (state.disciplineId) {
+            url.searchParams.set("d", state.disciplineId);
+        } else {
+            url.searchParams.delete("d");
+            url.searchParams.delete("discipline");
+        }
+    }
+    window.history.replaceState({}, "", url);
+}
+
+/**
  * @param {string | null | undefined} disciplineId
  */
 export function syncDisciplineQueryParam(disciplineId) {
-    const url = new URL(window.location.href);
-    if (disciplineId) {
-        url.searchParams.set("d", disciplineId);
-    } else {
-        url.searchParams.delete("d");
-        url.searchParams.delete("discipline");
-    }
-    window.history.replaceState({}, "", url);
+    syncUrlState({
+        conversationId: conversationIdFromUrl(),
+        disciplineId: disciplineId || null,
+    });
 }

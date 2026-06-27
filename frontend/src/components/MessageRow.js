@@ -141,16 +141,18 @@ export function setBreadcrumbsContent(
     breadcrumbsEl.replaceChildren();
 
     if (details.length) {
-        const block = document.createElement("div");
-        block.className = "message-sources";
+        const collapsible = document.createElement("details");
+        collapsible.className = "message-sources-collapsible";
 
-        const heading = document.createElement("p");
-        heading.className = "message-sources__heading";
-        heading.textContent =
+        const summary = document.createElement("summary");
+        summary.className = "message-sources-collapsible__summary";
+        summary.textContent =
             details.length === 1
-                ? "Material usado nesta resposta"
-                : `Materiais usados nesta resposta (${details.length})`;
-        block.appendChild(heading);
+                ? "1 material utilizado"
+                : `${details.length} materiais utilizados`;
+
+        const panel = document.createElement("div");
+        panel.className = "message-sources-collapsible__panel";
 
         const ul = document.createElement("ul");
         ul.className = "message-sources__list";
@@ -187,13 +189,15 @@ export function setBreadcrumbsContent(
                     : "Ver menos";
                 toggle.setAttribute("aria-expanded", open ? "false" : "true");
             });
-            block.appendChild(ul);
-            block.appendChild(toggle);
+            panel.appendChild(ul);
+            panel.appendChild(toggle);
         } else {
-            block.appendChild(ul);
+            panel.appendChild(ul);
         }
 
-        breadcrumbsEl.appendChild(block);
+        collapsible.appendChild(summary);
+        collapsible.appendChild(panel);
+        breadcrumbsEl.appendChild(collapsible);
     }
 
     if (noteText) {
@@ -331,8 +335,9 @@ export function appendMessageRow(chatBox, opts) {
     }
 
     row.appendChild(meta);
+    if (role === "bot") row.appendChild(bubble);
     if (role === "bot") row.appendChild(breadcrumbs);
-    row.appendChild(bubble);
+    else row.appendChild(bubble);
     chatBox.appendChild(row);
     scrollBottom();
     return bubble;
@@ -368,8 +373,8 @@ export function createStreamingBotRow(chatBox, scrollBottom) {
     bubble.appendChild(postAmbiguity);
 
     row.appendChild(meta);
-    row.appendChild(breadcrumbs);
     row.appendChild(bubble);
+    row.appendChild(breadcrumbs);
     chatBox.appendChild(row);
     scrollBottom();
     return { row, bubble, breadcrumbs, prose, ambiguitySlot, postAmbiguity };

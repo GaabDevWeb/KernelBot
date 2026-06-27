@@ -359,3 +359,11 @@ class LessonCatalog:
             "catalog_only_count": len(catalog_only),
             "index_only_count": len(index_only),
         }
+
+    def list_disciplines(self) -> list[str]:
+        return sorted({il.entry.discipline for il in self._lessons})
+
+    def lessons_for_discipline(self, discipline_id: str) -> list[LessonEntry]:
+        disc = _normalize_part(discipline_id)
+        entries = [il.entry for il in self._lessons if il.entry.discipline == disc]
+        return sorted(entries, key=lambda e: (e.title or e.name or e.slug).lower())

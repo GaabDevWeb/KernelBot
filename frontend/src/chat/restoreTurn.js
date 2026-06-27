@@ -144,6 +144,27 @@ function snapshotAcl(meta) {
 }
 
 /**
+ * Restaura pin badge a partir do último snapshot ACL persistido.
+ * @param {Array<{ role?: string, turnMeta?: { aclSnapshot?: Record<string, unknown> } }>} turns
+ * @param {(meta: Record<string, unknown>) => void} refreshPinBadge
+ * @param {() => void} hidePinBadge
+ */
+export function restoreSessionPinFromHistory(turns, refreshPinBadge, hidePinBadge) {
+    if (!Array.isArray(turns) || !turns.length) {
+        hidePinBadge();
+        return;
+    }
+    for (let i = turns.length - 1; i >= 0; i -= 1) {
+        const snap = turns[i]?.turnMeta?.aclSnapshot;
+        if (snap?.pinned_active) {
+            refreshPinBadge(snap);
+            return;
+        }
+    }
+    hidePinBadge();
+}
+
+/**
  * @param {Record<string, unknown> | null | undefined} payload
  */
 function extractCandidatesFromPayload(payload) {
@@ -294,8 +315,8 @@ export function appendMessageRowWithMeta(chatBox, opts) {
     if (isError) bubble.classList.add("error");
 
     row.appendChild(meta);
-    if (role === "bot") row.appendChild(breadcrumbs);
     row.appendChild(bubble);
+    if (role === "bot") row.appendChild(breadcrumbs);
     chatBox.appendChild(row);
 
     if (role === "user" || isError) {

@@ -1,0 +1,36 @@
+- generic [ref=e2]:
+  - complementary "Histórico de conversas" [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e8]: Conversas
+      - button "Nova" [ref=e9] [cursor=pointer]
+    - searchbox "Buscar conversas" [ref=e10]
+    - list [ref=e11]:
+      - listitem "Nova conversa" [ref=e12] [cursor=pointer]
+  - generic [ref=e13]:
+    - banner [ref=e14]:
+      - button "Abrir conversas" [active] [ref=e78] [cursor=pointer]: Conversas
+      - generic [ref=e16]: Online
+    - log "Histórico de mensagens" [ref=e15]:
+      - generic:
+        - generic:
+          - paragraph: KERNEL ASSISTANT
+          - heading "Estude por disciplinas" [level=1]:
+            - generic: Estude por disciplinas
+          - paragraph: Consulte materiais do curso e receba respostas fundamentadas nas aulas indexadas.
+          - generic "Clique para usar esta sugestão" [ref=e37] [cursor=pointer]:
+            - generic [ref=e38]: /fluencia-ia Qual a diferença entre ML e DL?
+          - generic "Atalhos de disciplinas" [ref=e17]:
+            - button "Fluência IA" [ref=e18] [cursor=pointer]
+            - button "Python" [ref=e19] [cursor=pointer]
+            - button "Projeto Bloco" [ref=e20] [cursor=pointer]
+            - button "SQL" [ref=e21] [cursor=pointer]
+            - button "Documentação" [ref=e22] [cursor=pointer]
+    - contentinfo [ref=e23]:
+      - generic [ref=e24]:
+        - button "Selecionar matéria da busca" [ref=e26] [cursor=pointer]:
+          - img [ref=e27]
+        - textbox "Mensagem" [ref=e33]:
+          - /placeholder: O que vamos revisar hoje?
+          - text: /
+        - button "Enviar mensagem" [ref=e34] [cursor=pointer]:
+          - img [ref=e35]

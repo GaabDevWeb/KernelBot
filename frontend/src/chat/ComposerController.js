@@ -86,5 +86,9 @@ export function createComposerController(deps) {
         refreshContextStack();
     }
 
-    return { refreshSiloUi, SILO_CLASS_PREFIX };
+    function getActiveDisciplineId() {
+        return activeDisciplineIdFromInput(input.value);
+    }
+
+    return { refreshSiloUi, getActiveDisciplineId, SILO_CLASS_PREFIX };
 }

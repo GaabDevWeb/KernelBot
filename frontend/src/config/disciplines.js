@@ -61,6 +61,16 @@ export function commandForDiscipline(disciplineId) {
 
 /**
  * @param {string | undefined} disciplineId
+ * @returns {string}
+ */
+export function labelForDiscipline(disciplineId) {
+    const key = (disciplineId || "").trim().toLowerCase();
+    const row = _items.find((d) => d.id === key);
+    return row?.label || "";
+}
+
+/**
+ * @param {string | undefined} disciplineId
  * @returns {string} ex.: `/python `
  */
 export function scopePrefixForDiscipline(disciplineId) {

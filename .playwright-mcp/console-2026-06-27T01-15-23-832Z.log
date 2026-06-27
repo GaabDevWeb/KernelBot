@@ -1,0 +1,7 @@
+[     123ms] [WARNING] GSAP target .entrance-subtitle not found. https://gsap.com @ https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js:9
+[     126ms] [WARNING] GSAP target .entrance-subtitle not found. https://gsap.com @ https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js:9
+[     543ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:8001/favicon.ico:0
+[     571ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:8001/favicon.ico:0
+[   98115ms] [LOG] Element previously highlighted. To highlight again, first unset `dataset.highlighted`. JSHandle@node @ https://esm.sh/highlight.js@11.9.0/es2022/lib/core.mjs:2
+[   98115ms] [LOG] Element previously highlighted. To highlight again, first unset `dataset.highlighted`. JSHandle@node @ https://esm.sh/highlight.js@11.9.0/es2022/lib/core.mjs:2
+[   98115ms] [LOG] Element previously highlighted. To highlight again, first unset `dataset.highlighted`. JSHandle@node @ https://esm.sh/highlight.js@11.9.0/es2022/lib/core.mjs:2
