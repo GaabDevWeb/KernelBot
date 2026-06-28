@@ -24,7 +24,7 @@ class DevSourceNoCacheMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
-        if request.url.path.startswith("/src/"):
+        if request.url.path.startswith("/src/") or request.url.path.startswith("/playground/"):
             response.headers["Cache-Control"] = "no-store"
         return response
 
@@ -45,6 +45,7 @@ def create_app(services: AppServices) -> FastAPI:
     app.state.templates = templates
 
     frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
+    playground_dir = Path(__file__).resolve().parent.parent / "playground"
     core_json = Path(__file__).resolve().parent.parent / "core" / "disciplines.json"
     assets_dir = frontend_dir / "assets"
     src_dir = frontend_dir / "src"
@@ -62,6 +63,8 @@ def create_app(services: AppServices) -> FastAPI:
         app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
     if src_dir.is_dir():
         app.mount("/src", StaticFiles(directory=str(src_dir)), name="src")
+    if playground_dir.is_dir():
+        app.mount("/playground", StaticFiles(directory=str(playground_dir), html=True), name="playground")
 
     app.include_router(router)
 

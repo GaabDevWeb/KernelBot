@@ -1,0 +1,17 @@
+- generic [active] [ref=e1]:
+  - complementary:
+    - paragraph:
+      - strong: Sandbox
+      - text: — edite
+      - code: playground/globe.js
+    - paragraph: Arraste o globo para rotacionar
+    - paragraph:
+      - generic: R
+      - text: replay entrada
+      - generic: "1"
+      - text: hero
+      - generic: "2"
+      - text: thinking
+    - paragraph:
+      - generic: D
+      - text: este painel
