@@ -3,14 +3,15 @@ import { getProgress, suggestNext } from "../utils/progress.js";
 
 /**
  * @param {{
- *   badgeEl: HTMLElement | null,
  *   input: HTMLTextAreaElement,
  *   refreshSiloUi: () => void,
  *   getDisciplineId: () => string | null,
+ *   scopeBtn?: HTMLElement | null,
+ *   siloPill?: HTMLElement | null,
  * }} opts
  */
 export function createDisciplinePanel(opts) {
-    const { badgeEl, input, refreshSiloUi, getDisciplineId } = opts;
+    const { input, refreshSiloUi, getDisciplineId, scopeBtn, siloPill } = opts;
 
     /** @type {HTMLElement | null} */
     let panel = null;
@@ -56,14 +57,12 @@ export function createDisciplinePanel(opts) {
     function close() {
         if (panel) panel.hidden = true;
         if (overlay) overlay.hidden = true;
-        badgeEl?.classList.remove("active-discipline-badge--panel-open");
     }
 
     function open() {
         ensureDom();
         if (panel) panel.hidden = false;
         if (overlay) overlay.hidden = false;
-        badgeEl?.classList.add("active-discipline-badge--panel-open");
     }
 
     /**
@@ -198,16 +197,20 @@ export function createDisciplinePanel(opts) {
         renderList(data);
     }
 
-    badgeEl?.addEventListener("click", () => {
-        if (badgeEl.hidden) return;
-        void showPanel();
-    });
-    badgeEl?.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
+    function bindOpen(el) {
+        if (!el) return;
+        el.addEventListener("click", () => {
+            if (getDisciplineId()) void showPanel();
+        });
+        el.addEventListener("keydown", (e) => {
+            if (e.key !== "Enter" && e.key !== " ") return;
+            if (!getDisciplineId()) return;
             e.preventDefault();
             void showPanel();
-        }
-    });
+        });
+    }
 
-    return { refresh, close };
+    bindOpen(siloPill ?? null);
+
+    return { refresh, close, showPanel };
 }

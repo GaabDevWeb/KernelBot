@@ -7,7 +7,9 @@ export function getEmptyStateEl() {
 export function isLanding() {
     const el = getEmptyStateEl();
     if (!el) return false;
-    return el.style.display !== "none";
+    if (el.style.display === "none") return false;
+    if (el.classList.contains("empty-state--dismissed")) return false;
+    return true;
 }
 
 /** ChatActive: pelo menos uma mensagem no histórico visível. */

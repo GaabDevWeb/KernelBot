@@ -5,6 +5,7 @@ import {
     siloDisplayName,
 } from "../utils/contextLabel.js";
 import { syncDisciplineQueryParam } from "../utils/deepLink.js";
+import { isLanding } from "../utils/uiState.js";
 
 /**
  * @param {{
@@ -15,6 +16,7 @@ import { syncDisciplineQueryParam } from "../utils/deepLink.js";
  *   scopeBtn: HTMLElement | null,
  *   contextStack: HTMLElement | null,
  *   refreshContextStack: () => void,
+ *   hidePinBadge?: () => void,
  * }} deps
  */
 export function createComposerController(deps) {
@@ -25,9 +27,12 @@ export function createComposerController(deps) {
         activeDisciplineBadge,
         scopeBtn,
         refreshContextStack,
+        hidePinBadge,
     } = deps;
 
     const SILO_CLASS_PREFIX = "input-area--silo-";
+    /** @type {string | null} */
+    let prevDisciplineId = null;
 
     function refreshSiloUi() {
         if (!inputArea) return;
@@ -38,10 +43,25 @@ export function createComposerController(deps) {
         });
         const active = activeDisciplineFromInput(input.value);
         const suffix = siloClassSuffix(input.value);
+        const currentDisciplineId = activeDisciplineIdFromInput(input.value);
+
+        if (
+            prevDisciplineId &&
+            currentDisciplineId &&
+            prevDisciplineId !== currentDisciplineId &&
+            hidePinBadge
+        ) {
+            hidePinBadge();
+        }
+        prevDisciplineId = currentDisciplineId;
 
         if (suffix && siloPill) {
             inputArea.classList.add("input-area--silo", SILO_CLASS_PREFIX + suffix);
             siloPill.hidden = false;
+            siloPill.classList.add("silo-pill--interactive");
+            siloPill.setAttribute("role", "button");
+            siloPill.setAttribute("tabindex", "0");
+            siloPill.setAttribute("title", "Ver mapa da disciplina");
             const name = siloDisplayName(input.value);
             if (active?.command) {
                 siloPill.innerHTML =
@@ -54,12 +74,18 @@ export function createComposerController(deps) {
         } else if (siloPill) {
             siloPill.hidden = true;
             siloPill.textContent = "";
+            siloPill.classList.remove("silo-pill--interactive");
+            siloPill.removeAttribute("role");
+            siloPill.removeAttribute("tabindex");
+            siloPill.removeAttribute("title");
         }
 
+        /* Canonical Layout: header badge only during landing (empty-state). */
         if (activeDisciplineBadge) {
             const labelEl = activeDisciplineBadge.querySelector(".active-discipline-badge__label");
             const cmdEl = activeDisciplineBadge.querySelector(".active-discipline-badge__cmd");
-            if (active) {
+            const showInHeader = Boolean(active) && isLanding();
+            if (showInHeader) {
                 activeDisciplineBadge.hidden = false;
                 if (labelEl) labelEl.textContent = active.label;
                 if (cmdEl) cmdEl.textContent = active.command;
@@ -82,7 +108,7 @@ export function createComposerController(deps) {
             );
         }
 
-        syncDisciplineQueryParam(activeDisciplineIdFromInput(input.value));
+        syncDisciplineQueryParam(currentDisciplineId);
         refreshContextStack();
     }
 

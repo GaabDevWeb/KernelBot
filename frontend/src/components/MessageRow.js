@@ -59,6 +59,16 @@ export function setContextBadges(breadcrumbsEl, opts) {
     }
 
     breadcrumbsEl.hidden = false;
+    const existing = breadcrumbsEl.querySelector(".message-context-badges-collapsible");
+    existing?.remove();
+
+    const details = document.createElement("details");
+    details.className = "message-context-badges-collapsible";
+
+    const summary = document.createElement("summary");
+    summary.className = "message-context-badges-collapsible__summary";
+    summary.textContent = "Detalhes da resposta";
+
     const wrap = document.createElement("div");
     wrap.className = "message-context-badges";
     for (const item of items) {
@@ -67,7 +77,8 @@ export function setContextBadges(breadcrumbsEl, opts) {
         badge.textContent = item.text;
         wrap.appendChild(badge);
     }
-    breadcrumbsEl.prepend(wrap);
+    details.append(summary, wrap);
+    breadcrumbsEl.prepend(details);
 }
 
 /**

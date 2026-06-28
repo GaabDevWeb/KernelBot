@@ -246,6 +246,7 @@ export function init() {
     }
 
     input.addEventListener("input", refreshSiloUi);
+    window.addEventListener("kernel:chat-active", refreshSiloUi);
     refreshSiloUi();
     refreshContextStack();
 

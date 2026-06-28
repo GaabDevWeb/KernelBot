@@ -50,6 +50,7 @@ export function createSlashCommandMenu(input, anchor) {
         menu.replaceChildren();
         filtered = [];
         activeIndex = 0;
+        document.getElementById("empty-state")?.classList.remove("empty-state--slash-open");
     }
 
     function render() {
@@ -59,6 +60,7 @@ export function createSlashCommandMenu(input, anchor) {
             return;
         }
         menu.hidden = false;
+        document.getElementById("empty-state")?.classList.add("empty-state--slash-open");
         filtered.forEach((item, i) => {
             const btn = document.createElement("button");
             btn.type = "button";
@@ -72,8 +74,10 @@ export function createSlashCommandMenu(input, anchor) {
                 btn.setAttribute("aria-selected", "false");
             }
             btn.innerHTML =
+                `<span class="slash-command-option__row">` +
                 `<span class="slash-command-option__cmd">${item.command}</span>` +
                 `<span class="slash-command-option__label">${item.label}</span>` +
+                `</span>` +
                 `<span class="slash-command-option__desc">${item.description}</span>`;
             btn.addEventListener("mousedown", (e) => {
                 e.preventDefault();

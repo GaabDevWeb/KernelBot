@@ -173,18 +173,37 @@
   #empty-state {
     align-items: flex-end;
     justify-content: center;
-    padding: 0 7vw 24vh;        /* lift the title above the input */
+    padding: 0 16px 24vh;
+    overflow-x: hidden;
   }
 
   .entrance-content {
     align-items: center;
     text-align: center;
-    max-width: 560px;
+    max-width: min(560px, 100%);
+    width: 100%;
   }
 
   .entrance-discipline-pills {
     justify-content: center;
+    max-width: 100%;
   }
+
+  .entrance-suggestion-text {
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+#empty-state.empty-state--dismissed {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+#empty-state.empty-state--slash-open {
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
 }
 
 /* -------- "Thinking" indicator: styles live in theme.css -------- */

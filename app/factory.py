@@ -40,6 +40,11 @@ def create_app(services: AppServices) -> FastAPI:
     def disciplines_config() -> FileResponse:
         return FileResponse(core_json, media_type="application/json")
 
+    @app.get("/favicon.ico")
+    def favicon() -> FileResponse:
+        icon = assets_dir / "favicon.svg"
+        return FileResponse(icon, media_type="image/svg+xml")
+
     if assets_dir.is_dir():
         app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
     if src_dir.is_dir():

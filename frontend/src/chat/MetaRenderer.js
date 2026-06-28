@@ -19,7 +19,7 @@ export function createMetaRenderer({ pinBadge, contextStack, refreshContextStack
         if (active && label) {
             pinBadge.hidden = false;
             const continuing = meta?.pin_chunks_used === true;
-            let text = continuing ? `Continuando: ${label}` : `aula: "${label}"`;
+            let text = continuing ? `Continuando: ${label}` : `Contexto fixado: "${label}"`;
             const cmd =
                 typeof meta?.suggested_scope_command === "string"
                     ? meta.suggested_scope_command.trim()

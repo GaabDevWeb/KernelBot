@@ -1,5 +1,6 @@
 import { appendMessageRowWithMeta } from "../chat/restoreTurn.js";
 import { appendMessageRow, createStreamingBotRow } from "./MessageRow.js";
+import { syncBodyUiState } from "../utils/uiState.js";
 
 /**
  * @param {{ chatBox: HTMLElement, emptyState: HTMLElement | null, renderMarkdown: (t: string) => string, sourceHandlers?: { onPinSource?: (d: Record<string, unknown>) => void }, chipHandlers?: { onSelect: (c: { title?: string, discipline?: string, slug?: string }) => void } }} opts
@@ -12,7 +13,19 @@ export function createChatView({
     chipHandlers,
 }) {
     function hideEmptyState() {
-        if (emptyState) emptyState.style.display = "none";
+        if (!emptyState || emptyState.style.display === "none") {
+            syncBodyUiState();
+            return;
+        }
+        if (!emptyState.classList.contains("empty-state--dismissed")) {
+            emptyState.classList.add("empty-state--dismissed");
+            window.setTimeout(() => {
+                if (emptyState) emptyState.style.display = "none";
+                syncBodyUiState();
+                window.dispatchEvent(new CustomEvent("kernel:chat-active"));
+            }, 200);
+        }
+        syncBodyUiState();
     }
 
     function scrollBottom() {
@@ -72,12 +85,17 @@ export function createChatView({
         hist.forEach(({ role, text, sources, sourceDetails, turnMeta }) =>
             appendMessage(role, text, false, false, sources, sourceDetails, turnMeta),
         );
+        syncBodyUiState();
     }
 
     function clearChat() {
         chatBox.querySelectorAll(".message-row").forEach((el) => el.remove());
         chatBox.querySelectorAll(".context-search-status").forEach((el) => el.remove());
-        if (emptyState) emptyState.style.display = "";
+        if (emptyState) {
+            emptyState.style.display = "";
+            emptyState.classList.remove("empty-state--dismissed");
+        }
+        syncBodyUiState();
     }
 
     function startBotStream() {
