@@ -124,7 +124,7 @@ export function createGlobe(canvas, opts = {}) {
   const PLATE_SCALE = isThinking ? 0.88 : 0.9;
 
   const PALETTE = isThinking
-    ? { fill: [185, 28, 28], stroke: [220, 100, 100], vertex: [245, 200, 200] }
+    ? { fill: [176, 147, 62], stroke: [200, 175, 110], vertex: [225, 210, 170] }
     : { fill: [220, 222, 228], stroke: [235, 237, 242], vertex: [248, 249, 252] };
 
   function rotate(p) {
@@ -366,9 +366,9 @@ export function createGlobe(canvas, opts = {}) {
     const pulse = 0.5 + 0.5 * Math.sin(t * 0.0028);
     const glowR = baseR * (1.18 + pulse * 0.05);
     const grd = ctx.createRadialGradient(cxPix, cyPix, 0, cxPix, cyPix, glowR);
-    grd.addColorStop(0, `rgba(185, 28, 28, ${0.14 + pulse * 0.06})`);
-    grd.addColorStop(0.6, "rgba(185, 28, 28, 0.04)");
-    grd.addColorStop(1, "rgba(185, 28, 28, 0)");
+    grd.addColorStop(0, `rgba(176, 147, 62, ${0.14 + pulse * 0.06})`);
+    grd.addColorStop(0.6, "rgba(176, 147, 62, 0.04)");
+    grd.addColorStop(1, "rgba(176, 147, 62, 0)");
     ctx.fillStyle = grd;
     ctx.beginPath();
     ctx.arc(cxPix, cyPix, glowR, 0, Math.PI * 2);

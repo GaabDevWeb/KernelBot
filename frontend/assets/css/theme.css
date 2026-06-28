@@ -1,21 +1,20 @@
 /* ===== Design Tokens ===== */
+/* Brand accent: #B0933E — use tokens, never hardcode. Error red is semantic only (--error). */
 :root {
     --bg: #0a0a0a;
     --surface: #27272A;
     --surface-2: #2F2F33;
     --border: #3F3F46;
-    --brand-primary: #b91c1c;
-    --brand-primary-hover: #dc2626;
-    --brand-surface: rgba(185, 28, 28, 0.12);
-    --brand-muted: rgba(185, 28, 28, 0.45);
+    --brand-primary: #B0933E;
+    --brand-primary-hover: #C4A855;
+    --brand-on-primary: #0a0a0a;
+    --brand-surface: rgba(176, 147, 62, 0.12);
+    --brand-muted: rgba(176, 147, 62, 0.45);
     --accent: var(--brand-primary);
-    --color-action: var(--brand-primary);
-    --color-brand: var(--brand-primary);
     --color-hint: var(--text-muted);
-    --color-code-inline: #fca5a5;
+    --color-code-inline: #D4BC82;
     --text: #E4E4E7;
     --text-muted: #B4B4BC;
-    --user-bg: var(--brand-primary);
     --bot-bg: #27272A;
     --error: #F87171;
     --error-bg: #3E1C1C;
@@ -778,7 +777,7 @@ body.chat-active .composer-wrap {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
+    color: var(--brand-on-primary);
     transition: background 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
 }
 
@@ -801,7 +800,7 @@ body.chat-active .composer-wrap {
     background: var(--btn-streaming);
     cursor: pointer;
     opacity: 1;
-    color: #fff;
+    color: var(--brand-on-primary);
 }
 
 #send-button.send-button--streaming svg {
@@ -812,8 +811,8 @@ body.chat-active .composer-wrap {
     content: "";
     width: 16px;
     height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.35);
-    border-top-color: #fff;
+    border: 2px solid rgba(10, 10, 10, 0.25);
+    border-top-color: var(--brand-on-primary);
     border-radius: 50%;
     animation: send-spin 0.75s linear infinite;
 }
@@ -1008,7 +1007,7 @@ body.chat-active .composer-wrap {
 }
 
 .scope-option-cmd {
-    color: var(--color-red-500);
+    color: var(--accent);
     font-family: var(--font-mono);
 }
 

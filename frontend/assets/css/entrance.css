@@ -186,8 +186,8 @@ body.ui-landing .app .entrance-suggestion {
 .entrance-kernel {
   -webkit-background-clip: text;
   background-clip: text;
-  -webkit-text-fill-color: #b91c1c;
-  color: #b91c1c;
+  -webkit-text-fill-color: var(--brand-primary);
+  color: var(--brand-primary);
 }
 
 .entrance-subtitle {
@@ -218,16 +218,16 @@ body.ui-landing .app .entrance-suggestion {
 }
 
 .entrance-discipline-pills .cmd-pill:hover {
-  border-color: #b91c1c;
+  border-color: var(--brand-primary);
   color: #fff;
-  background: rgba(185, 28, 28, 0.2);
+  background: var(--brand-surface);
 }
 
 .entrance-caret {
   display: none;
 }
 
-/* -------- Cycling command suggestions (red pill, white text) -------- */
+/* -------- Cycling command suggestions (brand pill) -------- */
 .entrance-suggestion-wrap {
   margin-top: 22px;
   min-height: 2.4em;          /* reserve space so the layout never jumps */
@@ -239,14 +239,14 @@ body.ui-landing .app .entrance-suggestion {
   max-width: 100%;
   padding: 8px 14px;
   border-radius: 12px;
-  background: #b91c1c;
-  color: #ffffff;
+  background: var(--brand-primary);
+  color: var(--brand-on-primary);
   font-family: var(--font-mono, 'JetBrains Mono', monospace);
   font-size: clamp(0.82rem, 1.6vw, 1rem);
   font-weight: 500;
   line-height: 1.3;
   letter-spacing: 0.01em;
-  box-shadow: 0 8px 22px rgba(185, 28, 28, 0.35);
+  box-shadow: 0 8px 22px rgba(176, 147, 62, 0.25);
   cursor: pointer;            /* click to drop the suggestion into the input */
   pointer-events: auto;       /* re-enable clicks (overlay is click-through) */
 }
@@ -261,7 +261,7 @@ body.ui-landing .app .entrance-suggestion {
   height: 1.05em;
   margin-left: 3px;
   vertical-align: -0.12em;
-  background: #ffffff;
+  background: var(--brand-on-primary);
   border-radius: 1px;
   animation: entrance-blink 1s steps(1) infinite;
 }
