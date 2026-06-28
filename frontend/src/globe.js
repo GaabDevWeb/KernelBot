@@ -90,7 +90,15 @@ export function createGlobe(canvas, opts = {}) {
       const dir = randomUnitVec();
       const mag = 2.6 + Math.random() * 2.4;
       const offset = { x: dir.x * mag, y: dir.y * mag, z: dir.z * mag };
-      faces.push({ corners, offset, p: formed ? 1 : 0 });
+      faces.push({
+        corners,
+        offset,
+        p: formed ? 1 : 0,
+        lat: i,
+        lon: j,
+        id: i * LON + j,
+        lesson: null,
+      });
     }
   }
 
@@ -144,8 +152,80 @@ export function createGlobe(canvas, opts = {}) {
   /* ---------- render loop ---------- */
   let rafId = 0;
   let running = true;
+  let spinPaused = false;
   let startTime = performance.now();
   let prev = startTime;
+
+  const defaultTilt = state.tilt;
+
+  let pointerClientX = -1;
+  let pointerClientY = -1;
+  let hoveredFace = null;
+  let hoveredAnchor = null;
+  let lastDrawList = [];
+  const hoverListeners = new Set();
+
+  function pointInPolygon(x, y, pts) {
+    let inside = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const xi = pts[i].x;
+      const yi = pts[i].y;
+      const xj = pts[j].x;
+      const yj = pts[j].y;
+      const intersect =
+        yi > y !== yj > y &&
+        x < ((xj - xi) * (y - yi)) / (yj - yi + 1e-12) + xi;
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function pickFaceAt(canvasX, canvasY) {
+    for (let i = lastDrawList.length - 1; i >= 0; i--) {
+      const d = lastDrawList[i];
+      if (d.facing < 0.22) continue;
+      if (pointInPolygon(canvasX, canvasY, d.shape)) {
+        return d;
+      }
+    }
+    return null;
+  }
+
+  function updateHoverPick() {
+    if (pointerClientX < 0) {
+      if (hoveredFace !== null) {
+        hoveredFace = null;
+        hoveredAnchor = null;
+        for (const fn of hoverListeners) fn(null, null);
+      }
+      return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const x = pointerClientX - rect.left;
+    const y = pointerClientY - rect.top;
+    const hit = pickFaceAt(x, y);
+    const nextFace = hit?.face ?? null;
+
+    if (nextFace !== hoveredFace) {
+      hoveredFace = nextFace;
+      hoveredAnchor = hit
+        ? {
+            clientX: rect.left + hit.anchorX,
+            clientY: rect.top + hit.anchorY,
+          }
+        : null;
+      for (const fn of hoverListeners) fn(hoveredFace, hoveredAnchor);
+    } else if (hit && hoveredAnchor) {
+      hoveredAnchor.clientX = rect.left + hit.anchorX;
+      hoveredAnchor.clientY = rect.top + hit.anchorY;
+      for (const fn of hoverListeners) fn(hoveredFace, hoveredAnchor);
+    } else if (!hit && hoveredFace !== null) {
+      hoveredFace = null;
+      hoveredAnchor = null;
+      for (const fn of hoverListeners) fn(null, null);
+    }
+  }
 
   function frame(now) {
     rafId = requestAnimationFrame(frame);
@@ -153,7 +233,7 @@ export function createGlobe(canvas, opts = {}) {
 
     const dt = (now - prev) / 1000;
     prev = now;
-    if (spin && !prefersReducedMotion) {
+    if (spin && !prefersReducedMotion && !spinPaused) {
       state.rotY += (isThinking ? spinSpeed * 0.85 : spinSpeed) * dt;
     }
 
@@ -203,26 +283,46 @@ export function createGlobe(canvas, opts = {}) {
 
       const facing = faceFacing(rotated);
       const plate = buildPlate(proj, cornerR);
+      let ax = 0;
+      let ay = 0;
+      for (const p of plate.pts) {
+        ax += p.x;
+        ay += p.y;
+      }
+      ax /= plate.pts.length;
+      ay /= plate.pts.length;
+
       drawList.push({
+        face: f,
         proj,
         shape: plate.pts,
         radius: plate.r,
         z: zSum / proj.length,
         facing,
         op: lerp,
+        anchorX: ax,
+        anchorY: ay,
       });
     }
 
     drawList.sort((a, b) => a.z - b.z);
+    lastDrawList = drawList;
+    updateHoverPick();
 
     for (const d of drawList) {
       const front = (d.facing + 1) / 2;
+      const isHovered = d.face === hoveredFace;
       const fillMul = isThinking ? 0.06 : 0.18;
-      const a = d.op * (0.03 + front * fillMul);
+      const hoverFillBoost = isHovered ? 1.55 : 1;
+      const a = d.op * (0.03 + front * fillMul) * hoverFillBoost;
       roundedPath(d.shape, d.radius);
       const [fr, fg, fb] = PALETTE.fill;
-      ctx.fillStyle = `rgba(${fr}, ${fg}, ${fb}, ${a})`;
+      ctx.fillStyle = `rgba(${fr}, ${fg}, ${fb}, ${Math.min(0.42, a)})`;
       ctx.fill();
+      if (isHovered && !isThinking) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${d.op * 0.045})`;
+        ctx.fill();
+      }
     }
 
     ctx.globalCompositeOperation = isThinking ? "source-over" : "lighter";
@@ -230,16 +330,18 @@ export function createGlobe(canvas, opts = {}) {
     ctx.lineCap = "round";
     for (const d of drawList) {
       const front = (d.facing + 1) / 2;
+      const isHovered = d.face === hoveredFace;
       const edgeMul = isThinking ? 0.38 : 0.6;
-      const edgeA = d.op * (0.08 + front * edgeMul);
+      const hoverEdgeBoost = isHovered ? 1.35 : 1;
+      const edgeA = d.op * (0.08 + front * edgeMul) * hoverEdgeBoost;
 
       roundedPath(d.shape, d.radius);
-      ctx.lineWidth = lineW;
+      ctx.lineWidth = isHovered ? lineW * 1.15 : lineW;
       const [sr, sg, sb] = PALETTE.stroke;
-      ctx.strokeStyle = `rgba(${sr}, ${sg}, ${sb}, ${edgeA})`;
+      ctx.strokeStyle = `rgba(${sr}, ${sg}, ${sb}, ${Math.min(0.95, edgeA)})`;
       if (!isThinking) {
-        ctx.shadowColor = "rgba(255, 255, 255, 0.85)";
-        ctx.shadowBlur = front > 0.5 ? 8 : 0;
+        ctx.shadowColor = isHovered ? "rgba(255, 255, 255, 0.95)" : "rgba(255, 255, 255, 0.85)";
+        ctx.shadowBlur = isHovered ? 14 : front > 0.5 ? 8 : 0;
       }
       ctx.stroke();
       ctx.shadowBlur = 0;
@@ -265,7 +367,7 @@ export function createGlobe(canvas, opts = {}) {
     const glowR = baseR * (1.18 + pulse * 0.05);
     const grd = ctx.createRadialGradient(cxPix, cyPix, 0, cxPix, cyPix, glowR);
     grd.addColorStop(0, `rgba(185, 28, 28, ${0.14 + pulse * 0.06})`);
-    grd.addColorStop(0.6, `rgba(185, 28, 28, 0.04)`);
+    grd.addColorStop(0.6, "rgba(185, 28, 28, 0.04)");
     grd.addColorStop(1, "rgba(185, 28, 28, 0)");
     ctx.fillStyle = grd;
     ctx.beginPath();
@@ -398,5 +500,70 @@ export function createGlobe(canvas, opts = {}) {
     if (sizeTo === "window") window.removeEventListener("resize", resize);
   }
 
-  return { state, faces, resize, stop };
+  function globeMetrics() {
+    const sizeMin = Math.min(W, H);
+    const baseR = sizeMin * (isThinking ? 0.4 : 0.28) * state.scale;
+    return {
+      cx: state.cx * W,
+      cy: state.cy * H,
+      radius: baseR * 1.06,
+    };
+  }
+
+  function hitTest(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const { cx, cy, radius } = globeMetrics();
+    const dx = x - cx;
+    const dy = y - cy;
+    return dx * dx + dy * dy <= radius * radius;
+  }
+
+  function getAutoSpinOmega() {
+    if (!spin || prefersReducedMotion) return 0;
+    return (isThinking ? spinSpeed * 0.85 : spinSpeed);
+  }
+
+  function setSpinPaused(paused) {
+    spinPaused = Boolean(paused);
+  }
+
+  function setPointer(clientX, clientY) {
+    if (clientX < 0 || clientY < 0) {
+      pointerClientX = -1;
+      pointerClientY = -1;
+      updateHoverPick();
+      return;
+    }
+    pointerClientX = clientX;
+    pointerClientY = clientY;
+    if (lastDrawList.length) updateHoverPick();
+  }
+
+  function getHoveredFace() {
+    return hoveredFace;
+  }
+
+  function onHoverChange(fn) {
+    hoverListeners.add(fn);
+    return () => hoverListeners.delete(fn);
+  }
+
+  return {
+    state,
+    faces,
+    resize,
+    stop,
+    hitTest,
+    globeMetrics,
+    getDefaultTilt: () => defaultTilt,
+    getAutoSpinOmega,
+    setSpinPaused,
+    setPointer,
+    getHoveredFace,
+    onHoverChange,
+    getLatCount: () => LAT,
+    getLonCount: () => LON,
+  };
 }

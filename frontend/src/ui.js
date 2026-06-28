@@ -163,6 +163,7 @@ export function init() {
         rebuildProgressFromHistory(turns);
         if (turns.length) {
             chatView.renderSavedHistory(turns);
+            window.__kernelGlobe?.dismiss(0);
         }
         refreshContextWindowNotice(loadConversation().turns.length);
         restorePinFromActiveConversation();

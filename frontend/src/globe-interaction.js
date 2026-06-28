@@ -1,14 +1,15 @@
 /* =============================================================
-   Drag + inertia + handoff for the low-poly globe (playground).
+   Drag + inertia + handoff for the low-poly globe.
    Preserves external auto-spin (GSAP or internal spin) at rest.
    ============================================================= */
 
-const SENS_X = 0.0052;
-const SENS_Y = 0.0031;
+const SENS_X = 0.003;
+const SENS_Y = 0.00175;
+const DRAG_FOLLOW = 7.2;
 const FRICTION = 3.8;
-const VELOCITY_STOP = 0.018;
-const HANDOFF_MS = 1600;
-const INERTIA_MAX_MS = 2400;
+const VELOCITY_STOP = 0.016;
+const HANDOFF_MS = 1700;
+const INERTIA_MAX_MS = 2600;
 const TILT_MIN = -0.88;
 const TILT_MAX = 0.18;
 
@@ -19,6 +20,7 @@ const TILT_MAX = 0.18;
  *   stopAutoSpin: () => void,
  *   startAutoSpin: () => void,
  *   getAutoSpinOmega?: () => number,
+ *   onPlateHover?: (face: object | null, anchor: object | null) => void,
  * }} options
  */
 export function attachGlobeInteraction(canvas, globe, options) {
@@ -28,9 +30,12 @@ export function attachGlobeInteraction(canvas, globe, options) {
   let ready = false;
   let mode = "auto"; // auto | drag | inertia | handoff
   let pointerId = null;
-  let lastX = 0;
-  let lastY = 0;
+  let pointerX = 0;
+  let pointerY = 0;
+  let followX = 0;
+  let followY = 0;
   let lastT = 0;
+  let dragLastT = 0;
   let velRotY = 0;
   let velTilt = 0;
   let motionRaf = 0;
@@ -55,9 +60,15 @@ export function attachGlobeInteraction(canvas, globe, options) {
   }
 
   function setCursor(kind) {
-    canvas.classList.remove("is-grabbable", "is-grabbing");
+    canvas.classList.remove("is-grabbable", "is-grabbing", "is-plate-hover");
     if (kind === "grab") canvas.classList.add("is-grabbable");
     if (kind === "grabbing") canvas.classList.add("is-grabbing");
+    if (kind === "plate") canvas.classList.add("is-plate-hover");
+  }
+
+  function clearPlatePointer() {
+    globe.setPointer?.(-1, -1);
+    options.onPlateHover?.(null, null);
   }
 
   function cancelMotionLoop() {
@@ -128,7 +139,7 @@ export function attachGlobeInteraction(canvas, globe, options) {
     velTilt *= decay;
 
     const tiltTarget = getDefaultTilt();
-    state.tilt += (tiltTarget - state.tilt) * Math.min(1, dt * 2.8);
+    state.tilt += (tiltTarget - state.tilt) * Math.min(1, dt * 2.4);
 
     if (
       Math.abs(velRotY) < VELOCITY_STOP ||
@@ -144,8 +155,64 @@ export function attachGlobeInteraction(canvas, globe, options) {
   }
 
   function updateHoverCursor(clientX, clientY) {
-    if (!ready || mode !== "auto" || pointerId !== null) return;
-    setCursor(hitTest(clientX, clientY) ? "grab" : null);
+    if (!ready || pointerId !== null) return;
+
+    globe.setPointer?.(clientX, clientY);
+
+    if (mode === "auto" && globe.getHoveredFace?.()?.lesson) {
+      setCursor("plate");
+      return;
+    }
+    if (mode === "auto") {
+      setCursor(hitTest(clientX, clientY) ? "grab" : null);
+      return;
+    }
+    setCursor(null);
+  }
+
+  function applyDragDelta(dx, dy, dt) {
+    if (Math.abs(dx) < 0.002 && Math.abs(dy) < 0.002) return;
+
+    const dRotY = dx * SENS_X;
+    const dTilt = dy * SENS_Y;
+
+    state.rotY += dRotY;
+    state.tilt = clampTilt(state.tilt + dTilt);
+
+    if (dt > 0) {
+      const instantRotY = dRotY / dt;
+      const instantTilt = dTilt / dt;
+      velRotY = velRotY * 0.55 + instantRotY * 0.45;
+      velTilt = velTilt * 0.55 + instantTilt * 0.45;
+    }
+  }
+
+  function flushDragLag() {
+    const dx = pointerX - followX;
+    const dy = pointerY - followY;
+    if (Math.abs(dx) > 0.4 || Math.abs(dy) > 0.4) {
+      applyDragDelta(dx, dy, 0.016);
+    }
+    followX = pointerX;
+    followY = pointerY;
+  }
+
+  function dragStep(now) {
+    if (mode !== "drag") return;
+
+    const dt = Math.min(0.032, Math.max(0.001, (now - dragLastT) / 1000));
+    dragLastT = now;
+
+    const k = 1 - Math.exp(-DRAG_FOLLOW * dt);
+    const prevFX = followX;
+    const prevFY = followY;
+
+    followX += (pointerX - followX) * k;
+    followY += (pointerY - followY) * k;
+
+    applyDragDelta(followX - prevFX, followY - prevFY, dt);
+
+    motionRaf = requestAnimationFrame(dragStep);
   }
 
   function beginInertia() {
@@ -170,41 +237,27 @@ export function attachGlobeInteraction(canvas, globe, options) {
     e.preventDefault();
     cancelMotionLoop();
     stopAutoSpin();
+    clearPlatePointer();
 
     pointerId = e.pointerId;
     mode = "drag";
-    lastX = e.clientX;
-    lastY = e.clientY;
-    lastT = performance.now();
+    pointerX = followX = e.clientX;
+    pointerY = followY = e.clientY;
+    dragLastT = performance.now();
+    lastT = dragLastT;
     velRotY = 0;
     velTilt = 0;
 
     canvas.setPointerCapture(e.pointerId);
     setCursor("grabbing");
+    motionRaf = requestAnimationFrame(dragStep);
   }
 
   function onPointerMove(e) {
     if (mode === "drag" && e.pointerId === pointerId) {
       e.preventDefault();
-      const now = performance.now();
-      const dt = Math.max(0.001, (now - lastT) / 1000);
-      const dx = e.clientX - lastX;
-      const dy = e.clientY - lastY;
-
-      const dRotY = dx * SENS_X;
-      const dTilt = dy * SENS_Y;
-
-      state.rotY += dRotY;
-      state.tilt = clampTilt(state.tilt + dTilt);
-
-      const instantRotY = dRotY / dt;
-      const instantTilt = dTilt / dt;
-      velRotY = velRotY * 0.35 + instantRotY * 0.65;
-      velTilt = velTilt * 0.35 + instantTilt * 0.65;
-
-      lastX = e.clientX;
-      lastY = e.clientY;
-      lastT = now;
+      pointerX = e.clientX;
+      pointerY = e.clientY;
       return;
     }
 
@@ -225,6 +278,11 @@ export function attachGlobeInteraction(canvas, globe, options) {
 
     if (mode !== "drag") return;
 
+    cancelMotionLoop();
+    pointerX = e.clientX;
+    pointerY = e.clientY;
+    flushDragLag();
+
     const speed = Math.hypot(velRotY, velTilt);
     if (speed < VELOCITY_STOP * 0.5) {
       velRotY = 0;
@@ -244,8 +302,8 @@ export function attachGlobeInteraction(canvas, globe, options) {
   function onPointerCancel(e) {
     if (e.pointerId !== pointerId) return;
     pointerId = null;
-    mode = "auto";
     cancelMotionLoop();
+    mode = "auto";
     setCursor(null);
     startAutoSpin();
   }
@@ -253,6 +311,8 @@ export function attachGlobeInteraction(canvas, globe, options) {
   function onLostCapture() {
     if (pointerId === null || mode !== "drag") return;
     pointerId = null;
+    cancelMotionLoop();
+    flushDragLag();
     beginInertia();
     setCursor(null);
   }
@@ -275,6 +335,7 @@ export function attachGlobeInteraction(canvas, globe, options) {
         cancelMotionLoop();
         pointerId = null;
         mode = "auto";
+        clearPlatePointer();
         setCursor(null);
       }
     },

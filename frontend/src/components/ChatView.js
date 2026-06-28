@@ -50,6 +50,7 @@ export function createChatView({
         emptyState.style.display = "flex";
         emptyState.classList.remove("empty-state--dismissed");
         syncBodyUiState();
+        window.dispatchEvent(new CustomEvent("kernel:show-landing"));
     }
 
     function hideEmptyState() {

@@ -12,6 +12,109 @@
   display: block;
   z-index: 0;
   pointer-events: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#globe.is-interactive {
+  pointer-events: auto;
+}
+
+#globe.is-dismissed {
+  pointer-events: none;
+}
+
+/* Na landing, cliques atravessam o shell até o globo (canvas z-index 0). */
+body.ui-landing .app-shell {
+  pointer-events: none;
+}
+
+body.ui-landing .app-shell > .conversation-sidebar,
+body.ui-landing .app-shell > .sidebar-overlay,
+body.ui-landing .app .header,
+body.ui-landing .app .input-area,
+body.ui-landing .app .entrance-discipline-pills,
+body.ui-landing .app .entrance-suggestion {
+  pointer-events: auto;
+}
+
+#globe.is-grabbable { cursor: grab; }
+#globe.is-grabbing { cursor: grabbing; }
+#globe.is-plate-hover { cursor: pointer; }
+
+/* Tooltip premium — placas do globo */
+.globe-tooltip {
+  position: fixed;
+  z-index: 20;
+  max-width: min(280px, calc(100vw - 28px));
+  padding: 14px 16px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(24, 24, 27, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.42);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(10px) scale(0.965);
+  filter: blur(4px);
+  transition:
+    opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform, filter;
+}
+
+.globe-tooltip.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+
+.globe-tooltip.is-leaving {
+  opacity: 0;
+  transform: translateY(6px) scale(0.975);
+  filter: blur(3px);
+  transition-duration: 0.28s;
+}
+
+.globe-tooltip__body {
+  transition: opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.globe-tooltip.is-content-fading .globe-tooltip__body {
+  opacity: 0.35;
+}
+
+.globe-tooltip__label {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+  margin-bottom: 4px;
+}
+
+.globe-tooltip__label + .globe-tooltip__title {
+  margin-bottom: 10px;
+}
+
+.globe-tooltip__title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #e4e4e7;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.globe-tooltip__discipline {
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #f4f4f5;
 }
 
 /* Keep all the real UI above the globe backdrop. */
