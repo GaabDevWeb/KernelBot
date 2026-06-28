@@ -2,8 +2,11 @@ import { appendMessageRowWithMeta } from "../chat/restoreTurn.js";
 import { appendMessageRow, createStreamingBotRow } from "./MessageRow.js";
 import { syncBodyUiState } from "../utils/uiState.js";
 
+const LANDING_CROSSFADE_MS = 250;
+const SCROLL_BOTTOM_THRESHOLD = 80;
+
 /**
- * @param {{ chatBox: HTMLElement, emptyState: HTMLElement | null, renderMarkdown: (t: string) => string, sourceHandlers?: { onPinSource?: (d: Record<string, unknown>) => void }, chipHandlers?: { onSelect: (c: { title?: string, discipline?: string, slug?: string }) => void } }} opts
+ * @param {{ chatBox: HTMLElement, emptyState: HTMLElement | null, renderMarkdown: (t: string) => string, sourceHandlers?: { onPinSource?: (d: Record<string, unknown>) => void }, chipHandlers?: { onSelect: (c: { title?: string, discipline?: string, slug?: string }) => void }, onRegenerate?: () => void }} opts
  */
 export function createChatView({
     chatBox,
@@ -11,7 +14,44 @@ export function createChatView({
     renderMarkdown,
     sourceHandlers,
     chipHandlers,
+    onRegenerate,
 }) {
+    /** @type {HTMLButtonElement | null} */
+    let scrollFab = null;
+
+    function ensureScrollFab() {
+        if (scrollFab && document.body.contains(scrollFab)) return scrollFab;
+        scrollFab = document.createElement("button");
+        scrollFab.type = "button";
+        scrollFab.className = "scroll-to-bottom-fab";
+        scrollFab.hidden = true;
+        scrollFab.setAttribute("aria-label", "Ir para o fim da conversa");
+        scrollFab.title = "Ir para o fim";
+        scrollFab.innerHTML =
+            '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v8M4 7l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        scrollFab.addEventListener("click", () => scrollBottom(true));
+        document.body.appendChild(scrollFab);
+        return scrollFab;
+    }
+
+    function updateScrollFab() {
+        const fab = ensureScrollFab();
+        const distance = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight;
+        fab.hidden = distance <= SCROLL_BOTTOM_THRESHOLD;
+    }
+
+    chatBox.addEventListener("scroll", updateScrollFab, { passive: true });
+
+    function showLanding() {
+        if (!emptyState) {
+            syncBodyUiState();
+            return;
+        }
+        emptyState.style.display = "flex";
+        emptyState.classList.remove("empty-state--dismissed");
+        syncBodyUiState();
+    }
+
     function hideEmptyState() {
         if (!emptyState || emptyState.style.display === "none") {
             syncBodyUiState();
@@ -23,13 +63,26 @@ export function createChatView({
                 if (emptyState) emptyState.style.display = "none";
                 syncBodyUiState();
                 window.dispatchEvent(new CustomEvent("kernel:chat-active"));
-            }, 200);
+            }, LANDING_CROSSFADE_MS);
         }
         syncBodyUiState();
     }
 
-    function scrollBottom() {
-        chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" });
+    function scrollBottom(instant = false) {
+        chatBox.scrollTo({
+            top: chatBox.scrollHeight,
+            behavior: instant ? "auto" : "smooth",
+        });
+        requestAnimationFrame(updateScrollFab);
+    }
+
+    function toolbarHandlersForRole(role, text) {
+        const botRows = chatBox.querySelectorAll(".message-row.bot");
+        const isLastBot = role === "bot" && botRows.length === 0;
+        return {
+            onRegenerate,
+            isLastBot: role === "bot" ? isLastBot : false,
+        };
     }
 
     /**
@@ -51,6 +104,7 @@ export function createChatView({
         turnMeta,
     ) {
         hideEmptyState();
+        const toolbarHandlers = toolbarHandlersForRole(role, text);
         if (role === "bot" && (turnMeta || sources?.length || sourceDetails?.length)) {
             return appendMessageRowWithMeta(chatBox, {
                 role,
@@ -64,6 +118,7 @@ export function createChatView({
                 scrollBottom,
                 sourceHandlers,
                 chipHandlers,
+                toolbarHandlers,
             });
         }
         return appendMessageRow(chatBox, {
@@ -76,26 +131,61 @@ export function createChatView({
             animated,
             scrollBottom,
             sourceHandlers,
+            toolbarHandlers,
         });
     }
 
     function renderSavedHistory(hist) {
         if (!hist.length) return;
         hideEmptyState();
-        hist.forEach(({ role, text, sources, sourceDetails, turnMeta }) =>
-            appendMessage(role, text, false, false, sources, sourceDetails, turnMeta),
-        );
+        hist.forEach(({ role, text, sources, sourceDetails, turnMeta }, index) => {
+            const isLastBot =
+                role === "bot" &&
+                !hist.slice(index + 1).some((t) => t.role === "bot");
+            if (role === "bot" && (turnMeta || sources?.length || sourceDetails?.length)) {
+                appendMessageRowWithMeta(chatBox, {
+                    role,
+                    text,
+                    isError: false,
+                    sources,
+                    sourceDetails,
+                    turnMeta,
+                    renderMarkdown,
+                    animated: false,
+                    scrollBottom,
+                    sourceHandlers,
+                    chipHandlers,
+                    toolbarHandlers: { onRegenerate, isLastBot },
+                });
+            } else {
+                appendMessageRow(chatBox, {
+                    role,
+                    text,
+                    isError: false,
+                    sources,
+                    sourceDetails,
+                    renderMarkdown,
+                    animated: false,
+                    scrollBottom,
+                    sourceHandlers,
+                    toolbarHandlers: { onRegenerate, isLastBot: role === "bot" && isLastBot },
+                });
+            }
+        });
         syncBodyUiState();
+        updateScrollFab();
     }
 
     function clearChat() {
         chatBox.querySelectorAll(".message-row").forEach((el) => el.remove());
         chatBox.querySelectorAll(".context-search-status").forEach((el) => el.remove());
-        if (emptyState) {
-            emptyState.style.display = "";
-            emptyState.classList.remove("empty-state--dismissed");
-        }
-        syncBodyUiState();
+        updateScrollFab();
+    }
+
+    function removeLastBotRow() {
+        const rows = chatBox.querySelectorAll(".message-row.bot");
+        const last = rows[rows.length - 1];
+        last?.remove();
     }
 
     function startBotStream() {
@@ -107,8 +197,11 @@ export function createChatView({
         appendMessage,
         renderSavedHistory,
         clearChat,
+        removeLastBotRow,
         startBotStream,
         scrollBottom,
         hideEmptyState,
+        showLanding,
+        updateScrollFab,
     };
 }

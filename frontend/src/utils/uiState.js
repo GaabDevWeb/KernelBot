@@ -1,3 +1,5 @@
+import { refreshHeaderConversationLabelVisibility } from "./headerLabel.js";
+
 /** @returns {HTMLElement | null} */
 export function getEmptyStateEl() {
     return document.getElementById("empty-state");
@@ -23,4 +25,5 @@ export function isChatActive() {
 export function syncBodyUiState() {
     document.body.classList.toggle("chat-active", isChatActive());
     document.body.classList.toggle("ui-landing", isLanding());
+    refreshHeaderConversationLabelVisibility();
 }

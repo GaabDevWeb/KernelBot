@@ -18,16 +18,27 @@ import {
     loadHistory,
     saveHistory,
 } from "./utils/history.js";
-import { createConversation, getActiveConversation } from "./utils/conversations.js";
+import {
+    createConversation,
+    getActiveConversation,
+    getConversationDiscipline,
+    setConversationDiscipline,
+} from "./utils/conversations.js";
 import {
     applyConversationDeepLink,
     applyDisciplineDeepLink,
+    syncDisciplineQueryParam,
     syncUrlState,
 } from "./utils/deepLink.js";
 import { rebuildProgressFromHistory } from "./utils/progress.js";
 import { getOrCreateSessionId, regenerateSessionId } from "./utils/sessionId.js";
 import { renderMarkdown } from "./utils/markdown.js";
 import { syncBodyUiState } from "./utils/uiState.js";
+import { initShortcutsOverlay } from "./components/ShortcutsOverlay.js";
+import {
+    refreshHeaderConversationLabelVisibility,
+    updateHeaderConversationLabel,
+} from "./utils/headerLabel.js";
 
 export function init() {
     const chatBox = document.getElementById("chat");
@@ -89,6 +100,10 @@ export function init() {
         contextStack,
         refreshContextStack,
         hidePinBadge,
+        onDisciplineChange: syncDisciplineQueryParam,
+        getStoredDisciplineId: () => getConversationDiscipline(getActiveConversation().id),
+        setStoredDisciplineId: (disciplineId) =>
+            setConversationDiscipline(getActiveConversation().id, disciplineId),
     });
 
     /** @type {ReturnType<typeof createTurnController> | null} */
@@ -126,6 +141,7 @@ export function init() {
         renderMarkdown,
         sourceHandlers,
         chipHandlers,
+        onRegenerate: () => void turnController?.regenerateLast(),
     });
 
     /** @type {ReturnType<typeof createComposer>} */
@@ -155,6 +171,7 @@ export function init() {
             conversationId: getActiveConversation().id,
             disciplineId: getActiveDisciplineId(),
         });
+        updateHeaderConversationLabel(getActiveConversation().title);
         disciplinePanel?.refresh();
         syncBodyUiState();
     }
@@ -164,12 +181,16 @@ export function init() {
         chatView.clearChat();
         bootstrapConversationView();
         sidebar?.render();
+        updateHeaderConversationLabel(getActiveConversation().title);
     }
 
     function finishConversationReset() {
         createConversation({ activate: true });
         sessionId = regenerateSessionId();
         chatView.clearChat();
+        chatView.showLanding();
+        input.value = "";
+        input.dispatchEvent(new Event("input"));
         hidePinBadge();
         refreshSiloUi();
         refreshContextWindowNotice(0);
@@ -178,13 +199,16 @@ export function init() {
             conversationId: getActiveConversation().id,
             disciplineId: getActiveDisciplineId(),
         });
+        updateHeaderConversationLabel(getActiveConversation().title);
         syncBodyUiState();
+        composer.focus();
     }
 
     composer = createComposer({
         input,
         sendButton: sendBtn,
-        onSend: (text) => void turnController?.send(text),
+        onSend: () => void turnController?.send(),
+        onStop: () => turnController?.abortStream(),
         pillsRoot: document,
     });
 
@@ -227,9 +251,13 @@ export function init() {
         searchInput: sidebarSearch,
         collapseBtn: sidebarCollapseBtn,
         getActiveId: () => getActiveConversation().id,
+        getActiveTitle: () => getActiveConversation().title || "Nova conversa",
         onSelect: () => reloadConversationView(),
         onNew: () => finishConversationReset(),
+        onDeleteActive: () => reloadConversationView(),
     });
+
+    initShortcutsOverlay();
 
     applyDisciplineDeepLink(input, () => {
         refreshSiloUi();
@@ -241,12 +269,14 @@ export function init() {
         newChatBtn.addEventListener("click", () => {
             if (turnController?.isSending()) return;
             finishConversationReset();
-            void turnController?.send("/reset");
         });
     }
 
     input.addEventListener("input", refreshSiloUi);
-    window.addEventListener("kernel:chat-active", refreshSiloUi);
+    window.addEventListener("kernel:chat-active", () => {
+        refreshSiloUi();
+        refreshHeaderConversationLabelVisibility();
+    });
     refreshSiloUi();
     refreshContextStack();
 
@@ -254,5 +284,6 @@ export function init() {
         bootstrapConversationView();
     }
     sidebar.render();
+    updateHeaderConversationLabel(getActiveConversation().title);
     composer.focus();
 }

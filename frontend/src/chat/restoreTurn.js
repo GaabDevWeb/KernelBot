@@ -6,6 +6,7 @@ import {
     setTurnHintBadge,
 } from "../components/MessageRow.js";
 import { fmt } from "../utils/time.js";
+import { mountMessageToolbar } from "../components/MessageRow.js";
 
 /**
  * @typedef {Object} TurnMeta
@@ -280,6 +281,7 @@ export function restoreBotTurn({
  *   scrollBottom: () => void,
  *   sourceHandlers?: { onPinSource?: (d: Record<string, unknown>) => void },
  *   chipHandlers?: { onSelect: (c: { title?: string, discipline?: string, slug?: string }) => void },
+ *   toolbarHandlers?: { onRegenerate?: () => void, isLastBot?: boolean },
  * }} opts
  */
 export function appendMessageRowWithMeta(chatBox, opts) {
@@ -295,6 +297,7 @@ export function appendMessageRowWithMeta(chatBox, opts) {
         scrollBottom,
         sourceHandlers,
         chipHandlers,
+        toolbarHandlers,
     } = opts;
 
     const row = document.createElement("div");
@@ -333,6 +336,13 @@ export function appendMessageRowWithMeta(chatBox, opts) {
         });
     } else {
         bubble.innerHTML = renderMarkdown(text);
+    }
+
+    if (!isError) {
+        mountMessageToolbar(row, role, text, {
+            onRegenerate: toolbarHandlers?.onRegenerate,
+            showRegenerate: role === "bot" && Boolean(toolbarHandlers?.isLastBot),
+        });
     }
 
     scrollBottom();

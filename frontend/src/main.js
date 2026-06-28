@@ -2,12 +2,16 @@ import { loadDisciplinesCatalog } from "./config/disciplines.js";
 import { init } from "./ui.js";
 import { initScopeMenu } from "./scopeMenu.js";
 import { initOnboarding } from "./onboarding.js";
+import { showToast } from "./utils/toast.js";
 
 async function boot() {
     await loadDisciplinesCatalog();
     initScopeMenu();
     initOnboarding();
     init();
+    if (typeof window !== "undefined") {
+        window.showToast = showToast;
+    }
 }
 
 boot().catch((err) => {

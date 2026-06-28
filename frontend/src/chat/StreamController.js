@@ -3,6 +3,9 @@
  * @param {import('../api.js').ChatService} chatService
  */
 export function createStreamController(chatService) {
+    /** @type {AbortController | null} */
+    let activeController = null;
+
     /**
      * @param {string} message
      * @param {string | undefined} sessionId
@@ -10,12 +13,22 @@ export function createStreamController(chatService) {
      * @param {Parameters<import('../api.js').ChatService['sendStream']>[1]} handlers
      */
     async function send(message, sessionId, history, handlers) {
-        return chatService.sendStream(message, {
-            sessionId,
-            history,
-            ...handlers,
-        });
+        activeController = new AbortController();
+        try {
+            return await chatService.sendStream(message, {
+                sessionId,
+                history,
+                signal: activeController.signal,
+                ...handlers,
+            });
+        } finally {
+            activeController = null;
+        }
     }
 
-    return { send };
+    function abort() {
+        activeController?.abort();
+    }
+
+    return { send, abort };
 }

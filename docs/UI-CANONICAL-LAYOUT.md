@@ -21,11 +21,13 @@ Antes de adicionar qualquer elemento de UI, responder: *qual região é dona dis
 
 - Disciplina ativa *(exceto exceção landing)*
 - Pin de aula
-- Contexto da conversa corrente
+- Contexto da conversa corrente como controle editável
 - Badges transitórios de turno
 - Modelo LLM ou meta técnica do turno
 
 **Exceção landing:** `#active-discipline-badge` permitido **somente** enquanto `#empty-state` estiver visível.
+
+**Exceção wayfinding (sidebar colapsada ou ChatActive):** `#header-conversation-label` — rótulo **read-only** do título da conversa ativa (truncado, `title` com texto completo). Orientação de navegação; **não** substitui o composer como fonte de contexto editável.
 
 ---
 
@@ -104,7 +106,26 @@ Se a resposta não for única, o elemento não entra até o conflito ser resolvi
 
 ## Implementação (referência de código)
 
-- Estado UI: [`frontend/src/utils/uiState.js`](../frontend/src/utils/uiState.js) — `isLanding()`, `isChatActive()`
+- Estado UI: [`frontend/src/utils/uiState.js`](../frontend/src/utils/uiState.js) — `isLanding()`, `isChatActive()`, `syncBodyUiState()`
+- Rótulo header: [`frontend/src/utils/headerLabel.js`](../frontend/src/utils/headerLabel.js) — `#header-conversation-label`
 - Refresh disciplina: [`frontend/src/chat/ComposerController.js`](../frontend/src/chat/ComposerController.js)
 - Pin: [`frontend/src/chat/MetaRenderer.js`](../frontend/src/chat/MetaRenderer.js)
 - Painel disciplina: abre via scope-btn / silo-pill, não via header em ChatActive
+- Toast / undo: [`frontend/src/utils/toast.js`](../frontend/src/utils/toast.js)
+- Sidebar conversas: [`frontend/src/components/ConversationSidebar.js`](../frontend/src/components/ConversationSidebar.js) — delete, rename, colapso
+- Streaming / stop: [`frontend/src/components/Composer.js`](../frontend/src/components/Composer.js), [`frontend/src/chat/StreamController.js`](../frontend/src/chat/StreamController.js)
+- Toolbar mensagem: [`frontend/src/components/MessageRow.js`](../frontend/src/components/MessageRow.js) — copiar, regenerar
+- Markdown ACL: [`frontend/src/utils/markdown.js`](../frontend/src/utils/markdown.js) — disclaimer colapsável, copy em `pre`
+- Scroll FAB: [`frontend/src/components/ChatView.js`](../frontend/src/components/ChatView.js)
+- Atalhos: [`frontend/src/components/ShortcutsOverlay.js`](../frontend/src/components/ShortcutsOverlay.js) — `?`, `Ctrl+/`
+- Motion landing↔chat: [`frontend/src/components/ChatView.js`](../frontend/src/components/ChatView.js), [`frontend/src/entrance.js`](../frontend/src/entrance.js)
+
+### Tokens CSS relevantes (`theme.css`)
+
+| Token | Uso |
+|-------|-----|
+| `--shell-max-chat` | Largura máxima do shell em ChatActive (`min(1400px, 100%)`) |
+| `--chat-read-max` | Coluna de leitura bot + composer alinhado |
+| `--surface-user` | Superfície das mensagens do utilizador |
+| `--btn-streaming` | Botão enviar durante geração |
+| `--toast-z` | Z-index do toast |

@@ -187,7 +187,8 @@ import { createGlobe } from "./globe.js";
     if (master) master.kill();
     if (idleSpin) idleSpin.kill();
     gsap.set([badge, newChatBtn, inputArea].filter(Boolean), { autoAlpha: 1, y: 0 });
-    gsap.to(canvas, { autoAlpha: 0, duration: 0.35, onComplete: () => globe.stop() });
+    const fadeMs = hasSeenIntro() ? 0.35 : 0.4;
+    gsap.to(canvas, { autoAlpha: 0, duration: fadeMs, onComplete: () => globe.stop() });
   }
 
   const obs = new MutationObserver(() => {

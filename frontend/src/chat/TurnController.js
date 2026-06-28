@@ -110,6 +110,7 @@ export function createTurnController(deps) {
             composer.clear();
         }
         composer.setEnabled(false);
+        composer.setStreaming(true);
         status.setProcessing();
 
         const isResetCmd = /^\/(?:reset|limpar)\b/i.test(text);
@@ -607,6 +608,7 @@ export function createTurnController(deps) {
             chatView.scrollBottom();
         } finally {
             disposeThinking();
+            composer.setStreaming(false);
             composer.setEnabled(true);
             sending = false;
 
@@ -628,9 +630,41 @@ export function createTurnController(deps) {
         return false;
     }
 
+    function abortStream() {
+        if (!sending) return;
+        streamController.abort();
+    }
+
+    async function regenerateLast() {
+        if (sending) return;
+        const history = loadHistory();
+        let lastUserIdx = -1;
+        for (let i = history.length - 1; i >= 0; i -= 1) {
+            if (history[i].role === "user") {
+                lastUserIdx = i;
+                break;
+            }
+        }
+        if (lastUserIdx === -1) return;
+
+        const userText = history[lastUserIdx].text;
+        const trimmed = history.slice(0, lastUserIdx);
+        saveHistory(trimmed);
+        refreshContextWindowNotice(trimmed.length);
+
+        const rows = chatBox.querySelectorAll(".message-row");
+        for (let i = rows.length - 1; i >= lastUserIdx; i -= 1) {
+            rows[i]?.remove();
+        }
+
+        await send(userText);
+    }
+
     return {
         send,
         isSending: () => sending,
         queueFollowUp,
+        abortStream,
+        regenerateLast,
     };
 }

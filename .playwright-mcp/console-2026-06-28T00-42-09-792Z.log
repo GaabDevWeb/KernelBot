@@ -1,0 +1,13 @@
+[     335ms] The requested module '../utils/conversations.js' does not provide an export named 'getConversationDiscipline'
+[   16463ms] The requested module '../utils/conversations.js' does not provide an export named 'getConversationDiscipline'
+[   24111ms] The requested module '../utils/conversations.js' does not provide an export named 'getConversationDiscipline'
+[  105656ms] The requested module '../utils/conversations.js' does not provide an export named 'getConversationDiscipline'
+[  128339ms] The requested module './utils/conversations.js' does not provide an export named 'getConversationDiscipline'
+[  139885ms] [ERROR] Access to script at 'http://127.0.0.1:8001/src/utils/conversations.js?t=1782607469676' from origin 'null' has been blocked by CORS policy: The request client is not a secure context and the resource is in more-private address space `loopback`. @ about:blank:0
+[  139885ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://127.0.0.1:8001/src/utils/conversations.js?t=1782607469676:0
+[  153763ms] The requested module './utils/conversations.js' does not provide an export named 'getConversationDiscipline'
+[  168336ms] The requested module './utils/conversations.js' does not provide an export named 'getConversationDiscipline'
+[  170924ms] The requested module './utils/conversations.js' does not provide an export named 'getConversationDiscipline'
+[  185825ms] The requested module './utils/conversations.js' does not provide an export named 'getConversationDiscipline'
+[  199463ms] The requested module './utils/conversations.js' does not provide an export named 'getConversationDiscipline'
+[  237026ms] The requested module './utils/conversations.js' does not provide an export named 'getConversationDiscipline'

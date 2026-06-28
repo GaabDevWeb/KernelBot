@@ -41,12 +41,13 @@ export class ChatService {
      *   onDelta: (fullText: string) => void,
      *   onMeta?: (payload: Record<string, unknown>) => void,
      *   onFirstToken?: () => void,
+     *   signal?: AbortSignal,
      *   onAbort?: () => void,
      *   onInactivity?: () => void,
      * }} handlers
      * @returns {Promise<
-     *   | { ok: true, fullText: string, isError: boolean, aborted?: boolean, stalled?: boolean }
-     *   | { ok: false, message: string, aborted?: boolean, stalled?: boolean }
+     *   | { ok: true, fullText: string, isError: boolean, aborted?: boolean, stalled?: boolean, abort: () => void }
+     *   | { ok: false, message: string, aborted?: boolean, stalled?: boolean, abort: () => void }
      * >}
      */
     async sendStream(message, handlers) {
@@ -59,6 +60,7 @@ export class ChatService {
             onAbort,
             onInactivity,
             inactivityMs = DEFAULT_STREAM_INACTIVITY_MS,
+            signal: externalSignal,
         } = handlers;
 
         let fullText = "";
@@ -69,6 +71,11 @@ export class ChatService {
         let stalledByInactivity = false;
 
         const controller = new AbortController();
+        const abort = () => controller.abort();
+        if (externalSignal) {
+            if (externalSignal.aborted) controller.abort();
+            else externalSignal.addEventListener("abort", abort, { once: true });
+        }
         /** @type {ReturnType<typeof setTimeout> | undefined} */
         let inactivityTimer;
 
@@ -114,7 +121,7 @@ export class ChatService {
                         : Array.isArray(err.detail)
                           ? err.detail.map((d) => d.msg || d).join("; ")
                           : `HTTP ${res.status}`;
-                return { ok: false, message: detail || `HTTP ${res.status}` };
+                return { ok: false, message: detail || `HTTP ${res.status}`, abort };
             }
 
             const reader = res.body.getReader();
@@ -169,7 +176,7 @@ export class ChatService {
             }
 
             clearInactivityTimer();
-            return { ok: true, fullText, isError };
+            return { ok: true, fullText, isError, abort };
         } catch (err) {
             clearInactivityTimer();
             if (err?.name === "AbortError") {
@@ -180,16 +187,18 @@ export class ChatService {
                         message:
                             "O stream parou de enviar dados (timeout de inatividade). Verifique a rede e tente de novo.",
                         stalled: true,
+                        abort,
                     };
                 }
                 aborted = true;
                 onAbort?.();
-                return { ok: false, message: "Stream cancelado.", aborted: true };
+                return { ok: false, message: "Stream cancelado.", aborted: true, abort };
             }
             console.error("[ACL] Falha no stream:", err);
             return {
                 ok: false,
                 message: `Falha de conexão: ${err?.message || String(err)}`,
+                abort,
             };
         }
     }

@@ -1,5 +1,7 @@
 import { fmt } from "../utils/time.js";
 import { parseSourceParts } from "../utils/formatSource.js";
+import { copyToClipboard } from "../utils/clipboard.js";
+import { showToast } from "../utils/toast.js";
 
 const MAX_VISIBLE_SOURCES = 3;
 
@@ -117,11 +119,6 @@ export function setTurnHintBadge(breadcrumbsEl, variant, hintText) {
         hint.textContent = "Várias fontes próximas — escolha uma aula abaixo ou continue no texto.";
     }
     if (!existing) breadcrumbsEl.prepend(hint);
-}
-
-/** @deprecated Use setTurnHintBadge(breadcrumbsEl, show ? "disambiguation" : "none") */
-export function setDisambiguationHint(breadcrumbsEl, show) {
-    setTurnHintBadge(breadcrumbsEl, show ? "disambiguation" : "none");
 }
 
 /**
@@ -302,8 +299,46 @@ function buildRichSourceCard(detail, handlers) {
 }
 
 /**
+ * @param {HTMLElement} row
+ * @param {'user'|'bot'} role
+ * @param {string} text
+ * @param {{ onRegenerate?: () => void, showRegenerate?: boolean }} [opts]
+ */
+export function mountMessageToolbar(row, role, text, opts = {}) {
+    const toolbar = document.createElement("div");
+    toolbar.className = "message-toolbar";
+
+    const copyBtn = document.createElement("button");
+    copyBtn.type = "button";
+    copyBtn.className = "message-toolbar__btn";
+    copyBtn.textContent = role === "user" ? "Copiar" : "Copiar resposta";
+    copyBtn.setAttribute("aria-label", copyBtn.textContent);
+    copyBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const ok = await copyToClipboard(text);
+        showToast(ok ? "Copiado" : "Não foi possível copiar");
+    });
+    toolbar.appendChild(copyBtn);
+
+    if (role === "bot" && opts.showRegenerate && typeof opts.onRegenerate === "function") {
+        const regenBtn = document.createElement("button");
+        regenBtn.type = "button";
+        regenBtn.className = "message-toolbar__btn";
+        regenBtn.textContent = "Regenerar";
+        regenBtn.setAttribute("aria-label", "Regenerar última resposta");
+        regenBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            opts.onRegenerate?.();
+        });
+        toolbar.appendChild(regenBtn);
+    }
+
+    row.appendChild(toolbar);
+}
+
+/**
  * @param {HTMLElement} chatBox
- * @param {{ role: 'user'|'bot', text: string, isError?: boolean, sources?: string[], sourceDetails?: Array<Record<string, unknown>>, renderMarkdown: (t: string) => string, animated?: boolean, scrollBottom: () => void, sourceHandlers?: { onPinSource?: (d: Record<string, unknown>) => void } }} opts
+ * @param {{ role: 'user'|'bot', text: string, isError?: boolean, sources?: string[], sourceDetails?: Array<Record<string, unknown>>, renderMarkdown: (t: string) => string, animated?: boolean, scrollBottom: () => void, sourceHandlers?: { onPinSource?: (d: Record<string, unknown>) => void }, toolbarHandlers?: { onRegenerate?: () => void, isLastBot?: boolean } }} opts
  */
 export function appendMessageRow(chatBox, opts) {
     const {
@@ -316,6 +351,7 @@ export function appendMessageRow(chatBox, opts) {
         animated = true,
         scrollBottom,
         sourceHandlers,
+        toolbarHandlers,
     } = opts;
 
     const row = document.createElement("div");
@@ -349,6 +385,14 @@ export function appendMessageRow(chatBox, opts) {
     if (role === "bot") row.appendChild(bubble);
     if (role === "bot") row.appendChild(breadcrumbs);
     else row.appendChild(bubble);
+
+    if (!isError) {
+        mountMessageToolbar(row, role, text, {
+            onRegenerate: toolbarHandlers?.onRegenerate,
+            showRegenerate: role === "bot" && Boolean(toolbarHandlers?.isLastBot),
+        });
+    }
+
     chatBox.appendChild(row);
     scrollBottom();
     return bubble;

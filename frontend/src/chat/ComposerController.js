@@ -4,7 +4,7 @@ import {
     siloClassSuffix,
     siloDisplayName,
 } from "../utils/contextLabel.js";
-import { syncDisciplineQueryParam } from "../utils/deepLink.js";
+import { commandForDiscipline, getDisciplines, labelForDiscipline } from "../config/disciplines.js";
 import { isLanding } from "../utils/uiState.js";
 
 /**
@@ -17,6 +17,9 @@ import { isLanding } from "../utils/uiState.js";
  *   contextStack: HTMLElement | null,
  *   refreshContextStack: () => void,
  *   hidePinBadge?: () => void,
+ *   onDisciplineChange?: (disciplineId: string | null) => void,
+ *   getStoredDisciplineId?: () => string | null,
+ *   setStoredDisciplineId?: (disciplineId: string | null) => void,
  * }} deps
  */
 export function createComposerController(deps) {
@@ -28,11 +31,60 @@ export function createComposerController(deps) {
         scopeBtn,
         refreshContextStack,
         hidePinBadge,
+        onDisciplineChange,
+        getStoredDisciplineId = () => null,
+        setStoredDisciplineId,
     } = deps;
 
     const SILO_CLASS_PREFIX = "input-area--silo-";
     /** @type {string | null} */
     let prevDisciplineId = null;
+
+    function resolveActiveDiscipline() {
+        const fromInput = activeDisciplineFromInput(input.value);
+        if (fromInput) return fromInput;
+        const storedId = getStoredDisciplineId();
+        if (!storedId) return null;
+        const row = getDisciplines().find((d) => d.id === storedId);
+        if (!row) {
+            return {
+                command: commandForDiscipline(storedId),
+                label: labelForDiscipline(storedId) || storedId,
+            };
+        }
+        return { command: row.command, label: row.label };
+    }
+
+    function resolveDisciplineId() {
+        const fromInput = activeDisciplineIdFromInput(input.value);
+        if (fromInput) return fromInput;
+        return getStoredDisciplineId();
+    }
+
+    function resolveSiloSuffix() {
+        const suffix = siloClassSuffix(input.value);
+        if (suffix) return suffix;
+        const storedId = getStoredDisciplineId();
+        if (!storedId) return null;
+        const row = getDisciplines().find((d) => d.id === storedId);
+        return row?.siloClass || storedId;
+    }
+
+    function resolveSiloDisplayName() {
+        const name = siloDisplayName(input.value);
+        if (name) return name;
+        const active = resolveActiveDiscipline();
+        return active?.label || null;
+    }
+
+    function persistDisciplineIfChanged() {
+        if (!setStoredDisciplineId) return;
+        const currentId = resolveDisciplineId();
+        const stored = getStoredDisciplineId();
+        if (currentId !== stored) {
+            setStoredDisciplineId(currentId);
+        }
+    }
 
     function refreshSiloUi() {
         if (!inputArea) return;
@@ -41,9 +93,11 @@ export function createComposerController(deps) {
                 inputArea.classList.remove(c);
             }
         });
-        const active = activeDisciplineFromInput(input.value);
-        const suffix = siloClassSuffix(input.value);
-        const currentDisciplineId = activeDisciplineIdFromInput(input.value);
+        const active = resolveActiveDiscipline();
+        const suffix = resolveSiloSuffix();
+        const currentDisciplineId = resolveDisciplineId();
+
+        persistDisciplineIfChanged();
 
         if (
             prevDisciplineId &&
@@ -62,7 +116,7 @@ export function createComposerController(deps) {
             siloPill.setAttribute("role", "button");
             siloPill.setAttribute("tabindex", "0");
             siloPill.setAttribute("title", "Ver mapa da disciplina");
-            const name = siloDisplayName(input.value);
+            const name = resolveSiloDisplayName();
             if (active?.command) {
                 siloPill.innerHTML =
                     `<span class="silo-pill__label">Disciplina ativa:</span> ` +
@@ -80,7 +134,6 @@ export function createComposerController(deps) {
             siloPill.removeAttribute("title");
         }
 
-        /* Canonical Layout: header badge only during landing (empty-state). */
         if (activeDisciplineBadge) {
             const labelEl = activeDisciplineBadge.querySelector(".active-discipline-badge__label");
             const cmdEl = activeDisciplineBadge.querySelector(".active-discipline-badge__cmd");
@@ -108,13 +161,13 @@ export function createComposerController(deps) {
             );
         }
 
-        syncDisciplineQueryParam(currentDisciplineId);
+        onDisciplineChange?.(currentDisciplineId);
         refreshContextStack();
     }
 
     function getActiveDisciplineId() {
-        return activeDisciplineIdFromInput(input.value);
+        return resolveDisciplineId();
     }
 
-    return { refreshSiloUi, getActiveDisciplineId, SILO_CLASS_PREFIX };
+    return { refreshSiloUi, getActiveDisciplineId, SILO_CLASS_PREFIX, persistDisciplineIfChanged };
 }

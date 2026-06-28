@@ -10,11 +10,23 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 
 from api.routes import router
 from app.state import AppServices
 
 log = logging.getLogger("kernelbots.app")
+
+
+class DevSourceNoCacheMiddleware(BaseHTTPMiddleware):
+    """Evita cache agressivo de módulos ES em /src durante desenvolvimento."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        if request.url.path.startswith("/src/"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
 
 
 def create_app(services: AppServices) -> FastAPI:
@@ -28,6 +40,7 @@ def create_app(services: AppServices) -> FastAPI:
         log.info("🛑 Servidor finalizado.")
 
     app = FastAPI(title="ACL — Agente de Contexto Local", lifespan=lifespan)
+    app.add_middleware(DevSourceNoCacheMiddleware)
     app.state.services = services
     app.state.templates = templates
 
@@ -42,8 +55,8 @@ def create_app(services: AppServices) -> FastAPI:
 
     @app.get("/favicon.ico")
     def favicon() -> FileResponse:
-        icon = assets_dir / "favicon.svg"
-        return FileResponse(icon, media_type="image/svg+xml")
+        icon = assets_dir / "images" / "icon.png"
+        return FileResponse(icon, media_type="image/png")
 
     if assets_dir.is_dir():
         app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
