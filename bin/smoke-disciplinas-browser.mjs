@@ -168,7 +168,7 @@ async function waitForOnline(page, timeoutMs = 90_000) {
 
 async function newConversation(page) {
   await waitForOnline(page).catch(() => {});
-  const newChat = page.locator("#new-chat-button");
+  const newChat = page.locator("#sidebar-new-chat");
   if (await newChat.isVisible().catch(() => false)) {
     await newChat.click();
   } else {

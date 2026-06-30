@@ -50,7 +50,6 @@ export function init() {
     const siloPill = document.getElementById("silo-pill");
     const pinBadge = document.getElementById("context-pin-badge");
     const contextStack = document.getElementById("context-stack");
-    const newChatBtn = document.getElementById("new-chat-button");
     const activeDisciplineBadge = document.getElementById("active-discipline-badge");
     const scopeBtn = document.getElementById("scope-btn");
     const contextWindowNoticeEl = document.getElementById("context-window-notice");
@@ -63,7 +62,9 @@ export function init() {
     const sidebarSearch = /** @type {HTMLInputElement | null} */ (
         document.getElementById("sidebar-search")
     );
+    const sidebarSearchToggle = document.getElementById("sidebar-search-toggle");
     const sidebarCollapseBtn = document.getElementById("sidebar-collapse-toggle");
+    const sidebarLogoBtn = document.getElementById("sidebar-logo-btn");
 
     let sessionId = getOrCreateSessionId();
 
@@ -250,7 +251,9 @@ export function init() {
         toggleBtn: sidebarToggle,
         newBtn: sidebarNewBtn,
         searchInput: sidebarSearch,
+        searchToggleBtn: sidebarSearchToggle,
         collapseBtn: sidebarCollapseBtn,
+        logoBtn: sidebarLogoBtn,
         getActiveId: () => getActiveConversation().id,
         getActiveTitle: () => getActiveConversation().title || "Nova conversa",
         onSelect: () => reloadConversationView(),
@@ -265,13 +268,6 @@ export function init() {
         disciplinePanel?.refresh();
     });
     const deepLinked = applyConversationDeepLink(() => reloadConversationView());
-
-    if (newChatBtn) {
-        newChatBtn.addEventListener("click", () => {
-            if (turnController?.isSending()) return;
-            finishConversationReset();
-        });
-    }
 
     input.addEventListener("input", refreshSiloUi);
     window.addEventListener("kernel:chat-active", () => {

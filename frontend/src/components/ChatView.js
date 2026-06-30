@@ -19,6 +19,24 @@ export function createChatView({
     /** @type {HTMLButtonElement | null} */
     let scrollFab = null;
 
+    function positionScrollFab() {
+        const fab = scrollFab;
+        if (!fab || fab.hidden) return;
+
+        const inputArea = document.querySelector(".input-area");
+        if (!inputArea) return;
+
+        const rect = inputArea.getBoundingClientRect();
+        const size = 40;
+        const gap = 8;
+        const inset = 12;
+
+        fab.style.top = `${Math.max(8, rect.top - gap - size)}px`;
+        fab.style.left = `${Math.max(8, rect.right - inset - size)}px`;
+        fab.style.bottom = "auto";
+        fab.style.right = "auto";
+    }
+
     function ensureScrollFab() {
         if (scrollFab && document.body.contains(scrollFab)) return scrollFab;
         scrollFab = document.createElement("button");
@@ -31,6 +49,15 @@ export function createChatView({
             '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v8M4 7l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         scrollFab.addEventListener("click", () => scrollBottom(true));
         document.body.appendChild(scrollFab);
+
+        const appEl = document.querySelector(".app");
+        const inputArea = document.querySelector(".input-area");
+        const reposition = () => positionScrollFab();
+        window.addEventListener("resize", reposition, { passive: true });
+        appEl && new ResizeObserver(reposition).observe(appEl);
+        inputArea && new ResizeObserver(reposition).observe(inputArea);
+        document.getElementById("conversation-sidebar")?.addEventListener("transitionend", reposition);
+
         return scrollFab;
     }
 
@@ -38,6 +65,7 @@ export function createChatView({
         const fab = ensureScrollFab();
         const distance = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight;
         fab.hidden = distance <= SCROLL_BOTTOM_THRESHOLD;
+        if (!fab.hidden) positionScrollFab();
     }
 
     chatBox.addEventListener("scroll", updateScrollFab, { passive: true });

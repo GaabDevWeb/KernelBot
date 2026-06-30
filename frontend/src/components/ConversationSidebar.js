@@ -14,6 +14,9 @@ import {
 
 const SIDEBAR_COLLAPSED_KEY = "kernel_sidebar_collapsed";
 
+/** @type {HTMLElement | null} */
+let openMenuEl = null;
+
 /**
  * @param {{
  *   sidebar: HTMLElement | null,
@@ -22,7 +25,9 @@ const SIDEBAR_COLLAPSED_KEY = "kernel_sidebar_collapsed";
  *   toggleBtn: HTMLElement | null,
  *   newBtn: HTMLElement | null,
  *   searchInput: HTMLInputElement | null,
+ *   searchToggleBtn: HTMLElement | null,
  *   collapseBtn: HTMLElement | null,
+ *   logoBtn: HTMLElement | null,
  *   getActiveId: () => string | null,
  *   getActiveTitle: () => string,
  *   onSelect: (id: string) => void,
@@ -38,7 +43,9 @@ export function createConversationSidebar(opts) {
         toggleBtn,
         newBtn,
         searchInput,
+        searchToggleBtn,
         collapseBtn,
+        logoBtn,
         getActiveId,
         getActiveTitle,
         onSelect,
@@ -46,8 +53,6 @@ export function createConversationSidebar(opts) {
         onDeleteActive,
     } = opts;
 
-    /** @type {ReturnType<typeof setTimeout> | null} */
-    let searchTimer = null;
     let searchQuery = "";
 
     function isDesktop() {
@@ -70,10 +75,12 @@ export function createConversationSidebar(opts) {
         }
     }
 
+    function isCollapsed() {
+        return Boolean(sidebar?.classList.contains("conversation-sidebar--collapsed"));
+    }
+
     function syncCollapsedBodyClass() {
-        const collapsed =
-            isDesktop() &&
-            Boolean(sidebar?.classList.contains("conversation-sidebar--collapsed"));
+        const collapsed = isDesktop() && isCollapsed();
         document.body.classList.toggle("sidebar-collapsed", collapsed);
         refreshHeaderConversationLabelVisibility();
     }
@@ -86,14 +93,30 @@ export function createConversationSidebar(opts) {
         }
         sidebar.classList.toggle("conversation-sidebar--collapsed", loadCollapsed());
         if (collapseBtn) {
-            const collapsed = sidebar.classList.contains("conversation-sidebar--collapsed");
+            const collapsed = isCollapsed();
             collapseBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
             collapseBtn.setAttribute(
                 "aria-label",
-                collapsed ? "Expandir conversas" : "Recolher conversas",
+                collapsed ? "Expandir sidebar" : "Recolher sidebar",
             );
+            collapseBtn.title = collapsed ? "Expandir sidebar" : "Recolher sidebar";
+        }
+        if (logoBtn) {
+            const collapsed = isCollapsed();
+            logoBtn.setAttribute(
+                "aria-label",
+                collapsed ? "Abrir barra lateral" : "Novo chat",
+            );
+            logoBtn.title = collapsed ? "Abrir barra lateral" : "Novo chat";
         }
         syncCollapsedBodyClass();
+    }
+
+    function expandSidebar() {
+        if (!sidebar || !isDesktop()) return;
+        sidebar.classList.remove("conversation-sidebar--collapsed");
+        saveCollapsed(false);
+        applyCollapsedState();
     }
 
     function closeMobile() {
@@ -110,6 +133,29 @@ export function createConversationSidebar(opts) {
         updateHeaderConversationLabel(getActiveTitle());
     }
 
+    function closeAllMenus() {
+        if (!openMenuEl) return;
+        openMenuEl.hidden = true;
+        openMenuEl
+            .closest(".conversation-sidebar__menu-wrap")
+            ?.querySelector(".conversation-sidebar__menu-trigger")
+            ?.setAttribute("aria-expanded", "false");
+        openMenuEl = null;
+    }
+
+    /**
+     * @param {HTMLElement} menuEl
+     * @param {HTMLButtonElement} trigger
+     */
+    function openMenu(menuEl, trigger) {
+        closeAllMenus();
+        menuEl.hidden = false;
+        trigger.setAttribute("aria-expanded", "true");
+        openMenuEl = menuEl;
+        const first = menuEl.querySelector("button");
+        first?.focus();
+    }
+
     /**
      * @param {HTMLElement} item
      * @param {string} convId
@@ -120,6 +166,8 @@ export function createConversationSidebar(opts) {
 
         const label = item.querySelector(".conversation-sidebar__item-label");
         if (!label) return;
+
+        closeAllMenus();
 
         const input = document.createElement("input");
         input.type = "text";
@@ -155,34 +203,40 @@ export function createConversationSidebar(opts) {
     }
 
     /**
-     * @param {HTMLElement} actionsEl
+     * @param {HTMLElement} menuEl
      * @param {string} convId
      */
-    function showDeleteConfirm(actionsEl, convId) {
-        actionsEl.replaceChildren();
-        const confirm = document.createElement("span");
-        confirm.className = "conversation-sidebar__confirm";
-        confirm.textContent = "Excluir?";
+    function showDeleteConfirmInMenu(menuEl, convId) {
+        menuEl.replaceChildren();
+        const text = document.createElement("p");
+        text.className = "conversation-sidebar__menu-confirm";
+        text.textContent = "Excluir conversa?";
+
+        const actions = document.createElement("div");
+        actions.className = "conversation-sidebar__menu-confirm-actions";
 
         const yes = document.createElement("button");
         yes.type = "button";
-        yes.className = "conversation-sidebar__confirm-yes";
+        yes.className = "conversation-sidebar__menu-confirm-yes";
         yes.textContent = "Sim";
         yes.addEventListener("click", (e) => {
             e.stopPropagation();
+            closeAllMenus();
             performDelete(convId);
         });
 
         const no = document.createElement("button");
         no.type = "button";
-        no.className = "conversation-sidebar__confirm-no";
         no.textContent = "Não";
         no.addEventListener("click", (e) => {
             e.stopPropagation();
+            closeAllMenus();
             render();
         });
 
-        actionsEl.append(confirm, yes, no);
+        actions.append(yes, no);
+        menuEl.append(text, actions);
+        yes.focus();
     }
 
     /**
@@ -220,9 +274,98 @@ export function createConversationSidebar(opts) {
         refreshHeaderLabel();
     }
 
+    /**
+     * @param {HTMLElement} wrap
+     * @param {string} convId
+     * @param {string} title
+     */
+    function buildContextMenu(wrap, convId, title) {
+        const menuWrap = document.createElement("div");
+        menuWrap.className = "conversation-sidebar__menu-wrap";
+
+        const trigger = document.createElement("button");
+        trigger.type = "button";
+        trigger.className = "conversation-sidebar__menu-trigger";
+        trigger.setAttribute("aria-label", "Ações da conversa");
+        trigger.setAttribute("aria-haspopup", "menu");
+        trigger.setAttribute("aria-expanded", "false");
+        trigger.textContent = "…";
+
+        const menu = document.createElement("div");
+        menu.className = "conversation-sidebar__menu";
+        menu.setAttribute("role", "menu");
+        menu.hidden = true;
+
+        const renameItem = document.createElement("button");
+        renameItem.type = "button";
+        renameItem.className = "conversation-sidebar__menu-item";
+        renameItem.setAttribute("role", "menuitem");
+        renameItem.textContent = "Renomear";
+        renameItem.addEventListener("click", (e) => {
+            e.stopPropagation();
+            closeAllMenus();
+            startInlineRename(wrap, convId, title);
+        });
+
+        const deleteItem = document.createElement("button");
+        deleteItem.type = "button";
+        deleteItem.className = "conversation-sidebar__menu-item conversation-sidebar__menu-item--danger";
+        deleteItem.setAttribute("role", "menuitem");
+        deleteItem.textContent = "Excluir";
+        deleteItem.addEventListener("click", (e) => {
+            e.stopPropagation();
+            showDeleteConfirmInMenu(menu, convId);
+        });
+
+        menu.append(renameItem, deleteItem);
+
+        trigger.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (menu.hidden) {
+                menu.replaceChildren(renameItem, deleteItem);
+                openMenu(menu, trigger);
+            } else {
+                closeAllMenus();
+            }
+        });
+
+        menu.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                e.preventDefault();
+                closeAllMenus();
+                trigger.focus();
+            }
+        });
+
+        menuWrap.append(trigger, menu);
+        return menuWrap;
+    }
+
+    /**
+     * @param {string} title
+     */
+    function conversationInitial(title) {
+        const trimmed = (title || "N").trim();
+        return trimmed.charAt(0).toUpperCase();
+    }
+
+    function selectConversation(convId) {
+        if (convId === getActiveId()) {
+            closeMobile();
+            return;
+        }
+        switchConversation(convId);
+        syncUrlState({ conversationId: convId });
+        onSelect(convId);
+        render();
+        closeMobile();
+    }
+
     function render() {
         if (!listEl) return;
         listEl.replaceChildren();
+        closeAllMenus();
+
         const activeId = getActiveId();
         const q = searchQuery.trim().toLowerCase();
         const items = listConversations().filter((conv) => {
@@ -241,9 +384,10 @@ export function createConversationSidebar(opts) {
         }
 
         for (const conv of items) {
-            const item = document.createElement("div");
-            item.className = "conversation-sidebar__item-wrap";
-            if (conv.id === activeId) item.classList.add("conversation-sidebar__item-wrap--active");
+            const title = conv.title || "Nova conversa";
+            const wrap = document.createElement("div");
+            wrap.className = "conversation-sidebar__item-wrap";
+            if (conv.id === activeId) wrap.classList.add("conversation-sidebar__item-wrap--active");
 
             const btn = document.createElement("button");
             btn.type = "button";
@@ -253,59 +397,33 @@ export function createConversationSidebar(opts) {
 
             const label = document.createElement("span");
             label.className = "conversation-sidebar__item-label";
-            const title = conv.title || "Nova conversa";
             label.textContent = title;
             btn.title = title;
             btn.appendChild(label);
 
-            btn.addEventListener("click", () => {
-                if (conv.id === activeId) {
-                    closeMobile();
-                    return;
-                }
-                switchConversation(conv.id);
-                syncUrlState({ conversationId: conv.id });
-                onSelect(conv.id);
-                render();
-                closeMobile();
-            });
-
+            btn.addEventListener("click", () => selectConversation(conv.id));
             btn.addEventListener("dblclick", (e) => {
                 e.preventDefault();
-                startInlineRename(item, conv.id, title);
+                startInlineRename(wrap, conv.id, title);
             });
 
-            const actions = document.createElement("div");
-            actions.className = "conversation-sidebar__item-actions";
+            const initialBtn = document.createElement("button");
+            initialBtn.type = "button";
+            initialBtn.className = "conversation-sidebar__item-initial";
+            initialBtn.textContent = conversationInitial(title);
+            initialBtn.title = title;
+            initialBtn.setAttribute("aria-label", title);
+            initialBtn.addEventListener("click", () => selectConversation(conv.id));
 
-            const renameBtn = document.createElement("button");
-            renameBtn.type = "button";
-            renameBtn.className = "conversation-sidebar__action conversation-sidebar__action--rename";
-            renameBtn.setAttribute("aria-label", "Renomear conversa");
-            renameBtn.title = "Renomear";
-            renameBtn.innerHTML =
-                '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>';
-            renameBtn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                startInlineRename(item, conv.id, title);
-            });
-
-            const deleteBtn = document.createElement("button");
-            deleteBtn.type = "button";
-            deleteBtn.className = "conversation-sidebar__action conversation-sidebar__action--delete";
-            deleteBtn.setAttribute("aria-label", "Excluir conversa");
-            deleteBtn.title = "Excluir";
-            deleteBtn.innerHTML =
-                '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 4.5h10M6 4.5V3.5h4v1M5 4.5v8h6v-8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>';
-            deleteBtn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                showDeleteConfirm(actions, conv.id);
-            });
-
-            actions.append(renameBtn, deleteBtn);
-            item.append(btn, actions);
-            listEl.appendChild(item);
+            wrap.append(btn, initialBtn, buildContextMenu(wrap, conv.id, title));
+            listEl.appendChild(wrap);
         }
+    }
+
+    function startNewChat() {
+        onNew();
+        render();
+        closeMobile();
     }
 
     toggleBtn?.addEventListener("click", () => {
@@ -315,27 +433,49 @@ export function createConversationSidebar(opts) {
 
     overlay?.addEventListener("click", closeMobile);
 
-    newBtn?.addEventListener("click", () => {
-        onNew();
-        render();
-        closeMobile();
-    });
+    newBtn?.addEventListener("click", startNewChat);
 
     collapseBtn?.addEventListener("click", () => {
         if (!sidebar || !isDesktop()) return;
-        const next = !sidebar.classList.contains("conversation-sidebar--collapsed");
+        const next = !isCollapsed();
         sidebar.classList.toggle("conversation-sidebar--collapsed", next);
         saveCollapsed(next);
         applyCollapsedState();
+        if (!next) searchInput?.focus();
+    });
+
+    logoBtn?.addEventListener("click", () => {
+        if (!sidebar) return;
+        if (isDesktop() && isCollapsed()) {
+            expandSidebar();
+            return;
+        }
+        startNewChat();
+    });
+
+    searchToggleBtn?.addEventListener("click", () => {
+        expandSidebar();
+        window.setTimeout(() => searchInput?.focus(), 240);
     });
 
     searchInput?.addEventListener("input", () => {
-        const value = searchInput.value;
-        if (searchTimer) clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => {
-            searchQuery = value;
-            render();
-        }, 150);
+        searchQuery = searchInput.value;
+        render();
+    });
+
+    document.addEventListener("click", (e) => {
+        if (!(e.target instanceof Node)) return;
+        if (
+            openMenuEl &&
+            !openMenuEl.contains(e.target) &&
+            !e.target.closest(".conversation-sidebar__menu-trigger")
+        ) {
+            closeAllMenus();
+        }
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeAllMenus();
     });
 
     window.addEventListener("resize", applyCollapsedState);

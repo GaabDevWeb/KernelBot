@@ -25,18 +25,51 @@
 
     <div class="app-shell">
         <aside class="conversation-sidebar" id="conversation-sidebar" aria-label="Histórico de conversas">
-            <div class="conversation-sidebar__head">
-                <button type="button" class="conversation-sidebar__collapse" id="sidebar-collapse-toggle"
-                    aria-expanded="true" aria-label="Recolher conversas" title="Recolher conversas">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                        <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+            <header class="conversation-sidebar__brand">
+                <button type="button" class="conversation-sidebar__logo-btn" id="sidebar-logo-btn"
+                    aria-label="KernelBot">
+                    <img class="conversation-sidebar__logo" src="/assets/images/Logo.png" alt=""
+                        width="36" height="36" decoding="async" />
+                    <img class="conversation-sidebar__logo-hover-icon" src="/assets/images/collapse_expand_icon.svg"
+                        alt="" width="16" height="14" decoding="async" aria-hidden="true" />
+                    <span class="conversation-sidebar__logo-tooltip">Abrir barra lateral</span>
                 </button>
-                <span class="conversation-sidebar__title">Conversas</span>
-                <button type="button" class="conversation-sidebar__new" id="sidebar-new-chat">Nova</button>
-            </div>
-            <input type="search" class="conversation-sidebar__search" id="sidebar-search"
-                placeholder="Buscar conversas" aria-label="Buscar conversas" autocomplete="off" />
+                <button type="button" class="conversation-sidebar__collapse" id="sidebar-collapse-toggle"
+                    aria-expanded="true" aria-label="Recolher sidebar" title="Recolher sidebar">
+                    <img src="/assets/images/collapse_expand_icon.svg" alt="" width="16" height="14" />
+                </button>
+            </header>
+
+            <nav class="conversation-sidebar__nav" aria-label="Ações da sidebar">
+                <button type="button" class="conversation-sidebar__action-row" id="sidebar-new-chat">
+                    <img class="conversation-sidebar__row-icon" src="/assets/images/new_conversation_icon.svg"
+                        alt="" width="16" height="16" decoding="async" />
+                    <span class="conversation-sidebar__row-label">Novo chat</span>
+                </button>
+
+                <div class="conversation-sidebar__search">
+                    <button type="button" class="conversation-sidebar__search-toggle" id="sidebar-search-toggle"
+                        aria-label="Pesquisar chats" title="Pesquisar chats">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.2" />
+                            <path d="M10.5 10.5L13 13" stroke="currentColor" stroke-width="1.2"
+                                stroke-linecap="round" />
+                        </svg>
+                    </button>
+                    <label class="conversation-sidebar__search-field">
+                        <span class="conversation-sidebar__search-leading" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.2" />
+                                <path d="M10.5 10.5L13 13" stroke="currentColor" stroke-width="1.2"
+                                    stroke-linecap="round" />
+                            </svg>
+                        </span>
+                        <input type="search" class="conversation-sidebar__search-input" id="sidebar-search"
+                            placeholder="Pesquisar chats" aria-label="Pesquisar chats" autocomplete="off" />
+                    </label>
+                </div>
+            </nav>
+
             <div class="conversation-sidebar__list" id="conversation-list" role="list"></div>
         </aside>
         <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
@@ -46,10 +79,6 @@
         <header class="header">
             <button type="button" class="header-sidebar-toggle" id="sidebar-toggle" aria-label="Abrir conversas">
                 Conversas
-            </button>
-            <button type="button" class="header-new-chat entrance-init-hidden" id="new-chat-button"
-                title="Limpar histórico e contexto fixado">
-                Nova conversa
             </button>
             <span id="header-conversation-label" class="header-conversation-label" hidden></span>
             <div class="active-discipline-badge" id="active-discipline-badge" hidden role="button" tabindex="0"
