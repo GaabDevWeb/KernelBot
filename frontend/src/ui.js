@@ -19,7 +19,7 @@ import {
     saveHistory,
 } from "./utils/history.js";
 import {
-    createConversation,
+    activateEmptyOrCreateConversation,
     getActiveConversation,
     getConversationDiscipline,
     setConversationDiscipline,
@@ -187,8 +187,8 @@ export function init() {
     }
 
     function finishConversationReset() {
-        createConversation({ activate: true });
-        sessionId = regenerateSessionId();
+        const { created } = activateEmptyOrCreateConversation();
+        sessionId = created ? regenerateSessionId() : getOrCreateSessionId();
         chatView.clearChat();
         chatView.showLanding();
         input.value = "";

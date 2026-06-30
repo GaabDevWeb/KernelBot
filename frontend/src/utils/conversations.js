@@ -66,6 +66,45 @@ function newId() {
 }
 
 /**
+ * Conversa sem mensagem útil do usuário (ainda sem conteúdo real enviado).
+ * @param {StoredConversation | { turns?: ConversationTurn[] } | null | undefined} conv
+ */
+export function isConversationEmpty(conv) {
+    const turns = conv?.turns;
+    if (!Array.isArray(turns) || !turns.length) return true;
+    return !turns.some((t) => {
+        if (t?.role !== "user") return false;
+        let text = stripLeadingDisciplineCommand(String(t.text || "").trim());
+        text = text.replace(/^\/(?:doc|content|reset|limpar)\b\s*/i, "").trim();
+        return text.length > 0;
+    });
+}
+
+/**
+ * @param {{ activeId: string | null, conversations: StoredConversation[] }} store
+ */
+function dedupeEmptyConversations(store) {
+    const empties = store.conversations.filter(isConversationEmpty);
+    if (empties.length <= 1) return store;
+
+    const activeEmpty = store.activeId && empties.find((c) => c.id === store.activeId);
+    const keep =
+        activeEmpty ||
+        [...empties].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
+    if (!keep) return store;
+
+    return {
+        ...store,
+        activeId: store.activeId && store.conversations.some((c) => c.id === store.activeId)
+            ? store.activeId
+            : keep.id,
+        conversations: store.conversations.filter(
+            (c) => !isConversationEmpty(c) || c.id === keep.id,
+        ),
+    };
+}
+
+/**
  * @param {string} text
  */
 export function titleFromFirstMessage(text) {
@@ -220,10 +259,16 @@ export function loadStore() {
         const conversations = Array.isArray(parsed?.conversations)
             ? parsed.conversations.filter((c) => c && c.id).map(normalizeConversation)
             : [];
-        return {
+        const store = {
             activeId: typeof parsed?.activeId === "string" ? parsed.activeId : null,
             conversations,
         };
+        const deduped = dedupeEmptyConversations(store);
+        if (deduped.conversations.length !== store.conversations.length) {
+            saveStore(deduped);
+            return deduped;
+        }
+        return store;
     } catch {
         return emptyStore();
     }
@@ -275,6 +320,21 @@ export function createConversation(opts = {}) {
     if (opts.activate !== false) store.activeId = conv.id;
     saveStore(store);
     return conv;
+}
+
+/**
+ * Ativa a conversa vazia existente ou cria uma nova (no máximo uma vazia por vez).
+ * @returns {{ conversation: StoredConversation, created: boolean }}
+ */
+export function activateEmptyOrCreateConversation() {
+    const store = loadStore();
+    const existing = store.conversations.find(isConversationEmpty);
+    if (existing) {
+        store.activeId = existing.id;
+        saveStore(store);
+        return { conversation: existing, created: false };
+    }
+    return { conversation: createConversation({ activate: true }), created: true };
 }
 
 /**
