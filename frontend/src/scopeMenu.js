@@ -2,6 +2,11 @@
  * Menu de escopo gerado a partir de disciplines.json (SSOT).
  */
 import { DISCIPLINES } from "./config/disciplines.js";
+import {
+    CATALOG_UNAVAILABLE_TITLE,
+    getCatalogAvailableSync,
+} from "./utils/catalogAvailability.js";
+import { showToast } from "./utils/toast.js";
 
 /** @type {string[]} */
 const COMMAND_PREFIXES = DISCIPLINES.map((d) => d.command).sort(
@@ -98,6 +103,10 @@ export function initScopeMenu(opts = {}) {
     }
 
     function openMenu() {
+        if (getCatalogAvailableSync() === false) {
+            showToast(`${CATALOG_UNAVAILABLE_TITLE} neste ambiente`);
+            return;
+        }
         menu.classList.add("open");
         btn.setAttribute("aria-expanded", "true");
     }
@@ -109,6 +118,10 @@ export function initScopeMenu(opts = {}) {
 
     btn.addEventListener("click", (e) => {
         e.stopPropagation();
+        if (btn.disabled || getCatalogAvailableSync() === false) {
+            showToast(`${CATALOG_UNAVAILABLE_TITLE} neste ambiente`);
+            return;
+        }
         menu.classList.contains("open") ? closeMenu() : openMenu();
     });
 

@@ -1,7 +1,7 @@
 {
   "name": "kernelbot",
   "version": "1.0.0",
-  "description": "<div align=\"center\">   <img src=\"frontend/assets/images/KernelBanner.webp\" alt=\"Banner\" width=\"100%\" /> </div>",
+  "description": "Kernel — assistente educacional com BM25, interface web SSE e multi-disciplinas.",
   "main": "index.js",
   "directories": {
     "doc": "docs",

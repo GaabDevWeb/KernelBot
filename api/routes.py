@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from collections.abc import AsyncGenerator
 
 from core.disciplines import trace_label_by_discipline
+from api.rate_limit import allow_request
 from engine.context import ConversationHistoryError, _normalize_conversation_history
 from engine.lesson_catalog import normalize_lesson_key
 
@@ -20,6 +21,9 @@ log = logging.getLogger("kernelbots.api.chat")
 router = APIRouter()
 
 _SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
+_MAX_MESSAGE_CHARS = 16_000
+_CHAT_RATE_LIMIT = 30
+_CHAT_RATE_WINDOW_SEC = 60.0
 
 
 def _verify_reload_bearer(request: Request) -> None:
@@ -47,10 +51,13 @@ async def health() -> dict[str, str]:
 
 
 @router.get("/api/public-config")
-async def public_config(request: Request) -> dict[str, str]:
+async def public_config(request: Request) -> dict[str, str | bool]:
     """Configuração pública do frontend (URLs externas, sem segredos)."""
     settings = request.app.state.services.context_manager.settings
-    return {"iss_lesson_base": settings.iss_public_lesson_base}
+    return {
+        "iss_lesson_base": settings.iss_public_lesson_base,
+        "catalog_enabled": settings.catalog_enabled,
+    }
 
 
 @router.get("/api/curriculum")
@@ -134,6 +141,11 @@ async def chat(request: Request) -> StreamingResponse:
     client_ip = request.client.host if request.client else "desconhecido"
     services = request.app.state.services
 
+    rate_key = f"chat:{client_ip}"
+    if not allow_request(rate_key, limit=_CHAT_RATE_LIMIT, window_sec=_CHAT_RATE_WINDOW_SEC):
+        log.warning(f"⚠  Rate limit excedido para {client_ip}")
+        raise HTTPException(status_code=429, detail="Muitas requisições. Tente novamente em instantes.")
+
     try:
         data = await request.json()
     except Exception:
@@ -144,6 +156,15 @@ async def chat(request: Request) -> StreamingResponse:
     if not user_message:
         log.warning(f"⚠  Requisição de {client_ip} com campo 'message' ausente ou vazio")
         raise HTTPException(status_code=400, detail="Campo 'message' ausente ou vazio.")
+
+    if len(user_message) > _MAX_MESSAGE_CHARS:
+        log.warning(
+            f"⚠  Requisição de {client_ip} — message excede {_MAX_MESSAGE_CHARS} caracteres"
+        )
+        raise HTTPException(
+            status_code=413,
+            detail=f"Mensagem muito longa (máximo {_MAX_MESSAGE_CHARS} caracteres).",
+        )
 
     raw_discipline = data.get("discipline")
     discipline: str | None

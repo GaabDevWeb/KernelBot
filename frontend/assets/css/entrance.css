@@ -25,6 +25,12 @@
   pointer-events: none;
 }
 
+#globe.globe--static-fallback {
+  opacity: 0 !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* Na landing, cliques atravessam o shell até o globo (canvas z-index 0). */
 body.ui-landing .app-shell {
   pointer-events: none;
@@ -34,6 +40,7 @@ body.ui-landing .app-shell > .conversation-sidebar,
 body.ui-landing .app-shell > .sidebar-overlay,
 body.ui-landing .app .header,
 body.ui-landing .app .input-area,
+body.ui-landing .app .onboarding-banner,
 body.ui-landing .app .entrance-discipline-pills,
 body.ui-landing .app .entrance-suggestion {
   pointer-events: auto;
@@ -50,11 +57,11 @@ body.ui-landing .app .entrance-suggestion {
   max-width: min(280px, calc(100vw - 28px));
   padding: 14px 16px 13px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(24, 24, 27, 0.92);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.42);
+  box-shadow: var(--shadow-md);
   pointer-events: none;
   opacity: 0;
   transform: translateY(10px) scale(0.965);
@@ -93,7 +100,7 @@ body.ui-landing .app .entrance-suggestion {
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #a1a1aa;
+  color: var(--sidebar-muted);
   margin-bottom: 4px;
 }
 
@@ -175,7 +182,7 @@ body.ui-landing .app .entrance-suggestion {
   line-height: 1.12;
   font-weight: 700;
   letter-spacing: -0.01em;
-  background: linear-gradient(120deg, var(--white) 0%, #d9dadf 45%, #a9aab0 100%);
+  background: linear-gradient(120deg, var(--white) 0%, var(--entrance-headline-mid) 45%, var(--entrance-headline-end) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -195,7 +202,7 @@ body.ui-landing .app .entrance-suggestion {
   font-size: clamp(0.95rem, 1.8vw, 1.05rem);
   line-height: var(--line-height-body, 1.5);
   font-weight: 400;
-  color: rgba(228, 228, 231, 0.88);
+  color: var(--entrance-subtitle);
   max-width: 42ch;
 }
 
@@ -209,8 +216,8 @@ body.ui-landing .app .entrance-suggestion {
 }
 
 .entrance-discipline-pills .cmd-pill {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.14);
+  background: var(--entrance-pill-bg);
+  border-color: var(--entrance-pill-border);
   color: var(--text);
   border-radius: var(--radius-xl);
   font-size: 12px;
@@ -273,12 +280,16 @@ body.ui-landing .app .entrance-suggestion {
   50%, 100% { opacity: 0; }
 }
 
-/* Mobile: globo recua; hero e pills ganham protagonismo (LAND-MOB-001) */
+/* Mobile: globo recua; hero e pills ganham protagonismo (LAND-MOB-001, TASK-014) */
 @media (max-width: 820px) {
+  #globe:not(.globe--static-fallback) {
+    opacity: 0.42;
+  }
+
   #empty-state {
     align-items: flex-end;
     justify-content: center;
-    padding: 0 16px 16vh;
+    padding: 0 16px max(12vh, 88px);
     overflow-x: hidden;
   }
 
@@ -287,6 +298,14 @@ body.ui-landing .app .entrance-suggestion {
     text-align: center;
     max-width: min(520px, 100%);
     width: 100%;
+    padding: 14px 16px 16px;
+    border-radius: 16px;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg) 72%, transparent) 0%,
+      color-mix(in srgb, var(--bg) 88%, transparent) 100%
+    );
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
   }
 
   .entrance-headline {
@@ -299,19 +318,72 @@ body.ui-landing .app .entrance-suggestion {
     margin-top: var(--space-2, 8px);
   }
 
+  /* Grid 3+2 — evita pill isolada na 2ª linha (TASK-013) */
   .entrance-discipline-pills {
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--space-2, 8px);
+    width: 100%;
     max-width: 100%;
     margin-top: var(--space-4, 16px);
+    justify-items: stretch;
+  }
+
+  .entrance-discipline-pills .cmd-pill {
+    flex: unset;
+    min-width: 0;
+    max-width: none;
+    width: auto;
+    grid-column: span 2;
+    text-align: center;
+    justify-content: center;
+    font-size: 11px;
+    padding: 6px 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .entrance-discipline-pills .cmd-pill:nth-child(4) {
+    grid-column: 2 / span 2;
+  }
+
+  .entrance-discipline-pills .cmd-pill:nth-child(5) {
+    grid-column: 4 / span 2;
   }
 
   .entrance-suggestion-wrap {
     margin-top: var(--space-4, 16px);
   }
 
+  /* TASK-019: suggestion alinhada às cmd-pills (surface + borda) em vez de bloco sólido */
+  .entrance-suggestion {
+    background: var(--brand-surface);
+    color: var(--text);
+    border: 1px solid var(--brand-muted);
+    box-shadow: none;
+  }
+
+  .entrance-suggestion-caret {
+    background: var(--brand-primary);
+  }
+
+  .entrance-discipline-pills .cmd-pill:hover {
+    border-color: var(--brand-muted);
+    color: var(--brand-inline);
+    background: var(--brand-surface);
+  }
+
   .entrance-suggestion-text {
     white-space: normal;
     text-align: center;
+  }
+}
+
+@media (max-width: 390px) {
+  .entrance-discipline-pills .cmd-pill {
+    font-size: 10px;
+    padding: 5px 6px;
   }
 }
 

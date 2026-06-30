@@ -48,7 +48,7 @@ FROM knowledge
 WHERE active = 1;
 ```
 
-**Backlog:** `LIMIT` por batch para evitar OOM em catálogos grandes — ver [16-backlog.md](16-backlog.md).
+**Nota:** `LIMIT` por batch para evitar OOM em catálogos grandes pode ser adicionado conforme escala do índice.
 
 ## Guard de tamanho
 

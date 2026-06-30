@@ -1,0 +1,102 @@
+[
+  {
+    "query": "Prepara o repositório KernelBot para publicação pública no GitHub",
+    "should_trigger": true,
+    "notes": "intent directo pré-lançamento"
+  },
+  {
+    "query": "/pre-publish-cleanup — audita e limpa o repo",
+    "should_trigger": true,
+    "notes": "invocação explícita do comando"
+  },
+  {
+    "query": "Remove lixo do repositório: screenshots de teste, roadmaps antigos e artefactos QA",
+    "should_trigger": true,
+    "notes": "sinónimos de limpeza pré-publicação"
+  },
+  {
+    "query": "Quero deixar o projeto maduro e organizado antes de abrir o repo ao público",
+    "should_trigger": true,
+    "notes": "formulacao implícita — filosofia da skill"
+  },
+  {
+    "query": "Release engineer: auditoria completa do repo e relatório do que foi removido",
+    "should_trigger": true,
+    "notes": "papel Release Engineer"
+  },
+  {
+    "query": "Limpa ficheiros temporários, código morto e assets órfãos sem quebrar o build",
+    "should_trigger": true,
+    "notes": "scope técnico de cleanup"
+  },
+  {
+    "query": "Remove audit-*.png, .playwright-mcp/ e documentação QA obsoleta do KernelBot",
+    "should_trigger": true,
+    "notes": "paths específicos KernelBot"
+  },
+  {
+    "query": "Organiza o repositório para manutenção pública — só o essencial",
+    "should_trigger": true,
+    "notes": "organização + publicação"
+  },
+  {
+    "query": "Implementa rate limiting no chat e depois publica",
+    "should_trigger": false,
+    "notes": "near-miss: feature + deploy, não cleanup"
+  },
+  {
+    "query": "Escreve testes pytest para o engine de retrieval",
+    "should_trigger": false,
+    "notes": "near-miss: testes novos, não limpeza"
+  },
+  {
+    "query": "Faz code review do PR #42",
+    "should_trigger": false,
+    "notes": "skill irmã: review, não release cleanup"
+  },
+  {
+    "query": "Como organizar um repositório open source em geral?",
+    "should_trigger": false,
+    "notes": "pergunta conceptual sem execução"
+  },
+  {
+    "query": "Refatora o Composer.js para melhorar legibilidade",
+    "should_trigger": false,
+    "notes": "refactor de negócio"
+  },
+  {
+    "query": "Gera CHANGELOG a partir dos commits da v2",
+    "should_trigger": false,
+    "notes": "release notes ≠ limpeza de repo"
+  },
+  {
+    "query": "Deploy para Railway em produção",
+    "should_trigger": false,
+    "notes": "deploy operacional, não auditoria de ficheiros"
+  },
+  {
+    "query": "Corrigir bug no TurnController quando cancela stream",
+    "should_trigger": false,
+    "notes": "bugfix"
+  },
+  {
+    "query": "Split este branch em PRs menores",
+    "should_trigger": false,
+    "notes": "split-to-prs skill"
+  },
+  {
+    "query": "Auditoria de segurança OWASP da API",
+    "should_trigger": false,
+    "notes": "security audit ≠ repo cleanup"
+  },
+  {
+    "query": "Atualiza o README com instruções de setup",
+    "should_trigger": false,
+    "notes": "docs sim, mas scope parcial — não auditoria completa"
+  },
+  {
+    "query": "Apaga node_modules para libertar espaço",
+    "should_trigger": false,
+    "notes": "limpeza local trivial, não missão release engineer"
+  }
+]

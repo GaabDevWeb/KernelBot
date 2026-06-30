@@ -29,6 +29,7 @@ import {
 import { mountIndexGapAlert } from "../components/IndexGapAlert.js";
 import {
     setBreadcrumbsContent,
+    mountLowGroundingNotice,
     setTurnHintBadge,
 } from "../components/MessageRow.js";
 import { groundingPolicyLabel, reasonLabel } from "../acl/reasonLabel.js";
@@ -509,6 +510,7 @@ export function createTurnController(deps) {
             );
             refreshStreamContextUi(meta, "", breadcrumbs);
             applyTurnHintFromMeta(meta, breadcrumbs);
+            mountLowGroundingNotice(breadcrumbs, meta);
 
             const options = disambiguationOptionsFromMeta(meta);
             if (options.length && isDisambiguationGeneration(meta)) {
@@ -593,6 +595,7 @@ export function createTurnController(deps) {
                     sourceHandlers,
                 );
                 applyTurnHintFromMeta(lastMeta, breadcrumbs);
+                mountLowGroundingNotice(breadcrumbs, lastMeta);
                 const finalText = isPostGenerationOverride(lastMeta)
                     ? finalized.displayText
                     : [finalized.proseBefore, finalized.proseAfter].filter(Boolean).join("\n\n") ||

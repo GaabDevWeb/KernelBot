@@ -71,6 +71,10 @@ import { createLandingGlobeController } from "./globe/landingController.js";
     controller?.restore();
   });
 
+  window.addEventListener("kernel:chat-active", () => {
+    controller?.dismiss(0);
+  });
+
   window.addEventListener("resize", () => {
     controller?.onResize();
   });

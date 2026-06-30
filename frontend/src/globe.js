@@ -123,9 +123,26 @@ export function createGlobe(canvas, opts = {}) {
   const FOCAL = isThinking ? 2.4 : 2.7;
   const PLATE_SCALE = isThinking ? 0.88 : 0.9;
 
-  const PALETTE = isThinking
-    ? { fill: [176, 147, 62], stroke: [200, 175, 110], vertex: [225, 210, 170] }
-    : { fill: [220, 222, 228], stroke: [235, 237, 242], vertex: [248, 249, 252] };
+  const PALETTES = {
+    dark: {
+      hero: { fill: [220, 222, 228], stroke: [235, 237, 242], vertex: [248, 249, 252] },
+      thinking: { fill: [176, 147, 62], stroke: [200, 175, 110], vertex: [225, 210, 170] },
+    },
+    light: {
+      hero: { fill: [100, 108, 124], stroke: [75, 82, 98], vertex: [55, 62, 78] },
+      thinking: { fill: [176, 147, 62], stroke: [200, 175, 110], vertex: [225, 210, 170] },
+    },
+  };
+
+  function isLightTheme() {
+    return typeof document !== "undefined" &&
+      document.documentElement.getAttribute("data-theme") === "light";
+  }
+
+  function getPalette() {
+    const mode = isLightTheme() ? "light" : "dark";
+    return isThinking ? PALETTES[mode].thinking : PALETTES[mode].hero;
+  }
 
   function rotate(p) {
     const cy = Math.cos(state.rotY);
@@ -153,8 +170,19 @@ export function createGlobe(canvas, opts = {}) {
   let rafId = 0;
   let running = true;
   let spinPaused = false;
+  let renderPaused = false;
   let startTime = performance.now();
   let prev = startTime;
+
+  const isMobileViewport =
+    sizeTo === "window" &&
+    variant === "hero" &&
+    typeof window !== "undefined" &&
+    window.innerWidth <= 820;
+
+  if (prefersReducedMotion || isMobileViewport) {
+    spinPaused = true;
+  }
 
   const defaultTilt = state.tilt;
 
@@ -228,17 +256,21 @@ export function createGlobe(canvas, opts = {}) {
   }
 
   function frame(now) {
-    rafId = requestAnimationFrame(frame);
     if (!running) return;
+    rafId = requestAnimationFrame(frame);
+    if (renderPaused) return;
 
     const dt = (now - prev) / 1000;
     prev = now;
-    if (spin && !prefersReducedMotion && !spinPaused) {
+    if (spin && !prefersReducedMotion && !spinPaused && !isMobileViewport) {
       state.rotY += (isThinking ? spinSpeed * 0.85 : spinSpeed) * dt;
     }
 
     const t = now - startTime;
     ctx.clearRect(0, 0, W, H);
+
+    const palette = getPalette();
+    const light = isLightTheme();
 
     const sizeMin = Math.min(W, H);
     const baseR = sizeMin * (isThinking ? 0.4 : 0.28) * state.scale;
@@ -316,11 +348,12 @@ export function createGlobe(canvas, opts = {}) {
       const hoverFillBoost = isHovered ? 1.55 : 1;
       const a = d.op * (0.03 + front * fillMul) * hoverFillBoost;
       roundedPath(d.shape, d.radius);
-      const [fr, fg, fb] = PALETTE.fill;
+      const [fr, fg, fb] = palette.fill;
       ctx.fillStyle = `rgba(${fr}, ${fg}, ${fb}, ${Math.min(0.42, a)})`;
       ctx.fill();
       if (isHovered && !isThinking) {
-        ctx.fillStyle = `rgba(255, 255, 255, ${d.op * 0.045})`;
+        const hoverRgb = light ? "40, 44, 52" : "255, 255, 255";
+        ctx.fillStyle = `rgba(${hoverRgb}, ${d.op * 0.045})`;
         ctx.fill();
       }
     }
@@ -337,10 +370,12 @@ export function createGlobe(canvas, opts = {}) {
 
       roundedPath(d.shape, d.radius);
       ctx.lineWidth = isHovered ? lineW * 1.15 : lineW;
-      const [sr, sg, sb] = PALETTE.stroke;
+      const [sr, sg, sb] = palette.stroke;
       ctx.strokeStyle = `rgba(${sr}, ${sg}, ${sb}, ${Math.min(0.95, edgeA)})`;
       if (!isThinking) {
-        ctx.shadowColor = isHovered ? "rgba(255, 255, 255, 0.95)" : "rgba(255, 255, 255, 0.85)";
+        ctx.shadowColor = light
+          ? (isHovered ? "rgba(60, 65, 80, 0.45)" : "rgba(80, 85, 100, 0.3)")
+          : (isHovered ? "rgba(255, 255, 255, 0.95)" : "rgba(255, 255, 255, 0.85)");
         ctx.shadowBlur = isHovered ? 14 : front > 0.5 ? 8 : 0;
       }
       ctx.stroke();
@@ -348,7 +383,7 @@ export function createGlobe(canvas, opts = {}) {
 
       const vtxThreshold = isThinking ? 0.92 : 0.55;
       if (!isThinking && front > vtxThreshold) {
-        const [vr, vg, vb] = PALETTE.vertex;
+        const [vr, vg, vb] = palette.vertex;
         for (const v of d.proj) {
           ctx.beginPath();
           ctx.arc(v.x, v.y, vertexR, 0, Math.PI * 2);
@@ -477,11 +512,13 @@ export function createGlobe(canvas, opts = {}) {
 
   function drawParticles(t) {
     ctx.globalCompositeOperation = "lighter";
+    const light = isLightTheme();
+    const particleRgb = light ? "80, 85, 100" : "200, 202, 210";
     for (const p of particles) {
       const tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 0.001 + p.tw));
       ctx.beginPath();
       ctx.arc(p.x * W, p.y * H, p.r * p.z, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(200, 202, 210, ${0.06 * tw * p.z})`;
+      ctx.fillStyle = `rgba(${particleRgb}, ${0.06 * tw * p.z})`;
       ctx.fill();
     }
     ctx.globalCompositeOperation = "source-over";
@@ -492,12 +529,25 @@ export function createGlobe(canvas, opts = {}) {
   if (sizeTo === "window") {
     window.addEventListener("resize", resize);
   }
+
+  function onVisibilityChange() {
+    renderPaused = document.hidden;
+  }
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    onVisibilityChange();
+  }
+
   rafId = requestAnimationFrame(frame);
 
   function stop() {
     running = false;
+    renderPaused = true;
     cancelAnimationFrame(rafId);
     if (sizeTo === "window") window.removeEventListener("resize", resize);
+    if (typeof document !== "undefined") {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    }
   }
 
   function globeMetrics() {
@@ -527,6 +577,13 @@ export function createGlobe(canvas, opts = {}) {
 
   function setSpinPaused(paused) {
     spinPaused = Boolean(paused);
+  }
+
+  function setRenderPaused(paused) {
+    renderPaused = Boolean(paused);
+    if (!renderPaused && running) {
+      prev = performance.now();
+    }
   }
 
   function setPointer(clientX, clientY) {
@@ -560,6 +617,7 @@ export function createGlobe(canvas, opts = {}) {
     getDefaultTilt: () => defaultTilt,
     getAutoSpinOmega,
     setSpinPaused,
+    setRenderPaused,
     setPointer,
     getHoveredFace,
     onHoverChange,

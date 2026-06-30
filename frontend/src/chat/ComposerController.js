@@ -5,6 +5,7 @@ import {
     siloDisplayName,
 } from "../utils/contextLabel.js";
 import { commandForDiscipline, getDisciplines, labelForDiscipline } from "../config/disciplines.js";
+import { getCatalogAvailableSync } from "../utils/catalogAvailability.js";
 
 /**
  * @param {{
@@ -109,10 +110,18 @@ export function createComposerController(deps) {
         if (suffix && siloPill) {
             inputArea.classList.add("input-area--silo", SILO_CLASS_PREFIX + suffix);
             siloPill.hidden = false;
-            siloPill.classList.add("silo-pill--interactive");
-            siloPill.setAttribute("role", "button");
-            siloPill.setAttribute("tabindex", "0");
-            siloPill.setAttribute("title", "Ver mapa da disciplina");
+            const catalogOn = getCatalogAvailableSync() !== false;
+            if (catalogOn) {
+                siloPill.classList.add("silo-pill--interactive");
+                siloPill.setAttribute("role", "button");
+                siloPill.setAttribute("tabindex", "0");
+                siloPill.setAttribute("title", "Ver mapa da disciplina");
+            } else {
+                siloPill.classList.remove("silo-pill--interactive");
+                siloPill.removeAttribute("role");
+                siloPill.removeAttribute("tabindex");
+                siloPill.removeAttribute("title");
+            }
             const name = resolveSiloDisplayName();
             if (active?.command) {
                 siloPill.innerHTML =

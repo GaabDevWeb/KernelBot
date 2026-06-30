@@ -75,6 +75,11 @@ export function initShortcutsOverlay() {
             if ((e.ctrlKey || e.metaKey) && e.key === "/") {
                 e.preventDefault();
                 toggleShortcutsOverlay();
+                return;
+            }
+            if (e.key === "?" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                e.preventDefault();
+                toggleShortcutsOverlay();
             }
             return;
         }

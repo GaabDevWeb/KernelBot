@@ -1,5 +1,7 @@
 import { commandForDiscipline, labelForDiscipline } from "../config/disciplines.js";
 import { getProgress, suggestNext } from "../utils/progress.js";
+import { getCatalogAvailableSync } from "../utils/catalogAvailability.js";
+import { showToast } from "../utils/toast.js";
 
 /**
  * @param {{
@@ -176,6 +178,12 @@ export function createDisciplinePanel(opts) {
     async function showPanel() {
         const id = getDisciplineId();
         if (!id) return;
+
+        if (getCatalogAvailableSync() === false) {
+            showToast("Mapa curricular indisponível neste ambiente");
+            return;
+        }
+
         open();
         const body = document.getElementById("discipline-panel-body");
         if (body) {
@@ -200,10 +208,18 @@ export function createDisciplinePanel(opts) {
     function bindOpen(el) {
         if (!el) return;
         el.addEventListener("click", () => {
+            if (getCatalogAvailableSync() === false) {
+                showToast("Mapa curricular indisponível neste ambiente");
+                return;
+            }
             if (getDisciplineId()) void showPanel();
         });
         el.addEventListener("keydown", (e) => {
             if (e.key !== "Enter" && e.key !== " ") return;
+            if (getCatalogAvailableSync() === false) {
+                showToast("Mapa curricular indisponível neste ambiente");
+                return;
+            }
             if (!getDisciplineId()) return;
             e.preventDefault();
             void showPanel();

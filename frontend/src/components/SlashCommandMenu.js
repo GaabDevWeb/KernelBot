@@ -73,6 +73,10 @@ export function createSlashCommandMenu(input, anchor) {
             } else {
                 btn.setAttribute("aria-selected", "false");
             }
+            btn.setAttribute(
+                "aria-label",
+                `${item.command} — ${item.label}. ${item.description}`,
+            );
             btn.innerHTML =
                 `<span class="slash-command-option__row">` +
                 `<span class="slash-command-option__cmd">${item.command}</span>` +

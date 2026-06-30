@@ -25,7 +25,7 @@ O **KernelBot** (ACL — Agente de Contexto Local) é um tutor de chat que respo
 | **Aluno / utilizador do chat** | [FAQ — utilizador](19-faq-usuario.md) |
 | **Quem quer contribuir com código ou conteúdo** | [Como contribuir](18-contribuir.md) |
 | **Dev / operador** | [Visão geral técnica](01-visao-geral.md) → [Arquitetura](02-arquitetura.md) |
-| **Testar localmente** | [TESTE-LOCAL.md](../../TESTE-LOCAL.md) (raiz do repo) |
+| **Testar localmente** | [13-staging-testes.md](13-staging-testes.md) |
 
 ## Ecossistema (visão simples)
 
@@ -61,7 +61,7 @@ Detalhe e exemplos: [FAQ — utilizador](19-faq-usuario.md).
 |--------|---------|---------|
 | **Pública** | 00, 18, 19 | Todos |
 | **Técnica** | 01–17 | Devs, operadores, RAG |
-| **Operacional** | [TESTE-LOCAL.md](../../TESTE-LOCAL.md) | Quem valida releases |
+| **Operacional** | [13-staging-testes.md](13-staging-testes.md) | Quem valida releases |
 
 ## Estado do projecto (junho/2026)
 

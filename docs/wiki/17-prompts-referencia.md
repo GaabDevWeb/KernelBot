@@ -222,7 +222,7 @@ Repositório de **prompts de referência** (vazamentos / documentação pública
 | P2 | ~~Modo `assistive` opcional~~ | **Feito** como `grounding_anchored.txt` + `ACL_GROUNDING_POLICY` |
 | P4 | Sincronizar esta página quando mudar `core/systemPrompt/` | — |
 
-Itens relacionados no backlog geral: [16-backlog.md](16-backlog.md) (B4 meta no prompt).
+Item relacionado: meta por `source` no prompt (B4) — ver [05-bm25-chunking.md](05-bm25-chunking.md).
 
 ---
 

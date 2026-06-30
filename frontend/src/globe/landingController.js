@@ -142,11 +142,31 @@ export function createLandingGlobeController({
     }
   }
 
+  function isStaticGlobeContext() {
+    return (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      window.innerWidth <= 768
+    );
+  }
+
   function mountHero() {
     killEntrance();
     tooltip.hide();
     unbindHover?.();
     if (globe) globe.stop();
+
+    if (isStaticGlobeContext()) {
+      globe = null;
+      interaction?.destroy();
+      interaction = null;
+      canvas.classList.add("globe--static-fallback");
+      canvas.style.opacity = "0";
+      canvas.style.pointerEvents = "none";
+      return;
+    }
+
+    canvas.classList.remove("globe--static-fallback");
+    canvas.style.pointerEvents = "";
 
     globe = createGlobe(canvas, {
       sizeTo: "window",
@@ -247,6 +267,10 @@ export function createLandingGlobeController({
     dismissed = false;
     killEntrance();
     applyRestingState();
+    if (!globe) {
+      canvas.style.opacity = "0";
+      return;
+    }
     setCanvasInteractive(true);
     globe?.setSpinPaused(false);
     if (gsap) {
@@ -263,20 +287,22 @@ export function createLandingGlobeController({
     if (dismissed) return;
     dismissed = true;
     killEntrance();
+    killIdleSpin();
     tooltip.hide();
     globe?.setPointer(-1, -1);
     interaction?.setEnabled(false);
     setCanvasInteractive(false);
+    globe?.setSpinPaused?.(true);
+    globe?.setRenderPaused?.(true);
+    globe?.stop?.();
 
     if (gsap) {
       gsap.to(canvas, {
         autoAlpha: 0,
         duration: fadeMs,
-        onComplete: () => globe?.setSpinPaused?.(true),
       });
     } else {
       canvas.style.opacity = "0";
-      globe?.setSpinPaused?.(true);
     }
   }
 
@@ -285,8 +311,13 @@ export function createLandingGlobeController({
     if (!globe) {
       mountHero();
     }
+    if (!globe) {
+      canvas.style.opacity = "0";
+      return;
+    }
     applyRestingState();
     globe?.setSpinPaused(false);
+    globe?.setRenderPaused(false);
     setCanvasInteractive(true);
 
     if (gsap) {

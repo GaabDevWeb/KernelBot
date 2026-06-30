@@ -76,7 +76,7 @@
     |------|---------|
     | Prompt mais limpo para o aluno | Query sobre meio da aula pode não mostrar keywords ao LLM |
 
-    Backlog opcional: uma linha de meta por `source` no prompt — [16-backlog.md](16-backlog.md).
+    Opcional: uma linha de meta por `source` no prompt.
 
     ## Deploy coordenado
 

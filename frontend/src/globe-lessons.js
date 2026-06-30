@@ -1,5 +1,5 @@
 /* =============================================================
-   Aulas fictícias do KernelBot — uma por placa do globo.
+   Aulas fictícias do Kernel — uma por placa do globo.
    ============================================================= */
 
 export const LESSONS = [

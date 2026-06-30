@@ -105,9 +105,9 @@ export function createConversationSidebar(opts) {
             const collapsed = isCollapsed();
             logoBtn.setAttribute(
                 "aria-label",
-                collapsed ? "Abrir barra lateral" : "Novo chat",
+                collapsed ? "Expandir barra lateral" : "Nova conversa",
             );
-            logoBtn.title = collapsed ? "Abrir barra lateral" : "Novo chat";
+            logoBtn.title = collapsed ? "Expandir barra lateral" : "Nova conversa";
         }
         syncCollapsedBodyClass();
     }
@@ -146,13 +146,63 @@ export function createConversationSidebar(opts) {
     /**
      * @param {HTMLElement} menuEl
      * @param {HTMLButtonElement} trigger
+     * @param {HTMLButtonElement[]} menuItems
+     */
+    function bindMenuKeyboard(menuEl, trigger, menuItems) {
+        /**
+         * @param {KeyboardEvent} e
+         */
+        function onMenuKeydown(e) {
+            if (menuEl.hidden) return;
+
+            const items = menuItems.filter((el) => el.isConnected && !el.hidden);
+            if (!items.length) return;
+
+            const active = document.activeElement;
+            let index = items.indexOf(/** @type {HTMLButtonElement} */ (active));
+
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                index = index < 0 ? 0 : (index + 1) % items.length;
+                items[index]?.focus();
+                return;
+            }
+            if (e.key === "ArrowUp") {
+                e.preventDefault();
+                index = index < 0 ? items.length - 1 : (index - 1 + items.length) % items.length;
+                items[index]?.focus();
+                return;
+            }
+            if (e.key === "Home") {
+                e.preventDefault();
+                items[0]?.focus();
+                return;
+            }
+            if (e.key === "End") {
+                e.preventDefault();
+                items[items.length - 1]?.focus();
+                return;
+            }
+            if (e.key === "Escape") {
+                e.preventDefault();
+                closeAllMenus();
+                trigger.focus();
+            }
+        }
+
+        menuEl.addEventListener("keydown", onMenuKeydown);
+    }
+
+    /**
+     * @param {HTMLElement} menuEl
+     * @param {HTMLButtonElement} trigger
      */
     function openMenu(menuEl, trigger) {
         closeAllMenus();
         menuEl.hidden = false;
         trigger.setAttribute("aria-expanded", "true");
         openMenuEl = menuEl;
-        const first = menuEl.querySelector("button");
+        const first = menuEl.querySelector('[role="menuitem"]');
         first?.focus();
     }
 
@@ -318,23 +368,26 @@ export function createConversationSidebar(opts) {
         });
 
         menu.append(renameItem, deleteItem);
+        bindMenuKeyboard(menu, trigger, [renameItem, deleteItem]);
 
-        trigger.addEventListener("click", (e) => {
-            e.stopPropagation();
+        function toggleMenu() {
             if (menu.hidden) {
                 menu.replaceChildren(renameItem, deleteItem);
                 openMenu(menu, trigger);
             } else {
                 closeAllMenus();
             }
+        }
+
+        trigger.addEventListener("click", (e) => {
+            e.stopPropagation();
+            toggleMenu();
         });
 
-        menu.addEventListener("keydown", (e) => {
-            if (e.key === "Escape") {
-                e.preventDefault();
-                closeAllMenus();
-                trigger.focus();
-            }
+        trigger.addEventListener("keydown", (e) => {
+            if (e.key !== "Enter" && e.key !== " ") return;
+            e.preventDefault();
+            toggleMenu();
         });
 
         menuWrap.append(trigger, menu);
@@ -483,8 +536,13 @@ export function createConversationSidebar(opts) {
         window.setTimeout(() => searchInput?.focus(), 240);
     });
 
+    searchInput?.addEventListener("focus", () => {
+        expandSidebar();
+    });
+
     searchInput?.addEventListener("input", () => {
         searchQuery = searchInput.value;
+        if (searchQuery.trim()) expandSidebar();
         render();
     });
 
@@ -511,7 +569,7 @@ export function createConversationSidebar(opts) {
         new ResizeObserver(() => updateListScrollAffordance()).observe(listEl);
     }
 
-    newBtn?.setAttribute("title", "Novo chat");
+    newBtn?.setAttribute("title", "Nova conversa");
     searchToggleBtn?.setAttribute("title", "Pesquisar chats");
 
     return { render, closeMobile, openMobile, refreshHeaderLabel };

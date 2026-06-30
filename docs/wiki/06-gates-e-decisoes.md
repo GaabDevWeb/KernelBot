@@ -137,7 +137,7 @@ indicou que ela pode ter saído do escopo das fontes.
 
 ## Calibração
 
-Os defaults são **conservadores** por design. Ajuste via `.env` após bateria de casos reais — documentar mudanças no [Backlog](16-backlog.md).
+Os defaults são **conservadores** por design. Ajuste via `.env` após bateria de casos reais — documentar mudanças no issue tracker.
 
 ## Ver também
 

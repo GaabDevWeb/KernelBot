@@ -6,6 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kernel — Assistente de Estudo</title>
     <meta name="description" content="Assistente de estudo com busca nas aulas indexadas — Python, SQL, carreira e mais." />
+    <meta name="color-scheme" content="dark light" />
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem("kernel-theme") === "light") {
+                    document.documentElement.setAttribute("data-theme", "light");
+                    document.documentElement.style.colorScheme = "light";
+                }
+            } catch (_) {}
+        })();
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
@@ -20,14 +31,15 @@
 </head>
 
 <body>
+    <a class="skip-link" href="#chat">Ir para o conteúdo principal</a>
     <!-- Full-screen low-poly globe: the entrance backdrop, behind the whole app. -->
     <canvas id="globe" aria-hidden="true"></canvas>
 
     <div class="app-shell">
-        <aside class="conversation-sidebar" id="conversation-sidebar" aria-label="Histórico de conversas">
+        <aside class="conversation-sidebar" id="conversation-sidebar" aria-label="Conversas — Kernel, Assistente de Estudo">
             <header class="conversation-sidebar__brand">
                 <button type="button" class="conversation-sidebar__logo-btn" id="sidebar-logo-btn"
-                    aria-label="KernelBot">
+                    aria-label="Kernel — Assistente de Estudo">
                     <img class="conversation-sidebar__logo" src="/assets/images/Logo.png" alt=""
                         width="36" height="36" decoding="async" />
                     <img class="conversation-sidebar__logo-hover-icon" src="/assets/images/collapse_expand_icon.svg"
@@ -44,7 +56,7 @@
                 <button type="button" class="conversation-sidebar__action-row" id="sidebar-new-chat">
                     <img class="conversation-sidebar__row-icon" src="/assets/images/new_conversation_icon.svg"
                         alt="" width="16" height="16" decoding="async" />
-                    <span class="conversation-sidebar__row-label">Novo chat</span>
+                    <span class="conversation-sidebar__row-label">Nova conversa</span>
                 </button>
 
                 <div class="conversation-sidebar__search">
@@ -71,6 +83,9 @@
             </nav>
 
             <div class="conversation-sidebar__list" id="conversation-list" role="list"></div>
+            <p class="conversation-sidebar__storage-note" id="sidebar-storage-note">
+                As conversas ficam salvas só neste navegador. Limpar dados do site ou usar outro dispositivo apaga o histórico.
+            </p>
         </aside>
         <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
 
@@ -81,13 +96,22 @@
                 Conversas
             </button>
             <span id="header-conversation-label" class="header-conversation-label" hidden></span>
+            <button type="button" class="theme-toggle" id="theme-toggle" title="Alternar tema">
+                <svg class="theme-toggle__icon theme-toggle__icon--sun" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" />
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+                <svg class="theme-toggle__icon theme-toggle__icon--moon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                </svg>
+            </button>
         </header>
 
         <main class="chat-box" id="chat" role="log" aria-live="polite" aria-label="Histórico de mensagens">
             <div class="empty-state" id="empty-state">
                 <!-- Animated title + cycling command suggestion (entrance.js). -->
                 <div class="entrance-content">
-                    <p class="entrance-eyebrow">KERNEL ASSISTANT</p>
+                    <p class="entrance-eyebrow">KERNEL — ASSISTENTE DE ESTUDO</p>
                     <h1 class="entrance-headline">
                         <span class="entrance-title-text"></span><span class="entrance-caret" aria-hidden="true"></span>
                     </h1>

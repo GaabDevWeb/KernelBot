@@ -57,6 +57,7 @@ export function createComposer({
             sendButton.disabled = false;
             sendButton.classList.toggle("send-button--streaming", streaming);
             input.classList.toggle("composer-input--streaming", streaming);
+            input.setAttribute("aria-busy", streaming ? "true" : "false");
             sendButton.setAttribute(
                 "aria-label",
                 streaming ? "Parar geração" : defaultSendLabel,

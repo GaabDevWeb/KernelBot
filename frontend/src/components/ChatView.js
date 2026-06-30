@@ -79,7 +79,11 @@ export function createChatView({
         if (!fab.hidden) positionScrollFab();
     }
 
-    chatBox.addEventListener("scroll", updateScrollFab, { passive: true });
+        chatBox.addEventListener("scroll", updateScrollFab, { passive: true });
+        new MutationObserver(() => updateScrollFab()).observe(chatBox, {
+            childList: true,
+            subtree: true,
+        });
 
     function showLanding() {
         if (!emptyState) {

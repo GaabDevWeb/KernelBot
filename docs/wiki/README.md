@@ -37,9 +37,8 @@ Para **alunos**, **curiosos** e **primeiro contacto** — linguagem directa, sem
 | 13 | [Staging e testes](13-staging-testes.md) | Docker local, scripts `bin/`, chat |
 | 14 | [Segurança e logs](14-seguranca-observabilidade.md) | Redacção, OOM, fallbacks |
 | 15 | [Glossário](15-glossario.md) | Termos do domínio |
-| 16 | [Backlog](16-backlog.md) | Débitos e próximos passos |
-| 17 | [Prompts — referência](17-prompts-referencia.md) | Arquitetura ACL, inventário CL4R1T4S, padrões |
-| 20 | [Deploy Railway](20-deploy-railway.md) | Runbook: Docker, MySQL, variáveis, ingest, smoke, rollback |
+| 16 | [Prompts — referência](17-prompts-referencia.md) | Arquitetura ACL, inventário CL4R1T4S, padrões |
+| 17 | [Deploy Railway](20-deploy-railway.md) | Runbook: Docker, MySQL, variáveis, ingest, smoke, rollback |
 
 ---
 
@@ -47,7 +46,7 @@ Para **alunos**, **curiosos** e **primeiro contacto** — linguagem directa, sem
 
 | Ficheiro | Uso |
 |----------|-----|
-| [TESTE-LOCAL.md](../../TESTE-LOCAL.md) | Comandos copy-paste para subir staging |
+| [13-staging-testes.md](13-staging-testes.md) | Staging local, scripts `bin/`, smoke |
 | [documentation.md](../../documentation.md) | Índice curto na raiz do repo |
 | Repositório **ISS** — `documentation.md` | Pipeline Jobs 1–5, ingest Job 2 |
 

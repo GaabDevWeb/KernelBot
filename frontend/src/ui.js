@@ -27,6 +27,7 @@ import {
 import {
     applyConversationDeepLink,
     applyDisciplineDeepLink,
+    rejectInvalidDisciplineDeepLink,
     syncDisciplineQueryParam,
     syncUrlState,
 } from "./utils/deepLink.js";
@@ -263,6 +264,7 @@ export function init() {
 
     initShortcutsOverlay();
 
+    rejectInvalidDisciplineDeepLink();
     applyDisciplineDeepLink(input, () => {
         refreshSiloUi();
         disciplinePanel?.refresh();

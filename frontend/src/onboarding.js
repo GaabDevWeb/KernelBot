@@ -35,7 +35,7 @@ export function initOnboarding() {
     const banner = document.createElement("aside");
     banner.className = "onboarding-banner";
     banner.setAttribute("role", "region");
-    banner.setAttribute("aria-label", "Como usar o Kernel");
+    banner.setAttribute("aria-label", "Como usar o Kernel — Assistente de Estudo");
 
     banner.innerHTML = `
         <div class="onboarding-banner__body">

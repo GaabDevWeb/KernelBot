@@ -1,6 +1,6 @@
 # Staging e testes locais
 
-[← Índice](README.md) · Guia rápido: [TESTE-LOCAL.md](../../TESTE-LOCAL.md)
+[← Índice](README.md)
 
 ## Pré-requisitos
 
@@ -139,7 +139,7 @@ curl -s http://127.0.0.1:8001/health/catalog | jq .
 
 ## Smoke test de latência (UI + SSE)
 
-Ver passos detalhados em [TESTE-LOCAL.md](../../TESTE-LOCAL.md#smoke-test-de-latência-browser). Resumo:
+Resumo do smoke de latência (browser + SSE):
 
 | Passo | O que valida |
 |-------|----------------|
