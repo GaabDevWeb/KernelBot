@@ -5,13 +5,16 @@
 
 const SENS_X = 0.003;
 const SENS_Y = 0.00175;
-const DRAG_FOLLOW = 7.2;
-const FRICTION = 3.8;
+const DRAG_FOLLOW = 6.8;
+const FRICTION = 3.4;
 const VELOCITY_STOP = 0.016;
 const HANDOFF_MS = 1700;
 const INERTIA_MAX_MS = 2600;
 const TILT_MIN = -0.88;
 const TILT_MAX = 0.18;
+const MOUSE_TILT_RANGE = 0.12;
+const MOUSE_PARALLAX_RANGE = 0.028;
+const MOUSE_FOLLOW_SMOOTH = 5.2;
 
 /**
  * @param {HTMLCanvasElement} canvas
@@ -44,6 +47,12 @@ export function attachGlobeInteraction(canvas, globe, options) {
   let handoffFromTilt = 0;
   let handoffLastT = 0;
   let inertiaStart = 0;
+  let mouseNormX = 0;
+  let mouseNormY = 0;
+  let idleFollowRaf = 0;
+  let idleFollowLastT = 0;
+  let idleRestCx = 0.5;
+  let idleRestCy = 0.5;
 
   const prefersReducedMotion =
     typeof window !== "undefined" &&
@@ -76,6 +85,56 @@ export function attachGlobeInteraction(canvas, globe, options) {
     motionRaf = 0;
   }
 
+  function cancelIdleFollow() {
+    if (idleFollowRaf) cancelAnimationFrame(idleFollowRaf);
+    idleFollowRaf = 0;
+    idleFollowLastT = 0;
+  }
+
+  function syncIdleRestingCenter() {
+    idleRestCx = state.cx;
+    idleRestCy = state.cy;
+  }
+
+  function idleFollowStep(now) {
+    if (!ready || mode !== "auto" || pointerId !== null || prefersReducedMotion) {
+      cancelIdleFollow();
+      return;
+    }
+
+    const dt = Math.min(
+      0.032,
+      Math.max(0.001, (now - (idleFollowLastT || now)) / 1000),
+    );
+    idleFollowLastT = now;
+    const k = 1 - Math.exp(-MOUSE_FOLLOW_SMOOTH * dt);
+    const baseTilt = getDefaultTilt();
+    const targetTilt = clampTilt(baseTilt + mouseNormY * MOUSE_TILT_RANGE);
+    const targetCx = idleRestCx + mouseNormX * MOUSE_PARALLAX_RANGE;
+    const targetCy = idleRestCy + mouseNormY * MOUSE_PARALLAX_RANGE * 0.65;
+
+    state.tilt += (targetTilt - state.tilt) * k;
+    state.cx += (targetCx - state.cx) * k;
+    state.cy += (targetCy - state.cy) * k;
+
+    idleFollowRaf = requestAnimationFrame(idleFollowStep);
+  }
+
+  function ensureIdleFollow() {
+    if (!ready || mode !== "auto" || pointerId !== null || prefersReducedMotion) return;
+    if (!idleFollowRaf) {
+      syncIdleRestingCenter();
+      idleFollowLastT = performance.now();
+      idleFollowRaf = requestAnimationFrame(idleFollowStep);
+    }
+  }
+
+  function trackMouseNorm(clientX, clientY) {
+    mouseNormX = (clientX / window.innerWidth - 0.5) * 2;
+    mouseNormY = (clientY / window.innerHeight - 0.5) * 2;
+    ensureIdleFollow();
+  }
+
   function stopAutoSpin() {
     options.stopAutoSpin();
     globe.setSpinPaused?.(true);
@@ -85,12 +144,16 @@ export function attachGlobeInteraction(canvas, globe, options) {
     globe.setSpinPaused?.(false);
     options.startAutoSpin();
     mode = "auto";
+    syncIdleRestingCenter();
+    ensureIdleFollow();
   }
 
   function finishHandoff(now) {
     cancelMotionLoop();
     startAutoSpin();
     handoffLastT = now;
+    syncIdleRestingCenter();
+    ensureIdleFollow();
   }
 
   function handoffStep(now) {
@@ -236,6 +299,7 @@ export function attachGlobeInteraction(canvas, globe, options) {
 
     e.preventDefault();
     cancelMotionLoop();
+    cancelIdleFollow();
     stopAutoSpin();
     clearPlatePointer();
 
@@ -265,6 +329,7 @@ export function attachGlobeInteraction(canvas, globe, options) {
   }
 
   function onMouseMove(e) {
+    trackMouseNorm(e.clientX, e.clientY);
     updateHoverCursor(e.clientX, e.clientY);
   }
 
@@ -327,20 +392,26 @@ export function attachGlobeInteraction(canvas, globe, options) {
   return {
     getMode: () => mode,
     isReady: () => ready,
+    syncIdleRestingCenter,
     setEnabled(value) {
       enabled = Boolean(value);
       ready = enabled;
       if (!enabled) {
         ready = false;
         cancelMotionLoop();
+        cancelIdleFollow();
         pointerId = null;
         mode = "auto";
         clearPlatePointer();
         setCursor(null);
+      } else {
+        syncIdleRestingCenter();
+        ensureIdleFollow();
       }
     },
     destroy() {
       cancelMotionLoop();
+      cancelIdleFollow();
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerup", onPointerUp);

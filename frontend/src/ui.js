@@ -33,6 +33,7 @@ import {
 import { rebuildProgressFromHistory } from "./utils/progress.js";
 import { getOrCreateSessionId, regenerateSessionId } from "./utils/sessionId.js";
 import { renderMarkdown } from "./utils/markdown.js";
+import { setIssLinkDisciplineResolver } from "./utils/issLinks.js";
 import { syncBodyUiState } from "./utils/uiState.js";
 import { initShortcutsOverlay } from "./components/ShortcutsOverlay.js";
 import {
@@ -103,6 +104,8 @@ export function init() {
         setStoredDisciplineId: (disciplineId) =>
             setConversationDiscipline(getActiveConversation().id, disciplineId),
     });
+
+    setIssLinkDisciplineResolver(() => getActiveDisciplineId());
 
     /** @type {ReturnType<typeof createTurnController> | null} */
     let turnController = null;

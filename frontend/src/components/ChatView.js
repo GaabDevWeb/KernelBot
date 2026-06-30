@@ -26,13 +26,24 @@ export function createChatView({
         const inputArea = document.querySelector(".input-area");
         if (!inputArea) return;
 
-        const rect = inputArea.getBoundingClientRect();
-        const size = 40;
-        const gap = 8;
-        const inset = 12;
+        const inputRect = inputArea.getBoundingClientRect();
+        const chatRect = chatBox.getBoundingClientRect();
+        const rootStyles = getComputedStyle(document.documentElement);
+        const readMax = parseFloat(rootStyles.getPropertyValue("--chat-read-max")) || 680;
+        const chatStyles = getComputedStyle(chatBox);
+        const padX =
+            (parseFloat(chatStyles.paddingLeft) || 0) +
+            (parseFloat(chatStyles.paddingRight) || 0);
+        const innerW = Math.max(0, chatRect.width - padX);
+        const columnWidth = Math.min(readMax, innerW * 0.82);
+        const padLeft = parseFloat(chatStyles.paddingLeft) || 0;
+        const columnRight = chatRect.left + padLeft + columnWidth;
 
-        fab.style.top = `${Math.max(8, rect.top - gap - size)}px`;
-        fab.style.left = `${Math.max(8, rect.right - inset - size)}px`;
+        const size = 44;
+        const gap = 8;
+
+        fab.style.top = `${Math.max(8, inputRect.top - gap - size)}px`;
+        fab.style.left = `${Math.max(8, columnRight - size)}px`;
         fab.style.bottom = "auto";
         fab.style.right = "auto";
     }

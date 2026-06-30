@@ -4,9 +4,11 @@ import {
     setBreadcrumbsContent,
     setContextBadges,
     setTurnHintBadge,
+    mountMessageToolbar,
 } from "../components/MessageRow.js";
 import { fmt } from "../utils/time.js";
-import { mountMessageToolbar } from "../components/MessageRow.js";
+import { stripDisciplinePrefixForDisplay } from "../config/disciplines.js";
+import { buildIssMarkdownContext } from "../utils/issLinks.js";
 
 /**
  * @typedef {Object} TurnMeta
@@ -214,9 +216,11 @@ export function restoreBotTurn({
         sourceHandlers,
     );
 
+    const mdContext = buildIssMarkdownContext({ sourceDetails: turn.sourceDetails });
+
     if (!tm) {
         if (turn.text && !turn.text.startsWith("[")) {
-            bubble.innerHTML = renderMarkdown(turn.text);
+            bubble.innerHTML = renderMarkdown(turn.text, mdContext);
         } else {
             bubble.textContent = turn.text;
         }
@@ -261,7 +265,7 @@ export function restoreBotTurn({
     }
 
     if (turn.text && !turn.text.startsWith("[")) {
-        bubble.innerHTML = renderMarkdown(turn.text);
+        bubble.innerHTML = renderMarkdown(turn.text, mdContext);
     } else {
         bubble.textContent = turn.text;
     }
@@ -323,7 +327,10 @@ export function appendMessageRowWithMeta(chatBox, opts) {
     chatBox.appendChild(row);
 
     if (role === "user" || isError) {
-        bubble.textContent = text;
+        bubble.textContent =
+            role === "user" && !isError
+                ? stripDisciplinePrefixForDisplay(text)
+                : text;
     } else if (turnMeta || sources?.length || sourceDetails?.length) {
         restoreBotTurn({
             row,
@@ -335,7 +342,10 @@ export function appendMessageRowWithMeta(chatBox, opts) {
             chipHandlers,
         });
     } else {
-        bubble.innerHTML = renderMarkdown(text);
+        bubble.innerHTML = renderMarkdown(
+            text,
+            buildIssMarkdownContext({ sourceDetails }),
+        );
     }
 
     if (!isError) {

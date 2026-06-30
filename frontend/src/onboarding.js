@@ -1,6 +1,25 @@
 const STORAGE_KEY = "kernel_onboarding_dismissed_v1";
 
 /**
+ * @param {HTMLElement} banner
+ * @param {boolean} [persist]
+ */
+function dismissOnboarding(banner, persist = true) {
+    if (!banner?.isConnected) return;
+    if (persist) {
+        try {
+            localStorage.setItem(STORAGE_KEY, "1");
+        } catch {
+            /* ignora */
+        }
+    }
+    banner.classList.add("onboarding-banner--leaving");
+    const remove = () => banner.remove();
+    banner.addEventListener("transitionend", remove, { once: true });
+    window.setTimeout(remove, 320);
+}
+
+/**
  * Banner único para novos utilizadores — 3 passos, dispensável.
  */
 export function initOnboarding() {
@@ -33,11 +52,12 @@ export function initOnboarding() {
     anchor.insertAdjacentElement("beforebegin", banner);
 
     banner.querySelector(".onboarding-banner__dismiss")?.addEventListener("click", () => {
-        try {
-            localStorage.setItem(STORAGE_KEY, "1");
-        } catch {
-            /* ignora */
-        }
-        banner.remove();
+        dismissOnboarding(banner, true);
     });
+
+    window.addEventListener(
+        "kernel:first-message-sent",
+        () => dismissOnboarding(banner, true),
+        { once: true },
+    );
 }

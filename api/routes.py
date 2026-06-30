@@ -46,6 +46,13 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@router.get("/api/public-config")
+async def public_config(request: Request) -> dict[str, str]:
+    """Configuração pública do frontend (URLs externas, sem segredos)."""
+    settings = request.app.state.services.context_manager.settings
+    return {"iss_lesson_base": settings.iss_public_lesson_base}
+
+
 @router.get("/api/curriculum")
 async def curriculum_all(request: Request) -> dict:
     """Lista disciplinas com aulas no catálogo."""

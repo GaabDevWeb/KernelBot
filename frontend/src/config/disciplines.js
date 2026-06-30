@@ -85,6 +85,31 @@ export function getDisciplinePrefixes() {
     return _items.map((d) => [d.command, d.label]);
 }
 
+/**
+ * Texto visível na bolha do utilizador — remove prefixo /disciplina (MSG-SLUG-001).
+ * O texto completo com comando permanece no composer e no histórico da API.
+ * @param {string} text
+ * @returns {string}
+ */
+export function stripDisciplinePrefixForDisplay(text) {
+    const raw = String(text ?? "");
+    if (!raw.trimStart().startsWith("/")) return raw;
+
+    for (const [command] of getDisciplinePrefixes()) {
+        if (!command) continue;
+        const trimmed = raw.trimStart();
+        const lower = trimmed.toLowerCase();
+        const cmd = command.toLowerCase();
+        if (lower === cmd) return "";
+        if (lower.startsWith(`${cmd} `)) {
+            return trimmed.slice(command.length).trimStart();
+        }
+    }
+
+    const generic = raw.trimStart().match(/^\/[^\s]+\s*/);
+    return generic ? raw.trimStart().slice(generic[0].length) : raw;
+}
+
 /** @deprecated Use getDisciplinePrefixes() */
 export const DISCIPLINE_PREFIXES = new Proxy([], {
     get(_target, prop) {

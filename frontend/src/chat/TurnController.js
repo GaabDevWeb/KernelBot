@@ -35,6 +35,7 @@ import { groundingPolicyLabel, reasonLabel } from "../acl/reasonLabel.js";
 import { buildTurnMeta } from "./restoreTurn.js";
 import { immediateContextLabel } from "../utils/contextLabel.js";
 import { highlightCodeBlocks, renderMarkdown } from "../utils/markdown.js";
+import { buildIssMarkdownContext } from "../utils/issLinks.js";
 import { createGlobe } from "../globe.js";
 import { markVisitedFromTurn } from "../utils/progress.js";
 
@@ -117,6 +118,7 @@ export function createTurnController(deps) {
         const historyForApi = isResetCmd ? [] : getHistoryForApi();
 
         chatView.appendMessage("user", text);
+        window.dispatchEvent(new CustomEvent("kernel:first-message-sent"));
 
         const history = loadHistory();
         history.push({ role: "user", text });
@@ -262,13 +264,29 @@ export function createTurnController(deps) {
             }
         }
 
+        function streamMarkdownContext() {
+            let disciplineId = null;
+            const scopeKey = String(lastMeta?.pinned_scope_key || "");
+            if (scopeKey.startsWith("discipline:")) {
+                disciplineId = scopeKey.slice("discipline:".length);
+            }
+            if (!disciplineId && streamSourceDetails.length) {
+                disciplineId = String(streamSourceDetails[0]?.discipline || "") || null;
+            }
+            return buildIssMarkdownContext({
+                sourceDetails: streamSourceDetails,
+                disciplineId,
+            });
+        }
+
         function renderStreamBubble(parsed, incrementalOptions = []) {
+            const mdContext = streamMarkdownContext();
             const { proseBefore, proseAfter, insideOpenBlock, blockClosed } = parsed;
             if (proseEl) {
-                proseEl.innerHTML = proseBefore ? renderMarkdown(proseBefore) : "";
+                proseEl.innerHTML = proseBefore ? renderMarkdown(proseBefore, mdContext) : "";
             }
             if (postAmbiguityEl) {
-                postAmbiguityEl.innerHTML = proseAfter ? renderMarkdown(proseAfter) : "";
+                postAmbiguityEl.innerHTML = proseAfter ? renderMarkdown(proseAfter, mdContext) : "";
             }
 
             const canStreamChips =
@@ -283,11 +301,11 @@ export function createTurnController(deps) {
 
             if (!ambiguitySlot) {
                 const legacy =
-                    (proseBefore ? renderMarkdown(proseBefore) : "") +
+                    (proseBefore ? renderMarkdown(proseBefore, mdContext) : "") +
                     (insideOpenBlock && !incrementalOptions.length
                         ? ambiguityPlaceholderHtml()
                         : "") +
-                    (proseAfter ? renderMarkdown(proseAfter) : "");
+                    (proseAfter ? renderMarkdown(proseAfter, mdContext) : "");
                 bubble.innerHTML = legacy || "";
                 return;
             }

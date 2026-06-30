@@ -361,6 +361,28 @@ export function createConversationSidebar(opts) {
         closeMobile();
     }
 
+    function refreshHeaderLabel() {
+        updateHeaderConversationLabel(getActiveTitle());
+    }
+
+    function updateListScrollAffordance() {
+        if (!listEl) return;
+        const overflow = listEl.scrollHeight > listEl.clientHeight + 2;
+        listEl.classList.toggle("conversation-sidebar__list--overflow", overflow);
+        if (!overflow) {
+            listEl.classList.remove(
+                "conversation-sidebar__list--at-top",
+                "conversation-sidebar__list--at-bottom",
+            );
+            return;
+        }
+        const atTop = listEl.scrollTop <= 2;
+        const atBottom =
+            listEl.scrollTop + listEl.clientHeight >= listEl.scrollHeight - 2;
+        listEl.classList.toggle("conversation-sidebar__list--at-top", atTop);
+        listEl.classList.toggle("conversation-sidebar__list--at-bottom", atBottom);
+    }
+
     function render() {
         if (!listEl) return;
         listEl.replaceChildren();
@@ -380,6 +402,7 @@ export function createConversationSidebar(opts) {
             empty.className = "conversation-sidebar__empty";
             empty.textContent = q ? "Nenhuma conversa encontrada" : "Nenhuma conversa ainda";
             listEl.appendChild(empty);
+            requestAnimationFrame(updateListScrollAffordance);
             return;
         }
 
@@ -418,6 +441,8 @@ export function createConversationSidebar(opts) {
             wrap.append(btn, initialBtn, buildContextMenu(wrap, conv.id, title));
             listEl.appendChild(wrap);
         }
+
+        requestAnimationFrame(updateListScrollAffordance);
     }
 
     function startNewChat() {
@@ -480,6 +505,14 @@ export function createConversationSidebar(opts) {
 
     window.addEventListener("resize", applyCollapsedState);
     applyCollapsedState();
+
+    if (listEl) {
+        listEl.addEventListener("scroll", updateListScrollAffordance, { passive: true });
+        new ResizeObserver(() => updateListScrollAffordance()).observe(listEl);
+    }
+
+    newBtn?.setAttribute("title", "Novo chat");
+    searchToggleBtn?.setAttribute("title", "Pesquisar chats");
 
     return { render, closeMobile, openMobile, refreshHeaderLabel };
 }

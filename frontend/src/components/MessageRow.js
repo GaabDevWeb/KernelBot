@@ -1,9 +1,13 @@
 import { fmt } from "../utils/time.js";
 import { parseSourceParts } from "../utils/formatSource.js";
+import { stripDisciplinePrefixForDisplay } from "../config/disciplines.js";
+import { buildIssMarkdownContext, createIssLessonAnchor, buildIssLessonUrl } from "../utils/issLinks.js";
 import { copyToClipboard } from "../utils/clipboard.js";
 import { showToast } from "../utils/toast.js";
 
 const MAX_VISIBLE_SOURCES = 3;
+
+const ACL_SOURCES_NOTE_RE = /não recebi trechos|\[fonte:/i;
 
 const HINT_CLASS = "message-hint-badge";
 const HINT_VARIANTS = {
@@ -208,7 +212,7 @@ export function setBreadcrumbsContent(
         breadcrumbsEl.appendChild(collapsible);
     }
 
-    if (noteText) {
+    if (noteText && !(ACL_SOURCES_NOTE_RE.test(noteText) && details.length)) {
         const note = document.createElement("div");
         note.className = SOURCES_NOTE_CLASS;
         note.textContent = noteText;
@@ -228,7 +232,14 @@ function buildRichSourceCard(detail, handlers) {
     const title = document.createElement("p");
     title.className = "source-card__title";
     const lessonTitle = String(detail.lesson_title || "Aula").trim();
-    title.textContent = `Aula: ${lessonTitle}`;
+    const discipline = String(detail.discipline || "").trim();
+    const slug = String(detail.slug || "").trim();
+    const lessonLink = createIssLessonAnchor(discipline, slug, lessonTitle);
+    if (lessonLink) {
+        title.append("Aula: ", lessonLink);
+    } else {
+        title.textContent = `Aula: ${lessonTitle}`;
+    }
 
     const metaRow = document.createElement("div");
     metaRow.className = "source-card__meta-row";
@@ -292,6 +303,28 @@ function buildRichSourceCard(detail, handlers) {
         pinBtn.textContent = "Fixar contexto";
         pinBtn.addEventListener("click", () => handlers.onPinSource?.(detail));
         actions.appendChild(pinBtn);
+    }
+
+    const lessonUrl = buildIssLessonUrl(discipline, slug);
+    if (lessonUrl) {
+        const openBtn = document.createElement("a");
+        openBtn.className = "source-card__action source-card__action--iss";
+        openBtn.href = lessonUrl;
+        openBtn.target = "_blank";
+        openBtn.rel = "noopener noreferrer";
+        openBtn.textContent = "Abrir no ISS";
+        openBtn.setAttribute("aria-label", `Abrir aula no ISS: ${lessonTitle}`);
+        actions.appendChild(openBtn);
+    } else if (slug || discipline) {
+        const unavailable = document.createElement("button");
+        unavailable.type = "button";
+        unavailable.className = "source-card__action source-card__action--unavailable";
+        unavailable.textContent = "Aula indisponível";
+        unavailable.title = "Não foi possível gerar o link para esta aula no ISS";
+        unavailable.addEventListener("click", () => {
+            showToast("Link da aula indisponível no ISS para esta fonte.");
+        });
+        actions.appendChild(unavailable);
     }
 
     if (actions.childElementCount) li.appendChild(actions);
@@ -454,9 +487,13 @@ export function appendMessageRow(chatBox, opts) {
     if (isError) bubble.classList.add("error");
 
     if (role === "bot" && !isError) {
-        bubble.innerHTML = renderMarkdown(text);
+        bubble.innerHTML = renderMarkdown(
+            text,
+            buildIssMarkdownContext({ sourceDetails }),
+        );
     } else {
-        bubble.textContent = text;
+        bubble.textContent =
+            role === "user" ? stripDisciplinePrefixForDisplay(text) : text;
     }
 
     row.appendChild(meta);

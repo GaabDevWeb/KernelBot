@@ -92,6 +92,11 @@ export function initScopeMenu(opts = {}) {
 
     if (!btn || !menu || !input) return;
 
+    const inputRow = document.querySelector(".input-row");
+    if (inputRow && menu.parentElement !== inputRow) {
+        inputRow.appendChild(menu);
+    }
+
     function openMenu() {
         menu.classList.add("open");
         btn.setAttribute("aria-expanded", "true");
@@ -122,9 +127,12 @@ export function initScopeMenu(opts = {}) {
     });
 
     document.addEventListener("click", (e) => {
-        if (selector && !selector.contains(/** @type {Node} */ (e.target))) {
-            closeMenu();
-        }
+        const row = document.querySelector(".input-row");
+        const target = /** @type {Node} */ (e.target);
+        if (selector?.contains(target)) return;
+        if (row?.contains(target) && menu.contains(target)) return;
+        if (menu.contains(target)) return;
+        closeMenu();
     });
 
     document.addEventListener("keydown", (e) => {

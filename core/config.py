@@ -86,6 +86,8 @@ class Settings:
     catalog_router_prompt: str
     # Token Bearer para /reload e GET /health/catalog (CI, operadores).
     reload_bearer_token: str | None
+    # URL pública da aula no ISS (frontend — links de fonte).
+    iss_public_lesson_base: str
 
     @property
     def openrouter_headers(self) -> dict[str, str]:
@@ -307,6 +309,10 @@ class Settings:
             or None
         )
 
+        iss_public_lesson_base = (
+            os.getenv("KERNELBOT_ISS_PUBLIC_BASE_URL") or ""
+        ).strip().rstrip("?") or "https://gaabdevweb.github.io/ISS/public/aula.html"
+
         """ !Credenciais do banco! """
 
         db_host = _normalize_db_host(os.getenv("DB_HOST") or "")
@@ -372,4 +378,5 @@ class Settings:
             catalog_prompt_top_k=catalog_prompt_top_k,
             catalog_router_prompt=catalog_router_prompt,
             reload_bearer_token=reload_bearer_token,
+            iss_public_lesson_base=iss_public_lesson_base,
         )

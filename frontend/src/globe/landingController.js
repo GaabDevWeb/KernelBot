@@ -50,12 +50,16 @@ export function createLandingGlobeController({
   function computeTargets() {
     if (window.innerWidth <= 820) {
       targets.cx = 0.5;
-      targets.cy = 0.42;
-      targets.scale = 0.74 * SCALE_FINAL;
+      targets.cy = 0.3;
+      targets.scale = 0.58 * SCALE_FINAL;
+    } else if (window.innerWidth < 1200) {
+      targets.cx = 0.38;
+      targets.cy = 0.5;
+      targets.scale = 1.05 * SCALE_FINAL;
     } else {
       targets.cx = 0.4;
       targets.cy = 0.5;
-      targets.scale = (window.innerWidth < 1200 ? 1.1 : 1.35) * SCALE_FINAL;
+      targets.scale = 1.28 * SCALE_FINAL;
     }
   }
 
@@ -304,6 +308,7 @@ export function createLandingGlobeController({
       globe.state.scale = targets.scale;
     }
     globe?.resize();
+    interaction?.syncIdleRestingCenter?.();
   }
 
   mountHero();
