@@ -4,55 +4,140 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ACL — Agente de Contexto Local</title>
-    <meta name="description" content="Chatbot RAG local de alta performance com busca BM25 sobre arquivos Markdown." />
+    <title>Kernel — Assistente de Estudo</title>
+    <meta name="description" content="Assistente de estudo com busca nas aulas indexadas — Python, SQL, carreira e mais." />
+    <meta name="color-scheme" content="dark light" />
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem("kernel-theme") === "light") {
+                    document.documentElement.setAttribute("data-theme", "light");
+                    document.documentElement.style.colorScheme = "light";
+                }
+            } catch (_) {}
+        })();
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet" />
 
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+    <link rel="icon" href="/assets/images/icon.png" type="image/png" />
     <link rel="stylesheet" href="/assets/css/output.css" />
     <link rel="stylesheet" href="/assets/css/theme.css" />
+    <link rel="stylesheet" href="/assets/css/discipline-panel.css" />
     <link rel="stylesheet" href="/assets/css/entrance.css" />
 </head>
 
 <body>
+    <a class="skip-link" href="#chat">Ir para o conteúdo principal</a>
     <!-- Full-screen low-poly globe: the entrance backdrop, behind the whole app. -->
     <canvas id="globe" aria-hidden="true"></canvas>
+
+    <div class="app-shell">
+        <aside class="conversation-sidebar" id="conversation-sidebar" aria-label="Conversas — Kernel, Assistente de Estudo">
+            <header class="conversation-sidebar__brand">
+                <button type="button" class="conversation-sidebar__logo-btn" id="sidebar-logo-btn"
+                    aria-label="Kernel — Assistente de Estudo">
+                    <img class="conversation-sidebar__logo" src="/assets/images/Logo.png" alt=""
+                        width="36" height="36" decoding="async" />
+                    <img class="conversation-sidebar__logo-hover-icon" src="/assets/images/collapse_expand_icon.svg"
+                        alt="" width="16" height="14" decoding="async" aria-hidden="true" />
+                    <span class="conversation-sidebar__logo-tooltip">Abrir barra lateral</span>
+                </button>
+                <button type="button" class="conversation-sidebar__collapse" id="sidebar-collapse-toggle"
+                    aria-expanded="true" aria-label="Recolher sidebar" title="Recolher sidebar">
+                    <img src="/assets/images/collapse_expand_icon.svg" alt="" width="16" height="14" />
+                </button>
+            </header>
+
+            <nav class="conversation-sidebar__nav" aria-label="Ações da sidebar">
+                <button type="button" class="conversation-sidebar__action-row" id="sidebar-new-chat">
+                    <img class="conversation-sidebar__row-icon" src="/assets/images/new_conversation_icon.svg"
+                        alt="" width="16" height="16" decoding="async" />
+                    <span class="conversation-sidebar__row-label">Nova conversa</span>
+                </button>
+
+                <div class="conversation-sidebar__search">
+                    <button type="button" class="conversation-sidebar__search-toggle" id="sidebar-search-toggle"
+                        aria-label="Pesquisar chats" title="Pesquisar chats">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.2" />
+                            <path d="M10.5 10.5L13 13" stroke="currentColor" stroke-width="1.2"
+                                stroke-linecap="round" />
+                        </svg>
+                    </button>
+                    <label class="conversation-sidebar__search-field">
+                        <span class="conversation-sidebar__search-leading" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.2" />
+                                <path d="M10.5 10.5L13 13" stroke="currentColor" stroke-width="1.2"
+                                    stroke-linecap="round" />
+                            </svg>
+                        </span>
+                        <input type="search" class="conversation-sidebar__search-input" id="sidebar-search"
+                            placeholder="Pesquisar chats" aria-label="Pesquisar chats" autocomplete="off" />
+                    </label>
+                </div>
+            </nav>
+
+            <div class="conversation-sidebar__list" id="conversation-list" role="list"></div>
+            <p class="conversation-sidebar__storage-note" id="sidebar-storage-note">
+                As conversas ficam salvas só neste navegador. Limpar dados do site ou usar outro dispositivo apaga o histórico.
+            </p>
+        </aside>
+        <div class="sidebar-overlay" id="sidebar-overlay" aria-hidden="true"></div>
 
     <div class="app">
 
         <header class="header">
-            <div class="header-badge online entrance-init-hidden" id="status-badge">Online</div>
+            <button type="button" class="header-sidebar-toggle" id="sidebar-toggle" aria-label="Abrir conversas">
+                Conversas
+            </button>
+            <span id="header-conversation-label" class="header-conversation-label" hidden></span>
+            <button type="button" class="theme-toggle" id="theme-toggle" title="Alternar tema">
+                <svg class="theme-toggle__icon theme-toggle__icon--sun" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" />
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+                <svg class="theme-toggle__icon theme-toggle__icon--moon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                </svg>
+            </button>
         </header>
 
         <main class="chat-box" id="chat" role="log" aria-live="polite" aria-label="Histórico de mensagens">
             <div class="empty-state" id="empty-state">
                 <!-- Animated title + cycling command suggestion (entrance.js). -->
                 <div class="entrance-content">
-                    <p class="entrance-eyebrow">KERNEL ASSISTANT</p>
+                    <p class="entrance-eyebrow">KERNEL — ASSISTENTE DE ESTUDO</p>
                     <h1 class="entrance-headline">
                         <span class="entrance-title-text"></span><span class="entrance-caret" aria-hidden="true"></span>
                     </h1>
+                    <p class="entrance-subtitle"></p>
 
                     <div class="entrance-suggestion-wrap">
                         <span class="entrance-suggestion" aria-live="polite" title="Clique para usar esta sugestão">
                             <span class="entrance-suggestion-text"></span><span class="entrance-suggestion-caret" aria-hidden="true"></span>
                         </span>
                     </div>
+
+                    <div class="entrance-discipline-pills" aria-label="Atalhos de disciplinas">
+                        <button type="button" class="cmd-pill entrance-cmd-pill" data-cmd="/fluencia-ia">Fluência IA</button>
+                        <button type="button" class="cmd-pill entrance-cmd-pill" data-cmd="/python">Python</button>
+                        <button type="button" class="cmd-pill entrance-cmd-pill" data-cmd="/projeto-bloco">Projeto Bloco</button>
+                        <button type="button" class="cmd-pill entrance-cmd-pill" data-cmd="/sql-modelagem-relacional">SQL</button>
+                        <button type="button" class="cmd-pill entrance-cmd-pill" data-cmd="/doc">Documentação</button>
+                    </div>
                 </div>
             </div>
         </main>
 
-        <footer class="input-area rounded-full mb-3 entrance-init-hidden">
-            <!-- Silo + pinned context share one gray panel, stacked in a column. -->
-            <div class="context-stack px-6 py-2 bg-zinc-700 text-neutral-200 rounded-t-4xl rounded-b-sm" id="context-stack" hidden>
+        <footer class="input-area entrance-init-hidden">
+            <p id="context-window-notice" class="context-window-notice" hidden></p>
+            <div class="context-stack" id="context-stack" hidden>
                 <div class="silo-pill" id="silo-pill" hidden aria-live="polite"></div>
-
-                <!-- Pinned context: eye icon + aula: "<label>" -->
                 <div class="context-pin-badge" id="context-pin-badge" hidden aria-live="polite">
                     <svg class="context-pin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -64,23 +149,14 @@
                 </div>
             </div>
 
-            <!-- <div class="input-hint">
-                <span>Enter</span> envia · <span>Shift+Enter</span> nova linha ·
-                <span>/python</span> · <span>/visualizacao-sql</span> · <span>/projeto-bloco</span> ·
-                <span>/planejamento-curso-carreira</span> · <span>/doc</span> · <span>/content</span>
-                · <span>/reload</span> para reconstruir o índice
-            </div> -->
             <div class="input-row">
-
-                <!-- Scope selector -->
-                <div class="relative flex-shrink-0" id="scope-selector">
+                <div class="scope-selector" id="scope-selector">
                     <button id="scope-btn" type="button"
-                        class="rounded-full p-3 flex items-center justify-center cursor-pointer"
-                        aria-label="Selecionar escopo da busca" title="Selecionar escopo" aria-haspopup="true"
+                        aria-label="Selecionar matéria da busca" title="Selecionar matéria" aria-haspopup="true"
                         aria-expanded="false">
                         <!-- <svg xmlns="http://www.w3.org/2000/svg" class="size-3.5 rotate-60"
                             viewBox="0 0 576 512">
-                            <path fill="rgb(255, 255, 255)"
+                            <path fill="rgb(245, 245, 245)"
                                 d="M7-25c9.4-9.4 24.6-9.4 33.9 0L569 503c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0L7 9C-2.3-.4-2.3-15.6 7-25z" />
                         </svg> -->
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -91,53 +167,21 @@
                         </svg>
                     </button>
 
-                    <div id="scope-menu" role="menu" aria-labelledby="scope-btn"
-                        class="absolute left-0 z-50 rounded-2xl overflow-hidden">
-                        <div class="!p-4">
-                            <p
-                                class="px-4 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-widest scope-menu-label">
-                                Escopo da busca
-                            </p>
-
-                            <button type="button" role="menuitem" data-cmd="/python"
-                                class="scope-option rounded-xl w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
-                                <span class="text-sm font-semibold scope-option-cmd">/python</span>
-                                <span class="text-xs leading-snug scope-option-desc">Consultas sobre Python e
-                                    programação</span>
-                            </button>
-
-                            <button type="button" role="menuitem" data-cmd="/visualizacao-sql"
-                                class="scope-option rounded-xl w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
-                                <span class="text-sm font-semibold scope-option-cmd">/sql</span>
-                                <span class="text-xs leading-snug scope-option-desc">Visualização SQL e consultas de
-                                    banco de dados</span>
-                            </button>
-
-                            <button type="button" role="menuitem" data-cmd="/planejamento-curso-carreira"
-                                class="scope-option rounded-xl w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
-                                <span class="text-sm font-semibold scope-option-cmd">/carreira</span>
-                                <span class="text-xs leading-snug scope-option-desc">Planejamento de curso e carreira
-                                    profissional</span>
-                            </button>
-
-                            <button type="button" role="menuitem" data-cmd="/doc"
-                                class="scope-option rounded-xl w-full text-left px-4 py-2.5 flex flex-col gap-0.5 cursor-pointer">
-                                <span class="text-sm font-semibold scope-option-cmd">/doc</span>
-                                <span class="text-xs leading-snug scope-option-desc">Documentação e arquivos internos do
-                                    sistema</span>
-                            </button>
+                    <div id="scope-menu" role="menu" aria-labelledby="scope-btn">
+                        <div class="scope-menu-inner">
+                            <p class="scope-menu-label">Matéria da busca</p>
+                            <div id="scope-menu-list"></div>
                         </div>
                     </div>
                 </div>
-                <!-- End scope selector -->
 
-                <textarea class="rounded-2xl" id="message-input" rows="1" placeholder="O que vamos revisar hoje?"
-                    autocomplete="off" aria-label="Campo de mensagem"></textarea>
-                <button class="bg-red-500 rounded-full p-3" id="send-button" aria-label="Enviar mensagem" title="Enviar">
-                    <!-- ➤ -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4"
-                        viewBox="0 0 384 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
-                        <path fill="rgb(255, 255, 255)"
+                <div class="composer-wrap" id="composer-wrap">
+                <textarea id="message-input" rows="1" placeholder="O que vamos revisar hoje?"
+                    autocomplete="off" aria-label="Mensagem"></textarea>
+                </div>
+                <button type="button" id="send-button" aria-label="Enviar mensagem" title="Enviar (Enter)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 384 512" aria-hidden="true">
+                        <path fill="currentColor"
                             d="M214.6 9.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 109.3 160 480c0 17.7 14.3 32 32 32s32-14.3 32-32l0-370.7 105.4 105.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z" />
                     </svg>
                 </button>
@@ -145,64 +189,12 @@
         </footer>
 
     </div>
+    </div>
 
     <!-- GSAP powers the entrance animation (globe + typed title + pill). -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script type="module" src="/src/entrance.js"></script>
     <script type="module" src="/src/main.js"></script>
-    <script>
-        (function () {
-            var btn = document.getElementById('scope-btn');
-            var menu = document.getElementById('scope-menu');
-            var input = document.getElementById('message-input');
-
-            function openMenu() {
-                menu.classList.add('open');
-                btn.setAttribute('aria-expanded', 'true');
-            }
-            function closeMenu() {
-                menu.classList.remove('open');
-                btn.setAttribute('aria-expanded', 'false');
-            }
-
-            btn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                menu.classList.contains('open') ? closeMenu() : openMenu();
-            });
-
-            menu.querySelectorAll('.scope-option').forEach(function (opt) {
-                opt.addEventListener('click', function () {
-                    var cmd = opt.dataset.cmd + ' ';
-                    var current = input.value.trim();
-                    var stripped = current.replace(/^\/[a-z\-]+\s*/, '');
-                    input.value = stripped ? cmd + stripped : cmd;
-                    input.dispatchEvent(new Event('input'));
-                    closeMenu();
-                    input.focus();
-                    input.selectionStart = input.selectionEnd = input.value.length;
-                });
-            });
-
-            document.addEventListener('click', function (e) {
-                if (!document.getElementById('scope-selector').contains(e.target)) {
-                    closeMenu();
-                }
-            });
-
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') closeMenu();
-            });
-
-            document.querySelectorAll('.suggestion-card').forEach(function (card) {
-                card.addEventListener('click', function () {
-                    input.value = card.dataset.prompt;
-                    input.dispatchEvent(new Event('input'));
-                    input.focus();
-                    input.selectionStart = input.selectionEnd = input.value.length;
-                });
-            });
-        })();
-    </script>
 </body>
 
 </html>

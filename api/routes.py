@@ -4,17 +4,128 @@ from __future__ import annotations
 
 import logging
 import re
+import secrets
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 
 from collections.abc import AsyncGenerator
 
+from core.disciplines import trace_label_by_discipline
+from api.rate_limit import allow_request
+from engine.context import ConversationHistoryError, _normalize_conversation_history
+from engine.lesson_catalog import normalize_lesson_key
+
 log = logging.getLogger("kernelbots.api.chat")
 
 router = APIRouter()
 
 _SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
+_MAX_MESSAGE_CHARS = 16_000
+_CHAT_RATE_LIMIT = 30
+_CHAT_RATE_WINDOW_SEC = 60.0
+
+
+def _verify_reload_bearer(request: Request) -> None:
+    """Exige Authorization: Bearer igual a ACL_RELOAD_BEARER_TOKEN (CI / operadores)."""
+    settings = request.app.state.services.context_manager.settings
+    expected = settings.reload_bearer_token
+    if not expected:
+        log.warning(
+            "ACL_RELOAD_BEARER_TOKEN não configurado — /reload e /health/catalog rejeitados"
+        )
+        raise HTTPException(status_code=503, detail="reload token not configured")
+
+    auth = request.headers.get("Authorization") or ""
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authorization Bearer token required")
+    token = auth[7:].strip()
+    if not token or not secrets.compare_digest(token, expected):
+        raise HTTPException(status_code=401, detail="Invalid reload bearer token")
+
+
+@router.get("/health")
+async def health() -> dict[str, str]:
+    """Liveness para Docker/Kubernetes (sem autenticação)."""
+    return {"status": "ok"}
+
+
+@router.get("/api/public-config")
+async def public_config(request: Request) -> dict[str, str | bool]:
+    """Configuração pública do frontend (URLs externas, sem segredos)."""
+    settings = request.app.state.services.context_manager.settings
+    return {
+        "iss_lesson_base": settings.iss_public_lesson_base,
+        "catalog_enabled": settings.catalog_enabled,
+    }
+
+
+@router.get("/api/curriculum")
+async def curriculum_all(request: Request) -> dict:
+    """Lista disciplinas com aulas no catálogo."""
+    services = request.app.state.services
+    catalog = services.lesson_catalog
+    if catalog is None:
+        raise HTTPException(status_code=503, detail="Catálogo indisponível")
+    labels = trace_label_by_discipline()
+    disciplines = []
+    for disc in catalog.list_disciplines():
+        lessons = catalog.lessons_for_discipline(disc)
+        disciplines.append(
+            {
+                "discipline": disc,
+                "label": labels.get(disc, disc),
+                "lesson_count": len(lessons),
+            }
+        )
+    return {"disciplines": disciplines}
+
+
+@router.get("/api/curriculum/{discipline_id}")
+async def curriculum_discipline(request: Request, discipline_id: str) -> dict:
+    """Aulas de uma disciplina para o painel curricular."""
+    services = request.app.state.services
+    catalog = services.lesson_catalog
+    if catalog is None:
+        raise HTTPException(status_code=503, detail="Catálogo indisponível")
+
+    disc_norm = normalize_lesson_key(discipline_id, "x").split(":", 1)[0]
+    lessons = catalog.lessons_for_discipline(disc_norm)
+    if not lessons:
+        all_discs = set(catalog.list_disciplines())
+        if disc_norm not in all_discs:
+            raise HTTPException(status_code=404, detail="Disciplina não encontrada no catálogo")
+
+    labels = trace_label_by_discipline()
+    return {
+        "discipline": disc_norm,
+        "label": labels.get(disc_norm, disc_norm),
+        "lessons": [
+            {
+                "slug": entry.slug,
+                "title": entry.title or entry.name,
+                "order": idx + 1,
+            }
+            for idx, entry in enumerate(lessons)
+        ],
+    }
+
+
+@router.get("/health/catalog")
+async def health_catalog(request: Request) -> dict:
+    """Snapshot de catálogo vs índice (protegido; Job 4 CI)."""
+    _verify_reload_bearer(request)
+    services = request.app.state.services
+    settings = services.context_manager.settings
+    drift = services.catalog_drift_report or {}
+    catalog_only = list(drift.get("catalog_only") or [])
+    return {
+        "catalog_enabled": settings.catalog_enabled,
+        "indexed_lesson_keys_count": len(services.indexed_lesson_keys),
+        "catalog_lesson_keys_count": int(drift.get("catalog_count") or 0),
+        "catalog_only_count": int(drift.get("catalog_only_count") or len(catalog_only)),
+        "catalog_only_sample": catalog_only[:10],
+    }
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -30,6 +141,11 @@ async def chat(request: Request) -> StreamingResponse:
     client_ip = request.client.host if request.client else "desconhecido"
     services = request.app.state.services
 
+    rate_key = f"chat:{client_ip}"
+    if not allow_request(rate_key, limit=_CHAT_RATE_LIMIT, window_sec=_CHAT_RATE_WINDOW_SEC):
+        log.warning(f"⚠  Rate limit excedido para {client_ip}")
+        raise HTTPException(status_code=429, detail="Muitas requisições. Tente novamente em instantes.")
+
     try:
         data = await request.json()
     except Exception:
@@ -40,6 +156,15 @@ async def chat(request: Request) -> StreamingResponse:
     if not user_message:
         log.warning(f"⚠  Requisição de {client_ip} com campo 'message' ausente ou vazio")
         raise HTTPException(status_code=400, detail="Campo 'message' ausente ou vazio.")
+
+    if len(user_message) > _MAX_MESSAGE_CHARS:
+        log.warning(
+            f"⚠  Requisição de {client_ip} — message excede {_MAX_MESSAGE_CHARS} caracteres"
+        )
+        raise HTTPException(
+            status_code=413,
+            detail=f"Mensagem muito longa (máximo {_MAX_MESSAGE_CHARS} caracteres).",
+        )
 
     raw_discipline = data.get("discipline")
     discipline: str | None
@@ -77,15 +202,43 @@ async def chat(request: Request) -> StreamingResponse:
             detail="Campo 'session_id' deve ser string ou omitido.",
         )
 
+    raw_history = data.get("history")
+    if raw_history is not None and not isinstance(raw_history, list):
+        log.warning(f"⚠  Requisição de {client_ip} — campo 'history' com tipo inválido")
+        raise HTTPException(
+            status_code=400,
+            detail="Campo 'history' deve ser uma lista ou omitido.",
+        )
+    try:
+        conversation_history = _normalize_conversation_history(raw_history)
+    except ConversationHistoryError as exc:
+        log.warning(f"⚠  Requisição de {client_ip} — history inválido: {exc}")
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     if user_message.strip().lower() == "/reload":
+        _verify_reload_bearer(request)
+
+        from engine.catalog_sync import refresh_indexed_lesson_keys_state
+
         log.info("🔄 Comando /reload recebido — reconstruindo índice BM25...")
         services.search_engine.rebuild()
+        _keys, keys_refreshed = refresh_indexed_lesson_keys_state(services)
         chunk_count = len(services.search_engine.chunks)
         silo_count = len(services.search_engine.discipline_ids)
         status = (
             f"Índice reconstruído: {chunk_count} chunk(s) total "
             f"({silo_count} silo(s) do MySQL)."
         )
+        if not keys_refreshed:
+            log.warning(
+                "⚠ /reload: BM25 reconstruído, mas chaves de catálogo (indexed_lesson_keys) "
+                "NÃO foram atualizadas — usando snapshot anterior (%d chave(s))",
+                len(_keys),
+            )
+            status += (
+                f" Aviso: chaves de catálogo não atualizadas (MySQL indisponível); "
+                f"continuando com {len(_keys)} chave(s) em cache."
+            )
         log.info("✅ /reload concluído — %s", status)
 
         async def _reload_stream() -> AsyncGenerator[str, None]:
@@ -102,6 +255,7 @@ async def chat(request: Request) -> StreamingResponse:
         user_message,
         discipline_filter=discipline,
         session_id=session_id,
+        conversation_history=conversation_history,
     )
 
     return StreamingResponse(

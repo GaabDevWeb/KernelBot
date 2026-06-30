@@ -1,0 +1,19 @@
+## Contrato de grounding (desambiguação entre fontes)
+
+Esta secção **sobrepõe-se** ao tom geral quando existem **vários** trechos numerados `[Fonte 1: …]`, `[Fonte 2: …]`, etc., injectados abaixo.
+
+1. Analise cada trecho pelo identificador (`[Fonte 1]`, `[Fonte 2]`, …) e pelo **score** indicado.
+2. **Escolha** o trecho mais **específico** para a pergunta do utilizador quando um deles cobrir claramente o pedido; baseie a resposta principal nesse trecho e cite o número da fonte.
+3. Se os trechos forem **complementares** (ângulos diferentes do mesmo tema), **sintetize** numa resposta coerente, citando cada fonte usada.
+4. Se forem **incompatíveis** ou igualmente plausíveis **sem critério claro para escolher**, **não** responda em prosa aberta nem liste opções em Markdown. Emita **apenas** o bloco estruturado abaixo (sem texto antes ou depois do bloco):
+   - **Preferência:** tag XML exacta (cada `<option>` **obrigatoriamente** auto-fechada com `/>` no fim da linha):
+```xml
+<ambiguity_options>
+<option discipline="DISCIPLINA" slug="SLUG" label="Título legível da aula"/>
+</ambiguity_options>
+```
+   - **Proibido** omitir o `/>` final ou usar `<option …></option>` sem atributos completos; o cliente de stream só reconhece opções com fecho sintático completo (`/>` ou `></option>`).
+   - **Alternativa:** uma linha JSON mínima (sem markdown):
+`{"disambiguation_options":[{"discipline":"...","slug":"...","label":"..."}]}`
+   - Use `discipline` e `slug` extraídos do caminho da fonte (`[Fonte N: disciplina/arquivo.json]`). `label` = título curto para o utilizador.
+5. **Proibido:** misturar factos de fontes distintas como se fossem um único documento; não invente conteúdo fora dos trechos numerados; não substituir o bloco estruturado por listas `- item` ou parágrafos explicativos quando a regra 4 se aplicar.

@@ -11,6 +11,9 @@ from typing import Literal
 from dotenv import load_dotenv
 
 GlobalContextMode = Literal["geral", "all"]
+RetrievalPolicyMode = Literal["strict", "fallback"]
+LLMProvider = Literal["openrouter", "cursor"]
+GroundingPolicy = Literal["strict", "anchored", "hybrid"]
 
 _LOG = logging.getLogger("kernelbots.config")
 
@@ -28,7 +31,11 @@ def _normalize_db_host(raw: str) -> str:
 
 @dataclass(frozen=True)
 class Settings:
+    llm_provider: LLMProvider
     openrouter_api_key: str
+    cursor_api_key: str
+    cursor_model: str
+    cursor_chat_only: bool
     project_root: Path
     content_dir: Path
     bm25_score_threshold: float
@@ -36,12 +43,22 @@ class Settings:
     openrouter_base: str
     models: tuple[str, ...]
     system_prompt_geral: str
+    grounding_policy: GroundingPolicy
+    grounding_strict: str
+    grounding_anchored: str
+    grounding_permissive: str
+    grounding_disambiguation: str
     sticky_instruction: str
+    retrieval_mode: RetrievalPolicyMode
+    disambiguation_enabled: bool
     http_timeout: float
     # Contexto fixado (sessão): ver `documentation.md`
     pinned_max_turns: int
     pinned_max_chars: int
     pinned_weak_score: float
+    # Histórico de diálogo no prompt (POC — não indexa no RAG)
+    chat_history_max_turns: int
+    chat_history_max_chars: int
     db_host: str
     db_port: int
     db_name: str
@@ -67,6 +84,10 @@ class Settings:
     catalog_strict_threshold: float
     catalog_prompt_top_k: int
     catalog_router_prompt: str
+    # Token Bearer para /reload e GET /health/catalog (CI, operadores).
+    reload_bearer_token: str | None
+    # URL pública da aula no ISS (frontend — links de fonte).
+    iss_public_lesson_base: str
 
     @property
     def openrouter_headers(self) -> dict[str, str]:
@@ -74,28 +95,57 @@ class Settings:
             "Authorization": f"Bearer {self.openrouter_api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "http://localhost:8000",
-            "X-Title": "ACL - Agente de Contexto Local",
+            "X-Title": "Kernel - Assistente de Estudo",
         }
 
     @classmethod
     def load(cls) -> Settings:
+        project_root = Path(__file__).resolve().parent.parent
+        staging_env = project_root / ".env.staging.local"
+        if os.getenv("KERNELBOT_ENV", "").strip().lower() == "staging" and staging_env.is_file():
+            load_dotenv(staging_env, override=True)
         load_dotenv()
-        key = os.getenv("OPENROUTER_API_KEY")
-        if not key:
-            raise RuntimeError("OPENROUTER_API_KEY ausente no .env — impossível iniciar.")
+        if os.getenv("KERNELBOT_ENV", "").strip().lower() == "staging" and staging_env.is_file():
+            load_dotenv(staging_env, override=True)
+        raw_provider = (os.getenv("ACL_LLM_PROVIDER") or "cursor").strip().lower()
+        if raw_provider not in ("openrouter", "cursor"):
+            raise RuntimeError(
+                "ACL_LLM_PROVIDER deve ser 'openrouter' ou 'cursor' "
+                f"(recebido: {raw_provider!r})."
+            )
+        llm_provider: LLMProvider = "cursor" if raw_provider == "cursor" else "openrouter"
+
+        openrouter_key = (os.getenv("OPENROUTER_API_KEY") or "").strip()
+        cursor_key = (os.getenv("CURSOR_API_KEY") or "").strip()
+        cursor_model = (os.getenv("ACL_CURSOR_MODEL") or "composer-2.5").strip()
+        cursor_chat_only = (os.getenv("ACL_CURSOR_CHAT_ONLY") or "").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
+
+        if llm_provider == "openrouter" and not openrouter_key:
+            raise RuntimeError("OPENROUTER_API_KEY ausente no .env — impossível iniciar (provider=openrouter).")
+        if llm_provider == "cursor" and not cursor_key:
+            raise RuntimeError("CURSOR_API_KEY ausente no .env — impossível iniciar (provider=cursor).")
 
         project_root = Path(__file__).resolve().parent.parent
         content_dir = project_root / "content"
         content_dir.mkdir(exist_ok=True)
 
         models = (
+            "deepseek/deepseek-v4-flash:free ",
             "openrouter/free",
-            "deepseek/deepseek-r1:free",
             "meta-llama/llama-4-maverick:free",
         )
 
         prompts_dir = Path(__file__).resolve().parent / "systemPrompt"
         system_prompt_file = prompts_dir / "system_prompt.txt"
+        grounding_strict_file = prompts_dir / "grounding_strict.txt"
+        grounding_anchored_file = prompts_dir / "grounding_anchored.txt"
+        grounding_permissive_file = prompts_dir / "grounding_permissive.txt"
+        grounding_disambiguation_file = prompts_dir / "grounding_disambiguation.txt"
         sticky_instruction_file = prompts_dir / "sticky_instruction.txt"
         catalog_router_file = prompts_dir / "catalog_router.txt"
 
@@ -103,6 +153,26 @@ class Settings:
             raise RuntimeError(
                 f"Arquivo de system prompt não encontrado: {system_prompt_file}. "
                 "Crie o arquivo core/systemPrompt/system_prompt.txt com o texto do assistente."
+            )
+        if not grounding_strict_file.exists():
+            raise RuntimeError(
+                f"Arquivo de grounding não encontrado: {grounding_strict_file}. "
+                "Crie o arquivo core/systemPrompt/grounding_strict.txt com o contrato anti-alucinação."
+            )
+        if not grounding_anchored_file.exists():
+            raise RuntimeError(
+                f"Arquivo de grounding anchored não encontrado: {grounding_anchored_file}. "
+                "Crie o arquivo core/systemPrompt/grounding_anchored.txt."
+            )
+        if not grounding_permissive_file.exists():
+            raise RuntimeError(
+                f"Arquivo de grounding permissivo não encontrado: {grounding_permissive_file}. "
+                "Crie o arquivo core/systemPrompt/grounding_permissive.txt."
+            )
+        if not grounding_disambiguation_file.exists():
+            raise RuntimeError(
+                f"Arquivo de grounding de desambiguação não encontrado: {grounding_disambiguation_file}. "
+                "Crie o arquivo core/systemPrompt/grounding_disambiguation.txt."
             )
         if not sticky_instruction_file.exists():
             raise RuntimeError(
@@ -116,6 +186,18 @@ class Settings:
             )
 
         system_prompt = system_prompt_file.read_text(encoding="utf-8").strip()
+        raw_grounding_policy = (os.getenv("ACL_GROUNDING_POLICY") or "anchored").strip().lower()
+        if raw_grounding_policy not in ("strict", "anchored", "hybrid"):
+            raise RuntimeError(
+                "ACL_GROUNDING_POLICY deve ser 'strict', 'anchored' ou 'hybrid' "
+                f"(recebido: {raw_grounding_policy!r})."
+            )
+        grounding_policy: GroundingPolicy = raw_grounding_policy  # type: ignore[assignment]
+
+        grounding_strict = grounding_strict_file.read_text(encoding="utf-8").strip()
+        grounding_anchored = grounding_anchored_file.read_text(encoding="utf-8").strip()
+        grounding_permissive = grounding_permissive_file.read_text(encoding="utf-8").strip()
+        grounding_disambiguation = grounding_disambiguation_file.read_text(encoding="utf-8").strip()
         sticky_instruction = sticky_instruction_file.read_text(encoding="utf-8").strip()
         catalog_router_prompt = catalog_router_file.read_text(encoding="utf-8").strip()
 
@@ -177,6 +259,26 @@ class Settings:
             "ACL_RETRIEVAL_MAX_CHUNKS_PER_SOURCE", 2, 1, 10
         )
 
+        chat_history_max_turns = _env_int("ACL_CHAT_HISTORY_MAX_TURNS", 12, 0, 40)
+        chat_history_max_chars = _env_int("ACL_CHAT_HISTORY_MAX_CHARS", 12000, 0, 200_000)
+
+        raw_retrieval_mode = (os.getenv("ACL_RETRIEVAL_MODE") or "strict").strip().lower()
+        if raw_retrieval_mode not in ("strict", "fallback"):
+            raise RuntimeError(
+                "ACL_RETRIEVAL_MODE deve ser 'strict' ou 'fallback' (legado) "
+                f"(recebido: {raw_retrieval_mode!r})."
+            )
+        if raw_retrieval_mode == "fallback":
+            import logging
+
+            logging.getLogger("kernelbots.config").warning(
+                "ACL_RETRIEVAL_MODE=fallback ignorado; gates são só classificação — sempre LLM + grounding_strict"
+            )
+        retrieval_mode: RetrievalPolicyMode = "strict"
+
+        raw_disambiguation = (os.getenv("ACL_DISAMBIGUATION_ENABLED") or "false").strip().lower()
+        disambiguation_enabled = raw_disambiguation in ("1", "true", "yes", "on")
+
         raw_catalog_enabled = (os.getenv("ACL_CATALOG_ENABLED") or "false").strip().lower()
         catalog_enabled = raw_catalog_enabled in ("1", "true", "yes", "on")
 
@@ -201,6 +303,16 @@ class Settings:
         )
         catalog_prompt_top_k = _env_int("ACL_CATALOG_PROMPT_TOP_K", 5, 1, 20)
 
+        reload_bearer_token = (
+            (os.getenv("ACL_RELOAD_BEARER_TOKEN") or os.getenv("KERNELBOT_RELOAD_TOKEN") or "")
+            .strip()
+            or None
+        )
+
+        iss_public_lesson_base = (
+            os.getenv("KERNELBOT_ISS_PUBLIC_BASE_URL") or ""
+        ).strip().rstrip("?") or "https://gaabdevweb.github.io/ISS/public/aula.html"
+
         """ !Credenciais do banco! """
 
         db_host = _normalize_db_host(os.getenv("DB_HOST") or "")
@@ -219,7 +331,11 @@ class Settings:
         db_password = (os.getenv("DB_PASSWORD") or "").strip()
 
         return cls(
-            openrouter_api_key=key,
+            llm_provider=llm_provider,
+            openrouter_api_key=openrouter_key,
+            cursor_api_key=cursor_key,
+            cursor_model=cursor_model,
+            cursor_chat_only=cursor_chat_only,
             project_root=project_root,
             content_dir=content_dir,
             bm25_score_threshold=0.7,
@@ -227,11 +343,20 @@ class Settings:
             openrouter_base="https://openrouter.ai/api/v1/chat/completions",
             models=models,
             system_prompt_geral=system_prompt,
+            grounding_policy=grounding_policy,
+            grounding_strict=grounding_strict,
+            grounding_anchored=grounding_anchored,
+            grounding_permissive=grounding_permissive,
+            grounding_disambiguation=grounding_disambiguation,
             sticky_instruction=sticky_instruction,
+            retrieval_mode=retrieval_mode,
+            disambiguation_enabled=disambiguation_enabled,
             http_timeout=60.0,
             pinned_max_turns=pinned_max_turns,
             pinned_max_chars=pinned_max_chars,
             pinned_weak_score=pinned_weak_score,
+            chat_history_max_turns=chat_history_max_turns,
+            chat_history_max_chars=chat_history_max_chars,
             db_host=db_host,
             db_port=db_port,
             db_name=db_name,
@@ -252,4 +377,6 @@ class Settings:
             catalog_strict_threshold=catalog_strict_threshold,
             catalog_prompt_top_k=catalog_prompt_top_k,
             catalog_router_prompt=catalog_router_prompt,
+            reload_bearer_token=reload_bearer_token,
+            iss_public_lesson_base=iss_public_lesson_base,
         )

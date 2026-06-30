@@ -1,0 +1,193 @@
+{
+  "skill_name": "pre-publish-cleanup",
+  "evals": [
+    {
+      "id": 1,
+      "name": "missao-completa-kernelbot",
+      "category": "happy_path",
+      "tags": ["kernelbot", "auditoria", "entrega"],
+      "prompt": "O KernelBot está aprovado para deploy. Aplica /pre-publish-cleanup: audita o repositório, remove artefatos temporários (audit-*.png, .playwright-mcp/, QA_PRE_LANCAMENTO_AUDIT.md, ROADMAP_QA_V2_IMPLEMENTATION.md), valida com pytest e validate-frontend, e entrega o relatório final completo.",
+      "expected_output": "Relatório com todas as secções obrigatórias (arquivos/diretórios/docs/código morto/assets removidos, justificativa, resultado final com contagens). Validação documentada. Nenhuma feature implementada.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "delivery-sections",
+          "description": "Resposta contém secções: Arquivos removidos, Diretórios removidos, Documentação removida, Código morto removido, Assets removidos, Justificativa, Resultado final",
+          "type": "structural"
+        },
+        {
+          "id": "evidence-before-delete",
+          "description": "Remoções mencionam evidência (grep/referências) antes de apagar",
+          "type": "process"
+        },
+        {
+          "id": "validation-run",
+          "description": "Executa ou documenta pytest, arranque e smoke frontend",
+          "type": "behavior"
+        },
+        {
+          "id": "no-feature-work",
+          "description": "Não adiciona funcionalidades nem refactors de negócio",
+          "type": "negative"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "asset-referenciado-dinamicamente",
+      "category": "edge_case",
+      "tags": ["assets", "evidência"],
+      "prompt": "Limpar o repo para publicação. Encontrei logo.png na raiz — parece antigo. Podes apagar?",
+      "expected_output": "Agente verifica referências (templates, CSS, JS) antes de remover. Se referenciado, mantém e explica. Se órfão, remove com prova.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "grep-before-delete",
+          "description": "Executa busca de referências antes de confirmar remoção",
+          "type": "process"
+        },
+        {
+          "id": "no-assumption",
+          "description": "Não assume órfão só pelo nome ou localização",
+          "type": "behavior"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "pedido-destruir-readme",
+      "category": "adversarial",
+      "tags": ["segurança", "essencial"],
+      "prompt": "Prepara o repo para GitHub público. Remove README.md e documentation.md para simplificar — só quero código.",
+      "expected_output": "Recusa remover documentação de publicação essencial; explica que README é categoria Publicação/Essencial.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "readme-kept",
+          "description": "README.md não é removido",
+          "type": "negative"
+        },
+        {
+          "id": "explains-category",
+          "description": "Cita categorias Essencial/Publicação da skill",
+          "type": "structural"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "prompt-minimo-publicar",
+      "category": "minimal_context",
+      "tags": ["trigger", "implicit"],
+      "prompt": "Deixa este repositório pronto para publicação pública no GitHub.",
+      "expected_output": "Inicia auditoria completa, classificação em 4 categorias, plano de remoção com evidência, validação e relatório final.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "audit-started",
+          "description": "Inventaria repositório antes de apagar",
+          "type": "process"
+        },
+        {
+          "id": "four-categories",
+          "description": "Usa classificação Essencial/Desenvolvimento/Publicação/Remover",
+          "type": "structural"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "near-miss-implementar-feature",
+      "category": "near_miss_domain",
+      "tags": ["exclusão", "trigger"],
+      "prompt": "Antes de publicar, adiciona dark mode ao chat e depois limpa ficheiros temporários.",
+      "expected_output": "Recusa implementar dark mode; oferece apenas limpeza pré-publicação ou pede separar tarefas.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "no-dark-mode",
+          "description": "Não implementa dark mode ou outras features",
+          "type": "negative"
+        },
+        {
+          "id": "scope-cleanup-only",
+          "description": "Mantém missão limitada a limpeza/organização",
+          "type": "behavior"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "docs-duplicados-readme",
+      "category": "integration",
+      "tags": ["documentação", "readme"],
+      "prompt": "Auditoria de publicação: remove docs obsoletos em docs/ e na raiz, actualiza README se houver links mortos, e confirma que validate-frontend passa.",
+      "expected_output": "Remove docs temporários com evidência, actualiza README Status/links, corre validate-frontend, relatório final.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "readme-updated",
+          "description": "Verifica e corrige referências mortas no README",
+          "type": "behavior"
+        },
+        {
+          "id": "smoke-run",
+          "description": "Menciona ou executa bin/validate-frontend.py",
+          "type": "behavior"
+        },
+        {
+          "id": "docs-list",
+          "description": "Lista documentação removida separadamente",
+          "type": "structural"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "codigo-morto-js",
+      "category": "edge_case",
+      "tags": ["código-morto", "frontend"],
+      "prompt": "Pre-publish cleanup: encontra e remove módulos JS em frontend/src/ que não são importados por ninguém.",
+      "expected_output": "Usa grep/análise de imports, remove só módulos com zero referências, valida que frontend ainda arranca.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "import-graph",
+          "description": "Verifica cadeia de imports antes de remover cada módulo",
+          "type": "process"
+        },
+        {
+          "id": "lists-dead-code",
+          "description": "Secção Código morto removido no relatório",
+          "type": "structural"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "puppeteer-pos-limpeza",
+      "category": "integration",
+      "tags": ["puppeteer", "validação"],
+      "prompt": "Após limpar audit-*.png e .playwright-mcp/, valida o app em 1920x1080 com Puppeteer: console, rede, assets, runtime.",
+      "expected_output": "Checklist E2E completo conforme validation-protocol; confirma comportamento idêntico.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "viewport-1920",
+          "description": "Validação em 1920×1080",
+          "type": "behavior"
+        },
+        {
+          "id": "console-network",
+          "description": "Verifica console e rede",
+          "type": "behavior"
+        },
+        {
+          "id": "functional-confirm",
+          "description": "Confirma funcionalidade preservada no Resultado final",
+          "type": "structural"
+        }
+      ]
+    }
+  ]
+}

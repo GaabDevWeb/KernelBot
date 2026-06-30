@@ -158,6 +158,10 @@ class LessonCatalog:
         self._keys: frozenset[str] = frozenset(
             normalize_lesson_key(il.entry.discipline, il.entry.slug) for il in lessons
         )
+        self._by_key: dict[str, LessonEntry] = {
+            normalize_lesson_key(il.entry.discipline, il.entry.slug): il.entry
+            for il in lessons
+        }
 
     @classmethod
     def load(cls, settings: Settings) -> LessonCatalog | None:
@@ -251,6 +255,12 @@ class LessonCatalog:
 
     def lesson_key(self, lesson: LessonEntry) -> str:
         return normalize_lesson_key(lesson.discipline, lesson.slug)
+
+    def entry_for_source(self, source: str) -> LessonEntry | None:
+        key = _parse_db_source_key(str(source or ""))
+        if not key:
+            return None
+        return self._by_key.get(key)
 
     def match(self, query: str) -> CatalogMatchResult:
         tokens = _tokenize(query)
@@ -349,3 +359,11 @@ class LessonCatalog:
             "catalog_only_count": len(catalog_only),
             "index_only_count": len(index_only),
         }
+
+    def list_disciplines(self) -> list[str]:
+        return sorted({il.entry.discipline for il in self._lessons})
+
+    def lessons_for_discipline(self, discipline_id: str) -> list[LessonEntry]:
+        disc = _normalize_part(discipline_id)
+        entries = [il.entry for il in self._lessons if il.entry.discipline == disc]
+        return sorted(entries, key=lambda e: (e.title or e.name or e.slug).lower())

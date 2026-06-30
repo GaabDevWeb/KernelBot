@@ -1,18 +1,20 @@
-"""Contratos e política de decisão do RAG ACL.
+"""Contratos e classificação de decisão do RAG ACL.
 
 Este módulo é o núcleo da mitigação incremental descrita em
 `rag_acl_incremental_6951b55f.plan.md`. Ele NÃO faz retrieval BM25 (isso
 continua em `engine.search`); ele normaliza termos, aplica regras de
-suficiência e devolve uma `RetrievalDecision` que determina se a geração
-deve acontecer ou se há hard stop.
-
-A regra central é: na dúvida, não responder.
+suficiência e devolve uma `RetrievalDecision` com `reason`, `confidence`
+e chunks selecionados. A geração via LLM **sempre** é permitida
+(`allow_generation=True`); os gates são telemetria e escolha de grounding.
 
 Fases suportadas:
 - Fase 1: hard stop por ausência de hits e `top_score < MIN_SCORE`.
 - Fase 2: coverage, MIN_TERMS, margem entre candidatos, vague_but_high_risk,
   coverage ponderada por termos centrais, `confidence == "low"`.
 - Fase 3: sanity check pós-geração (override para `post_generation_misalignment`).
+- `index_gap` em `DecisionReason` apenas para contrato tipado e ACL_META; a
+  decisão é emitida em `engine.context` (catálogo confiante + chave fora do
+  índice), nunca em `build_decision()`.
 """
 
 from __future__ import annotations
@@ -25,6 +27,7 @@ from core.structured_log import ACL_MOD_DECISION, log_event
 from typing import Iterable, Literal
 
 Mode = Literal["strict", "assistive"]
+AclRetrievalPolicyMode = Literal["strict", "fallback"]
 Confidence = Literal["high", "medium", "low"]
 DecisionReason = Literal[
     "ok",
@@ -36,6 +39,7 @@ DecisionReason = Literal[
     "vague_but_high_risk",
     "post_generation_misalignment",
     "provider_error",
+    "index_gap",
 ]
 
 # Thresholds deliberadamente conservadores. O plano exige que eles sejam
@@ -175,10 +179,11 @@ class RetrievalTrace:
 
 @dataclass(frozen=True)
 class RetrievalDecision:
-    """Decisão final do retrieval: permitir geração ou hard stop.
+    """Decisão final do retrieval: classificação + chunks para o prompt.
 
-    `selected_candidates` só é populado quando `allow_generation=True`.
-    `trace` nunca é None e carrega contexto para UI e avaliação.
+    `allow_generation` permanece no contrato por compatibilidade com ACL_META;
+    `build_decision` define-o sempre como `True`. `selected_candidates` pode
+    ser vazio (ex.: `insufficient_context` sem hits). `trace` nunca é None.
     """
 
     allow_generation: bool
@@ -473,6 +478,41 @@ def _build_trace(
     )
 
 
+def _decision_with_chunks(
+    *,
+    reason: DecisionReason,
+    confidence: Confidence,
+    selected: list[RetrievalCandidate],
+    top_k: int,
+    query: str,
+    informative: list[str],
+    mode: Mode,
+    coverage_value: float,
+    debug: dict,
+    trace_candidates: list[RetrievalCandidate] | None = None,
+) -> RetrievalDecision:
+    """Monta decisão advisory: sempre `allow_generation=True`."""
+    chunks = tuple(selected[:top_k])
+    trace_list = list(trace_candidates if trace_candidates is not None else selected)
+    return RetrievalDecision(
+        allow_generation=True,
+        reason=reason,
+        confidence=confidence,
+        selected_candidates=chunks,
+        trace=_build_trace(
+            query,
+            informative,
+            mode,
+            trace_list,
+            coverage_value,
+            reason,
+            True,
+            confidence,
+            debug,
+        ),
+    )
+
+
 def build_decision(
     query: str,
     candidates: list[RetrievalCandidate],
@@ -485,17 +525,25 @@ def build_decision(
     min_terms: int = MIN_TERMS,
     top_k: int = TOP_K,
     max_per_source: int = MAX_CHUNKS_PER_SOURCE,
+    acl_retrieval_mode: AclRetrievalPolicyMode = "strict",
+    disambiguation_enabled: bool = False,
 ) -> RetrievalDecision:
-    """Aplica as Fases 1 e 2 sobre candidatos já recuperados.
+    """Classifica candidatos BM25 e seleciona chunks para o prompt (sempre LLM).
 
-    Ordem das verificações segue o plano:
-    1. Ausência de hits ou top_score baixo → `insufficient_context` (F1).
-    2. Query subespecificada → `underspecified_query` (F2, strict).
-    3. Vague but high risk → `vague_but_high_risk` (F2, strict).
-    4. Margem entre top1/top2 baixa → `ambiguous_retrieval` (F2, strict).
-    5. Coverage baixa no melhor chunk → `context_misaligned` (F2).
-    6. `confidence == "low"` após sinais fracos → `low_confidence` (F2, strict).
+    Ordem das verificações:
+    1. Ausência de hits ou top_score baixo → `insufficient_context`.
+    2. Query subespecificada → `underspecified_query`.
+    3. Vague but high risk → `vague_but_high_risk`.
+    4. Margem baixa → `ambiguous_retrieval` (disambiguation só com flag).
+    5. Coverage baixa → `context_misaligned`.
+    6. `confidence == "low"` → `low_confidence`.
+    `acl_retrieval_mode` é legado (ignorado; emite aviso em debug se != strict).
     """
+    if acl_retrieval_mode != "strict":
+        _log.warning(
+            "ACL_RETRIEVAL_MODE=%s ignorado; política única: sempre LLM com grounding_strict",
+            acl_retrieval_mode,
+        )
     informative = extract_informative_terms(query)
     central, optional = classify_terms(informative)
 
@@ -533,6 +581,8 @@ def build_decision(
         "min_terms": min_terms,
         "top_k": top_k,
         "max_per_source": max_per_source,
+        "acl_retrieval_mode": acl_retrieval_mode,
+        "disambiguation_enabled": disambiguation_enabled,
     }
 
     log_event(
@@ -592,80 +642,113 @@ def build_decision(
     if not selected or top < min_score:
         confidence: Confidence = "low"
         debug["confidence"] = confidence
-        return _finish(RetrievalDecision(
-            allow_generation=False,
-            reason="insufficient_context",
-            confidence=confidence,
-            selected_candidates=(),
-            trace=_build_trace(
-                query, informative, mode, selected, coverage_value,
-                "insufficient_context", False, confidence, debug,
-            ),
-        ))
+        return _finish(
+            _decision_with_chunks(
+                reason="insufficient_context",
+                confidence=confidence,
+                selected=selected if selected and top < min_score else [],
+                top_k=top_k,
+                query=query,
+                informative=informative,
+                mode=mode,
+                coverage_value=coverage_value,
+                debug=debug,
+                trace_candidates=selected,
+            )
+        )
 
-    # 2. Query subespecificada (Fase 2, strict).
+    # 2. Query subespecificada.
     if mode == "strict" and len(informative) < min_terms:
         confidence = "low"
         debug["confidence"] = confidence
-        return _finish(RetrievalDecision(
-            allow_generation=False,
-            reason="underspecified_query",
-            confidence=confidence,
-            selected_candidates=(),
-            trace=_build_trace(
-                query, informative, mode, selected, coverage_value,
-                "underspecified_query", False, confidence, debug,
-            ),
-        ))
+        return _finish(
+            _decision_with_chunks(
+                reason="underspecified_query",
+                confidence=confidence,
+                selected=selected,
+                top_k=top_k,
+                query=query,
+                informative=informative,
+                mode=mode,
+                coverage_value=coverage_value,
+                debug=debug,
+            )
+        )
 
-    # 3. Vague but high risk (Fase 2, strict).
+    # 3. Vague but high risk.
     if mode == "strict" and vague_high_risk:
         confidence = "low"
         debug["confidence"] = confidence
-        return _finish(RetrievalDecision(
-            allow_generation=False,
-            reason="vague_but_high_risk",
-            confidence=confidence,
-            selected_candidates=(),
-            trace=_build_trace(
-                query, informative, mode, selected, coverage_value,
-                "vague_but_high_risk", False, confidence, debug,
-            ),
-        ))
+        return _finish(
+            _decision_with_chunks(
+                reason="vague_but_high_risk",
+                confidence=confidence,
+                selected=selected,
+                top_k=top_k,
+                query=query,
+                informative=informative,
+                mode=mode,
+                coverage_value=coverage_value,
+                debug=debug,
+            )
+        )
 
-    # 4. Retrieval ambíguo por margem baixa (Fase 2, strict).
-    # Só dispara quando há de fato um segundo candidato; um único hit sólido
-    # não é ambíguo por margem.
+    # 4. Retrieval ambíguo por margem baixa.
     if mode == "strict" and len(selected) > 1 and score_margin < min_score_margin:
+        qualified = [c for c in selected if c.raw_score >= min_score]
+        if disambiguation_enabled and len(qualified) >= 2:
+            confidence = "medium"
+            debug["confidence"] = confidence
+            debug["disambiguation_generation"] = True
+            return _finish(
+                _decision_with_chunks(
+                    reason="ambiguous_retrieval",
+                    confidence=confidence,
+                    selected=qualified,
+                    top_k=top_k,
+                    query=query,
+                    informative=informative,
+                    mode=mode,
+                    coverage_value=coverage_value,
+                    debug=debug,
+                    trace_candidates=qualified,
+                )
+            )
         confidence = "low"
         debug["confidence"] = confidence
-        return _finish(RetrievalDecision(
-            allow_generation=False,
-            reason="ambiguous_retrieval",
-            confidence=confidence,
-            selected_candidates=(),
-            trace=_build_trace(
-                query, informative, mode, selected, coverage_value,
-                "ambiguous_retrieval", False, confidence, debug,
-            ),
-        ))
+        return _finish(
+            _decision_with_chunks(
+                reason="ambiguous_retrieval",
+                confidence=confidence,
+                selected=selected,
+                top_k=top_k,
+                query=query,
+                informative=informative,
+                mode=mode,
+                coverage_value=coverage_value,
+                debug=debug,
+            )
+        )
 
-    # 5. Coverage baixa no melhor chunk (Fase 2).
+    # 5. Coverage baixa no melhor chunk.
     if informative and coverage_value < min_coverage:
         confidence = "low"
         debug["confidence"] = confidence
-        return _finish(RetrievalDecision(
-            allow_generation=False,
-            reason="context_misaligned",
-            confidence=confidence,
-            selected_candidates=(),
-            trace=_build_trace(
-                query, informative, mode, selected, coverage_value,
-                "context_misaligned", False, confidence, debug,
-            ),
-        ))
+        return _finish(
+            _decision_with_chunks(
+                reason="context_misaligned",
+                confidence=confidence,
+                selected=selected,
+                top_k=top_k,
+                query=query,
+                informative=informative,
+                mode=mode,
+                coverage_value=coverage_value,
+                debug=debug,
+            )
+        )
 
-    # 6. Confidence determinística (Fase 2).
+    # 6. Confidence determinística.
     confidence = "high"
     if coverage_w < min_coverage_weighted:
         confidence = "low"
@@ -678,27 +761,33 @@ def build_decision(
     debug["confidence"] = confidence
 
     if mode == "strict" and confidence == "low":
-        return _finish(RetrievalDecision(
-            allow_generation=False,
-            reason="low_confidence",
-            confidence=confidence,
-            selected_candidates=(),
-            trace=_build_trace(
-                query, informative, mode, selected, coverage_value,
-                "low_confidence", False, confidence, debug,
-            ),
-        ))
+        return _finish(
+            _decision_with_chunks(
+                reason="low_confidence",
+                confidence=confidence,
+                selected=selected,
+                top_k=top_k,
+                query=query,
+                informative=informative,
+                mode=mode,
+                coverage_value=coverage_value,
+                debug=debug,
+            )
+        )
 
-    return _finish(RetrievalDecision(
-        allow_generation=True,
-        reason="ok",
-        confidence=confidence,
-        selected_candidates=tuple(selected),
-        trace=_build_trace(
-            query, informative, mode, selected, coverage_value,
-            "ok", True, confidence, debug,
-        ),
-    ))
+    return _finish(
+        _decision_with_chunks(
+            reason="ok",
+            confidence=confidence,
+            selected=selected,
+            top_k=top_k,
+            query=query,
+            informative=informative,
+            mode=mode,
+            coverage_value=coverage_value,
+            debug=debug,
+        )
+    )
 
 
 # --- Sanity check pós-geração (Fase 3) --------------------------------------
@@ -707,10 +796,58 @@ def _tokens_of(text: str) -> set[str]:
     return set(normalize_and_tokenize(text))
 
 
+_PEDAGOGICAL_EXTENSION_RE = re.compile(
+    r"extens[aã]o pedag[oó]gica\s*\(fora do material indexado\)",
+    re.IGNORECASE,
+)
+
+_FONTES_CITATION_RE = re.compile(r"\[fonte", re.IGNORECASE)
+
+# Em anchored/hybrid só estes flags disparam aviso pós-geração na UI.
+_ANCHORED_ADVISORY_STRONG_FLAGS = frozenset({"introduced_unsupported_terms"})
+
+
+def _has_pedagogical_extension_marker(answer: str) -> bool:
+    return bool(_PEDAGOGICAL_EXTENSION_RE.search(answer))
+
+
+def _answer_cites_indexed_sources(answer: str) -> bool:
+    low = answer.lower()
+    return bool(_FONTES_CITATION_RE.search(answer)) or "db:" in low
+
+
+_LACUNA_OR_REFUSAL_RE = re.compile(
+    r"(não vou ignorar|não vou passar|não há trecho|lacuna declarada|"
+    r"não aparece nos trechos|não tenho \(nem devo|não faz parte do que o kernel|"
+    r"material injectado neste turno não|não há definição nem explicação)",
+    re.IGNORECASE,
+)
+
+
+def anchored_post_generation_advisory_flags(
+    flags: list[str],
+    answer: str = "",
+) -> list[str]:
+    """Subconjunto de flags que justificam aviso amarelo em modo anchored/hybrid."""
+    strong = [f for f in flags if f in _ANCHORED_ADVISORY_STRONG_FLAGS]
+    if not strong:
+        return []
+    if _answer_cites_indexed_sources(answer):
+        return []
+    if _LACUNA_OR_REFUSAL_RE.search(answer):
+        return []
+    if _has_pedagogical_extension_marker(answer):
+        return []
+    return strong
+
+
 def post_generation_flags(
     answer: str,
     informative_terms: Iterable[str],
     selected_candidates: Iterable[RetrievalCandidate],
+    *,
+    grounding_policy: str = "strict",
+    decision_reason: str | None = None,
 ) -> list[str]:
     """Sanity check leve, não-LLM, sobre a resposta gerada.
 
@@ -724,10 +861,14 @@ def post_generation_flags(
     """
     flags: list[str] = []
     answer_tokens = _tokens_of(answer)
+    relaxed_anchored = grounding_policy in ("anchored", "hybrid")
+    has_pedagogy_marker = _has_pedagogical_extension_marker(answer)
+    cites_sources = _answer_cites_indexed_sources(answer)
 
     info = [t.lower() for t in informative_terms]
-    if info and not any(t in answer_tokens for t in info):
-        flags.append("missing_informative_terms")
+    if not relaxed_anchored and decision_reason == "ok":
+        if info and not any(t in answer_tokens for t in info):
+            flags.append("missing_informative_terms")
 
     candidates = list(selected_candidates)
     chunk_tokens: set[str] = set()
@@ -736,21 +877,24 @@ def post_generation_flags(
         chunk_tokens |= _tokens_of(c.text)
         sources.add(c.source.lower())
 
-    source_mentioned = any(src_part for src_part in sources if src_part in answer.lower())
-    # Termos centrais dos chunks presentes: heurística mínima. Se a resposta
-    # não cita nem fonte nem termos dos chunks, é sinal forte de alucinação
-    # ou de resposta genérica.
-    answer_tokens_sigset = {t for t in answer_tokens if len(t) > 4}
-    shared_with_chunks = bool(answer_tokens_sigset & chunk_tokens)
-    if candidates and not source_mentioned and not shared_with_chunks:
-        flags.append("missing_source_entities")
+    skip_missing_source = relaxed_anchored and (
+        has_pedagogy_marker or cites_sources
+    )
+    if not skip_missing_source:
+        source_mentioned = any(src_part for src_part in sources if src_part in answer.lower())
+        answer_tokens_sigset = {t for t in answer_tokens if len(t) > 4}
+        shared_with_chunks = bool(answer_tokens_sigset & chunk_tokens)
+        if candidates and not source_mentioned and not shared_with_chunks:
+            flags.append("missing_source_entities")
 
-    if candidates:
+    skip_unsupported = relaxed_anchored and (
+        cites_sources or has_pedagogy_marker
+    )
+    if candidates and not skip_unsupported:
         tech_like = {t for t in answer_tokens if len(t) >= 5 and re.search(r"[a-z]", t)}
         unsupported = [t for t in tech_like if t not in chunk_tokens and t not in info]
-        # Limite conservador: só marca se muitos termos técnicos longos
-        # aparecerem sem suporte nos chunks.
-        if len(unsupported) > 25:
+        unsupported_limit = 50 if relaxed_anchored else 25
+        if len(unsupported) > unsupported_limit:
             flags.append("introduced_unsupported_terms")
 
     return flags

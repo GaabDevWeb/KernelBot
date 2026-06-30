@@ -12,6 +12,116 @@
   display: block;
   z-index: 0;
   pointer-events: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#globe.is-interactive {
+  pointer-events: auto;
+}
+
+#globe.is-dismissed {
+  pointer-events: none;
+}
+
+#globe.globe--static-fallback {
+  opacity: 0 !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Na landing, cliques atravessam o shell até o globo (canvas z-index 0). */
+body.ui-landing .app-shell {
+  pointer-events: none;
+}
+
+body.ui-landing .app-shell > .conversation-sidebar,
+body.ui-landing .app-shell > .sidebar-overlay,
+body.ui-landing .app .header,
+body.ui-landing .app .input-area,
+body.ui-landing .app .onboarding-banner,
+body.ui-landing .app .entrance-discipline-pills,
+body.ui-landing .app .entrance-suggestion {
+  pointer-events: auto;
+}
+
+#globe.is-grabbable { cursor: grab; }
+#globe.is-grabbing { cursor: grabbing; }
+#globe.is-plate-hover { cursor: pointer; }
+
+/* Tooltip premium — placas do globo */
+.globe-tooltip {
+  position: fixed;
+  z-index: 20;
+  max-width: min(280px, calc(100vw - 28px));
+  padding: 14px 16px 13px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(10px) scale(0.965);
+  filter: blur(4px);
+  transition:
+    opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform, filter;
+}
+
+.globe-tooltip.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+
+.globe-tooltip.is-leaving {
+  opacity: 0;
+  transform: translateY(6px) scale(0.975);
+  filter: blur(3px);
+  transition-duration: 0.28s;
+}
+
+.globe-tooltip__body {
+  transition: opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.globe-tooltip.is-content-fading .globe-tooltip__body {
+  opacity: 0.35;
+}
+
+.globe-tooltip__label {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sidebar-muted);
+  margin-bottom: 4px;
+}
+
+.globe-tooltip__label + .globe-tooltip__title {
+  margin-bottom: 10px;
+}
+
+.globe-tooltip__title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.globe-tooltip__discipline {
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--white);
 }
 
 /* Keep all the real UI above the globe backdrop. */
@@ -31,9 +141,9 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: flex-end;   /* title to the right */
+  justify-content: flex-end;
   gap: 0;
-  padding: 0 18vw;
+  padding: 0 clamp(48px, 12vw, 180px) clamp(96px, 11vh, 140px) clamp(56px, 14vw, 220px);
   pointer-events: none;
 }
 
@@ -53,18 +163,18 @@
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
-  max-width: 460px;
+  max-width: 420px;
   opacity: 0;
   transform: translateY(18px);
 }
 
 .entrance-eyebrow {
-  font-size: 0.72rem;
+  font-size: var(--font-size-xs, 12px);
   letter-spacing: 0.42em;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--white);
   opacity: 0.85;
-  margin-bottom: 14px;
+  margin-bottom: var(--space-3, 12px);
 }
 
 .entrance-headline {
@@ -72,7 +182,7 @@
   line-height: 1.12;
   font-weight: 700;
   letter-spacing: -0.01em;
-  background: linear-gradient(120deg, #ffffff 0%, #d9dadf 45%, #a9aab0 100%);
+  background: linear-gradient(120deg, var(--white) 0%, var(--entrance-headline-mid) 45%, var(--entrance-headline-end) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -83,48 +193,74 @@
 .entrance-kernel {
   -webkit-background-clip: text;
   background-clip: text;
-  -webkit-text-fill-color: #b91c1c;
-  color: #b91c1c;
+  -webkit-text-fill-color: var(--brand-primary);
+  color: var(--brand-primary);
 }
 
-/* Blinking caret following the typed title. */
+.entrance-subtitle {
+  margin: var(--space-3, 12px) 0 0;
+  font-size: clamp(0.95rem, 1.8vw, 1.05rem);
+  line-height: var(--line-height-body, 1.5);
+  font-weight: 400;
+  color: var(--entrance-subtitle);
+  max-width: 42ch;
+}
+
+.entrance-discipline-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+  margin-top: var(--section-gap-sm, 16px);
+  justify-content: flex-start;
+  pointer-events: auto;
+}
+
+.entrance-discipline-pills .cmd-pill {
+  background: var(--entrance-pill-bg);
+  border-color: var(--entrance-pill-border);
+  color: var(--text);
+  border-radius: var(--radius-xl);
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+.entrance-discipline-pills .cmd-pill:hover {
+  border-color: var(--brand-primary);
+  color: var(--white);
+  background: var(--brand-surface);
+}
+
 .entrance-caret {
-  display: inline-block;
-  width: 3px;
-  height: 1em;
-  margin-left: 4px;
-  vertical-align: -0.12em;
-  background: #e6e7ea;
-  border-radius: 2px;
-  box-shadow: 0 0 12px #e6e7ea;
-  animation: entrance-blink 1s steps(1) infinite;
+  display: none;
 }
 
-/* -------- Cycling command suggestions (red pill, white text) -------- */
+/* -------- Cycling command suggestions (brand pill) -------- */
 .entrance-suggestion-wrap {
-  margin-top: 22px;
-  min-height: 2.4em;          /* reserve space so the layout never jumps */
+  margin-top: var(--section-gap-md, 24px);
+  min-height: 2.4em;
 }
 
 .entrance-suggestion {
   display: inline-flex;
   align-items: center;
-  max-width: 100%;
+  max-width: min(100%, 520px);
   padding: 8px 14px;
   border-radius: 12px;
-  background: #b91c1c;
-  color: #ffffff;
+  background: var(--brand-primary);
+  color: var(--brand-on-primary);
   font-family: var(--font-mono, 'JetBrains Mono', monospace);
   font-size: clamp(0.82rem, 1.6vw, 1rem);
   font-weight: 500;
   line-height: 1.3;
   letter-spacing: 0.01em;
-  box-shadow: 0 8px 22px rgba(185, 28, 28, 0.35);
+  box-shadow: 0 8px 22px var(--brand-glow);
   cursor: pointer;            /* click to drop the suggestion into the input */
   pointer-events: auto;       /* re-enable clicks (overlay is click-through) */
 }
 
 .entrance-suggestion-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -134,7 +270,7 @@
   height: 1.05em;
   margin-left: 3px;
   vertical-align: -0.12em;
-  background: #ffffff;
+  background: var(--brand-on-primary);
   border-radius: 1px;
   animation: entrance-blink 1s steps(1) infinite;
 }
@@ -144,38 +280,133 @@
   50%, 100% { opacity: 0; }
 }
 
-/* Mobile: globe sits up top, title stacks centered below it. */
+/* Mobile: globo recua; hero e pills ganham protagonismo (LAND-MOB-001, TASK-014) */
 @media (max-width: 820px) {
+  #globe:not(.globe--static-fallback) {
+    opacity: 0.42;
+  }
+
   #empty-state {
     align-items: flex-end;
     justify-content: center;
-    padding: 0 7vw 24vh;        /* lift the title above the input */
+    padding: 0 16px max(12vh, 88px);
+    overflow-x: hidden;
   }
 
   .entrance-content {
     align-items: center;
     text-align: center;
-    max-width: 560px;
+    max-width: min(520px, 100%);
+    width: 100%;
+    padding: 14px 16px 16px;
+    border-radius: 16px;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg) 72%, transparent) 0%,
+      color-mix(in srgb, var(--bg) 88%, transparent) 100%
+    );
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  }
+
+  .entrance-headline {
+    font-size: clamp(1.55rem, 6.2vw, 2.1rem);
+  }
+
+  .entrance-subtitle {
+    font-size: var(--font-size-sm, 14px);
+    max-width: 36ch;
+    margin-top: var(--space-2, 8px);
+  }
+
+  /* Grid 3+2 — evita pill isolada na 2ª linha (TASK-013) */
+  .entrance-discipline-pills {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--space-2, 8px);
+    width: 100%;
+    max-width: 100%;
+    margin-top: var(--space-4, 16px);
+    justify-items: stretch;
+  }
+
+  .entrance-discipline-pills .cmd-pill {
+    flex: unset;
+    min-width: 0;
+    max-width: none;
+    width: auto;
+    grid-column: span 2;
+    text-align: center;
+    justify-content: center;
+    font-size: 11px;
+    padding: 6px 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .entrance-discipline-pills .cmd-pill:nth-child(4) {
+    grid-column: 2 / span 2;
+  }
+
+  .entrance-discipline-pills .cmd-pill:nth-child(5) {
+    grid-column: 4 / span 2;
+  }
+
+  .entrance-suggestion-wrap {
+    margin-top: var(--space-4, 16px);
+  }
+
+  /* TASK-019: suggestion alinhada às cmd-pills (surface + borda) em vez de bloco sólido */
+  .entrance-suggestion {
+    background: var(--brand-surface);
+    color: var(--text);
+    border: 1px solid var(--brand-muted);
+    box-shadow: none;
+  }
+
+  .entrance-suggestion-caret {
+    background: var(--brand-primary);
+  }
+
+  .entrance-discipline-pills .cmd-pill:hover {
+    border-color: var(--brand-muted);
+    color: var(--brand-inline);
+    background: var(--brand-surface);
+  }
+
+  .entrance-suggestion-text {
+    white-space: normal;
+    text-align: center;
   }
 }
 
-/* -------- "Thinking" indicator: a small globe spinner + label -------- */
-.thinking-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+@media (max-width: 390px) {
+  .entrance-discipline-pills .cmd-pill {
+    font-size: 10px;
+    padding: 5px 6px;
+  }
 }
 
-.thinking-globe {
-  width: 30px;
-  height: 30px;
-  display: block;
-  flex: 0 0 auto;
+#empty-state.empty-state--dismissed {
+  opacity: 0;
+  transition: opacity 250ms ease;
+  pointer-events: none;
 }
+
+#empty-state.empty-state--slash-open {
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+
+/* -------- "Thinking" indicator: styles live in theme.css -------- */
 
 @media (prefers-reduced-motion: reduce) {
   .entrance-caret,
   .entrance-suggestion-caret {
     animation: none;
+  }
+
+  #globe.is-interactive {
+    pointer-events: auto;
   }
 }

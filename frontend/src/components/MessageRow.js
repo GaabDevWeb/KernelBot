@@ -1,40 +1,485 @@
 import { fmt } from "../utils/time.js";
+import { parseSourceParts } from "../utils/formatSource.js";
+import { stripDisciplinePrefixForDisplay } from "../config/disciplines.js";
+import { buildIssMarkdownContext, createIssLessonAnchor, buildIssLessonUrl } from "../utils/issLinks.js";
+import { copyToClipboard } from "../utils/clipboard.js";
+import { showToast } from "../utils/toast.js";
 
-const MAX_BREADCRUMB_LINES = 5;
+const MAX_VISIBLE_SOURCES = 3;
+
+const ACL_SOURCES_NOTE_RE = /não recebi trechos|\[fonte:/i;
+
+const HINT_CLASS = "message-hint-badge";
+const HINT_VARIANTS = {
+    disambiguation: "message-hint-badge--disambiguation",
+    misalignment: "message-hint-badge--misalignment",
+    advisory: "message-hint-badge--advisory",
+    scope: "message-hint-badge--scope",
+};
+
+const CONTEXT_BADGE_CLASS = "message-context-badge";
+const SOURCES_NOTE_CLASS = "message-sources-note";
+const LOW_GROUNDING_CLASS = "message-low-grounding-banner";
 
 /**
- * @param {HTMLElement} breadcrumbsEl
- * @param {string[] | undefined} sources
+ * Aviso visível quando a resposta não tem grounding no material indexado.
+ * @param {HTMLElement | null | undefined} breadcrumbsEl
+ * @param {Record<string, unknown> | null | undefined} meta
  */
-export function setBreadcrumbsContent(breadcrumbsEl, sources) {
+export function mountLowGroundingNotice(breadcrumbsEl, meta) {
     if (!breadcrumbsEl) return;
-    if (!sources?.length) {
+    breadcrumbsEl.querySelector(`.${LOW_GROUNDING_CLASS}`)?.remove();
+
+    const sources = meta?.sources;
+    const hasSources = Array.isArray(sources) && sources.length > 0;
+    const reason = String(meta?.reason || "");
+    const confidence = String(meta?.confidence || "");
+    const isLowGrounding =
+        !hasSources &&
+        (reason === "insufficient_context" || confidence === "low");
+
+    if (!isLowGrounding) return;
+
+    breadcrumbsEl.hidden = false;
+    const banner = document.createElement("div");
+    banner.className = LOW_GROUNDING_CLASS;
+    banner.setAttribute("role", "note");
+    banner.innerHTML =
+        "<strong>Sem material indexado nesta busca.</strong> " +
+        "Escolha uma matéria no botão de grade ou refine a pergunta para respostas mais fundamentadas.";
+    breadcrumbsEl.prepend(banner);
+}
+
+/**
+ * @param {string[] | undefined} sources
+ * @param {Array<Record<string, unknown>> | undefined} sourceDetails
+ * @returns {Array<Record<string, unknown>>}
+ */
+function normalizeSourceDetails(sources, sourceDetails) {
+    if (Array.isArray(sourceDetails) && sourceDetails.length) {
+        return sourceDetails;
+    }
+    return (sources || []).map((raw) => {
+        const p = parseSourceParts(raw);
+        return {
+            source: raw,
+            discipline_label: p?.discipline || "",
+            lesson_title: p?.lesson || raw,
+            module: null,
+            excerpt: "",
+        };
+    });
+}
+
+/**
+ * @param {HTMLElement | null | undefined} breadcrumbsEl
+ * @param {{ reason?: string, groundingPolicy?: string, pedagogy?: boolean }} opts
+ */
+export function setContextBadges(breadcrumbsEl, opts) {
+    if (!breadcrumbsEl) return;
+    breadcrumbsEl.querySelectorAll(`.${CONTEXT_BADGE_CLASS}`).forEach((el) => el.remove());
+
+    const items = [];
+    if (opts.groundingPolicy) {
+        items.push({ text: opts.groundingPolicy, variant: "course" });
+    }
+    if (opts.reason) {
+        items.push({ text: opts.reason, variant: "weak" });
+    }
+    if (opts.pedagogy) {
+        items.push({ text: "Complemento pedagógico", variant: "pedagogy" });
+    }
+    if (!items.length) {
+        if (!breadcrumbsEl.childElementCount) breadcrumbsEl.hidden = true;
+        return;
+    }
+
+    breadcrumbsEl.hidden = false;
+    const existing = breadcrumbsEl.querySelector(".message-context-badges-collapsible");
+    existing?.remove();
+
+    const details = document.createElement("details");
+    details.className = "message-context-badges-collapsible";
+
+    const summary = document.createElement("summary");
+    summary.className = "message-context-badges-collapsible__summary";
+    summary.textContent = "Detalhes da resposta";
+
+    const wrap = document.createElement("div");
+    wrap.className = "message-context-badges";
+    for (const item of items) {
+        const badge = document.createElement("span");
+        badge.className = `${CONTEXT_BADGE_CLASS} message-context-badge--${item.variant}`;
+        badge.textContent = item.text;
+        wrap.appendChild(badge);
+    }
+    details.append(summary, wrap);
+    breadcrumbsEl.prepend(details);
+}
+
+/**
+ * @param {HTMLElement | null | undefined} breadcrumbsEl
+ * @param {"none" | "disambiguation" | "misalignment" | "advisory" | "scope"} variant
+ * @param {string} [hintText]
+ */
+export function setTurnHintBadge(breadcrumbsEl, variant, hintText) {
+    if (!breadcrumbsEl) return;
+    const existing = breadcrumbsEl.querySelector(`.${HINT_CLASS}`);
+    if (variant === "none") {
+        existing?.remove();
+        if (!breadcrumbsEl.childElementCount) breadcrumbsEl.hidden = true;
+        return;
+    }
+    breadcrumbsEl.hidden = false;
+    const hint = existing ?? document.createElement("div");
+    hint.className = HINT_CLASS;
+    Object.values(HINT_VARIANTS).forEach((c) => hint.classList.remove(c));
+    if (variant === "misalignment") {
+        hint.classList.add(HINT_VARIANTS.misalignment);
+        hint.textContent =
+            "Resposta revista — o conteúdo gerado não alinhou com as fontes recuperadas.";
+    } else if (variant === "advisory") {
+        hint.classList.add(HINT_VARIANTS.advisory);
+        hint.textContent =
+            "A checagem automática sugere rever as fontes — a resposta acima foi mantida.";
+    } else if (variant === "scope") {
+        hint.classList.add(HINT_VARIANTS.scope);
+        const t = (hintText || "").trim();
+        hint.textContent =
+            t ||
+            "O tema fixado pode não coincidir com a pergunta — use um comando de disciplina ou /reset.";
+    } else {
+        hint.classList.add(HINT_VARIANTS.disambiguation);
+        hint.textContent = "Várias fontes próximas — escolha uma aula abaixo ou continue no texto.";
+    }
+    if (!existing) breadcrumbsEl.prepend(hint);
+}
+
+/**
+ * @param {HTMLElement | null | undefined} breadcrumbsEl
+ * @param {string[] | undefined} sources
+ * @param {string | null | undefined} [sourcesNote]
+ * @param {Array<Record<string, unknown>> | undefined} [sourceDetails]
+ * @param {{ onPinSource?: (detail: Record<string, unknown>) => void }} [handlers]
+ */
+export function setBreadcrumbsContent(
+    breadcrumbsEl,
+    sources,
+    sourcesNote,
+    sourceDetails,
+    handlers = {},
+) {
+    if (!breadcrumbsEl) return;
+    const noteText = (sourcesNote || "").trim();
+    const details = normalizeSourceDetails(sources, sourceDetails);
+
+    if (!details.length && !noteText) {
         breadcrumbsEl.hidden = true;
         breadcrumbsEl.replaceChildren();
         return;
     }
+
     breadcrumbsEl.hidden = false;
     breadcrumbsEl.replaceChildren();
-    const slice = sources.slice(0, MAX_BREADCRUMB_LINES);
-    for (const path of slice) {
-        const line = document.createElement("div");
-        line.className = "message-breadcrumb-line";
-        line.textContent = path.split("/").join(" > ");
-        breadcrumbsEl.appendChild(line);
+
+    if (details.length) {
+        const collapsible = document.createElement("details");
+        collapsible.className = "message-sources-collapsible";
+
+        const summary = document.createElement("summary");
+        summary.className = "message-sources-collapsible__summary";
+        summary.textContent =
+            details.length === 1
+                ? "1 material utilizado"
+                : `${details.length} materiais utilizados`;
+
+        const panel = document.createElement("div");
+        panel.className = "message-sources-collapsible__panel";
+
+        const ul = document.createElement("ul");
+        ul.className = "message-sources__list";
+
+        const visible = details.slice(0, MAX_VISIBLE_SOURCES);
+        const hidden = details.slice(MAX_VISIBLE_SOURCES);
+
+        for (const detail of visible) {
+            ul.appendChild(buildRichSourceCard(detail, handlers));
+        }
+
+        if (hidden.length) {
+            const extraWrap = document.createElement("li");
+            extraWrap.className = "message-sources__extra";
+            extraWrap.hidden = true;
+            const extraUl = document.createElement("ul");
+            extraUl.className = "message-sources__list message-sources__list--extra";
+            for (const detail of hidden) {
+                extraUl.appendChild(buildRichSourceCard(detail, handlers));
+            }
+            extraWrap.appendChild(extraUl);
+            ul.appendChild(extraWrap);
+
+            const toggle = document.createElement("button");
+            toggle.type = "button";
+            toggle.className = "message-sources__toggle";
+            toggle.textContent = `Ver mais ${hidden.length} fonte${hidden.length === 1 ? "" : "s"}`;
+            toggle.setAttribute("aria-expanded", "false");
+            toggle.addEventListener("click", () => {
+                const open = !extraWrap.hidden;
+                extraWrap.hidden = open;
+                toggle.textContent = open
+                    ? `Ver mais ${hidden.length} fonte${hidden.length === 1 ? "" : "s"}`
+                    : "Ver menos";
+                toggle.setAttribute("aria-expanded", open ? "false" : "true");
+            });
+            panel.appendChild(ul);
+            panel.appendChild(toggle);
+        } else {
+            panel.appendChild(ul);
+        }
+
+        collapsible.appendChild(summary);
+        collapsible.appendChild(panel);
+        breadcrumbsEl.appendChild(collapsible);
     }
-    const extra = sources.length - slice.length;
-    if (extra > 0) {
-        const more = document.createElement("div");
-        more.className = "message-breadcrumb-more";
-        more.textContent = `+${extra} ficheiro${extra === 1 ? "" : "s"}`;
-        breadcrumbsEl.appendChild(more);
+
+    if (noteText && !(ACL_SOURCES_NOTE_RE.test(noteText) && details.length)) {
+        const note = document.createElement("div");
+        note.className = SOURCES_NOTE_CLASS;
+        note.textContent = noteText;
+        breadcrumbsEl.appendChild(note);
     }
 }
 
 /**
+ * @param {Record<string, unknown>} detail
+ * @param {{ onPinSource?: (detail: Record<string, unknown>) => void }} handlers
+ * @returns {HTMLLIElement}
+ */
+function buildRichSourceCard(detail, handlers) {
+    const li = document.createElement("li");
+    li.className = "source-card source-card--rich";
+
+    const title = document.createElement("p");
+    title.className = "source-card__title";
+    const lessonTitle = String(detail.lesson_title || "Aula").trim();
+    const discipline = String(detail.discipline || "").trim();
+    const slug = String(detail.slug || "").trim();
+    const lessonLink = createIssLessonAnchor(discipline, slug, lessonTitle);
+    if (lessonLink) {
+        title.append("Aula: ", lessonLink);
+    } else {
+        title.textContent = `Aula: ${lessonTitle}`;
+    }
+
+    const metaRow = document.createElement("div");
+    metaRow.className = "source-card__meta-row";
+
+    const discLabel = String(detail.discipline_label || "").trim();
+    if (discLabel) {
+        const disc = document.createElement("span");
+        disc.className = "source-card__meta-item";
+        disc.innerHTML = `<span class="source-card__meta-k">Disciplina</span> ${discLabel}`;
+        metaRow.appendChild(disc);
+    }
+
+    const module = detail.module ? String(detail.module).trim() : "";
+    if (module) {
+        const mod = document.createElement("span");
+        mod.className = "source-card__meta-item";
+        mod.innerHTML = `<span class="source-card__meta-k">Sequência</span> ${module}`;
+        metaRow.appendChild(mod);
+    }
+
+    li.appendChild(title);
+    if (metaRow.childElementCount) li.appendChild(metaRow);
+
+    const excerpt = String(detail.excerpt || "").trim();
+    if (excerpt) {
+        const exLabel = document.createElement("p");
+        exLabel.className = "source-card__excerpt-label";
+        exLabel.textContent = "Trecho encontrado";
+
+        const ex = document.createElement("blockquote");
+        ex.className = "source-card__excerpt";
+        ex.textContent = excerpt;
+
+        li.appendChild(exLabel);
+        li.appendChild(ex);
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "source-card__actions";
+
+    if (excerpt) {
+        const viewBtn = document.createElement("button");
+        viewBtn.type = "button";
+        viewBtn.className = "source-card__action source-card__action--secondary";
+        viewBtn.textContent = "Ver trecho";
+        viewBtn.setAttribute("aria-expanded", "false");
+        const excerptEl = li.querySelector(".source-card__excerpt");
+        viewBtn.addEventListener("click", () => {
+            if (!excerptEl) return;
+            const expanded = excerptEl.classList.toggle("source-card__excerpt--expanded");
+            viewBtn.textContent = expanded ? "Recolher" : "Ver trecho";
+            viewBtn.setAttribute("aria-expanded", expanded ? "true" : "false");
+        });
+        actions.appendChild(viewBtn);
+    }
+
+    if (handlers.onPinSource && (detail.slug || detail.discipline)) {
+        const pinBtn = document.createElement("button");
+        pinBtn.type = "button";
+        pinBtn.className = "source-card__action source-card__action--primary";
+        pinBtn.textContent = "Fixar contexto";
+        pinBtn.addEventListener("click", () => handlers.onPinSource?.(detail));
+        actions.appendChild(pinBtn);
+    }
+
+    const lessonUrl = buildIssLessonUrl(discipline, slug);
+    if (lessonUrl) {
+        const openBtn = document.createElement("a");
+        openBtn.className = "source-card__action source-card__action--iss";
+        openBtn.href = lessonUrl;
+        openBtn.target = "_blank";
+        openBtn.rel = "noopener noreferrer";
+        openBtn.textContent = "Abrir no ISS";
+        openBtn.setAttribute("aria-label", `Abrir aula no ISS: ${lessonTitle}`);
+        actions.appendChild(openBtn);
+    } else if (slug || discipline) {
+        const unavailable = document.createElement("button");
+        unavailable.type = "button";
+        unavailable.className = "source-card__action source-card__action--unavailable";
+        unavailable.textContent = "Aula indisponível";
+        unavailable.title = "Não foi possível gerar o link para esta aula no ISS";
+        unavailable.addEventListener("click", () => {
+            showToast("Link da aula indisponível no ISS para esta fonte.");
+        });
+        actions.appendChild(unavailable);
+    }
+
+    if (actions.childElementCount) li.appendChild(actions);
+    return li;
+}
+
+const COPY_ICON_SRC = "/assets/images/copy_icon.svg";
+const OK_ICON_SRC = "/assets/images/ok_icon.svg";
+const REGENERATE_ICON_SRC = "/assets/images/regenerate_icon.svg";
+const COPY_SUCCESS_MS = 1500;
+const ICON_FADE_MS = 220;
+
+function prefersReducedMotion() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/**
+ * @param {HTMLImageElement} img
+ * @param {string} nextSrc
+ */
+function crossfadeToolbarIcon(img, nextSrc) {
+    const current = img.getAttribute("src") || "";
+    if (current === nextSrc || img.src.endsWith(nextSrc)) {
+        return Promise.resolve();
+    }
+    if (prefersReducedMotion()) {
+        img.src = nextSrc;
+        return Promise.resolve();
+    }
+    img.classList.add("message-toolbar__icon--fade");
+    return new Promise((resolve) => {
+        window.setTimeout(() => {
+            img.src = nextSrc;
+            requestAnimationFrame(() => {
+                img.classList.remove("message-toolbar__icon--fade");
+                window.setTimeout(resolve, ICON_FADE_MS);
+            });
+        }, ICON_FADE_MS);
+    });
+}
+
+/**
+ * @param {HTMLButtonElement} btn
+ * @param {string} defaultLabel
+ */
+function flashCopySuccess(btn, defaultLabel) {
+    const img = btn.querySelector(".message-toolbar__icon");
+    if (!img) return;
+    if (btn._copyRevertTimer) clearTimeout(btn._copyRevertTimer);
+
+    void (async () => {
+        await crossfadeToolbarIcon(img, OK_ICON_SRC);
+        btn.setAttribute("aria-label", "Copiado");
+        btn.classList.add("message-toolbar__btn--copied");
+        btn._copyRevertTimer = window.setTimeout(() => {
+            void (async () => {
+                btn.classList.remove("message-toolbar__btn--copied");
+                await crossfadeToolbarIcon(img, COPY_ICON_SRC);
+                btn.setAttribute("aria-label", defaultLabel);
+                btn._copyRevertTimer = null;
+            })();
+        }, COPY_SUCCESS_MS);
+    })();
+}
+
+/**
+ * @param {string} className
+ * @param {string} iconSrc
+ * @param {string} ariaLabel
+ */
+function createToolbarIconButton(className, iconSrc, ariaLabel) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = className;
+    btn.setAttribute("aria-label", ariaLabel);
+    const img = document.createElement("img");
+    img.className = "message-toolbar__icon";
+    img.src = iconSrc;
+    img.alt = "";
+    img.setAttribute("aria-hidden", "true");
+    img.width = 14;
+    img.height = 14;
+    btn.appendChild(img);
+    return btn;
+}
+
+/**
+ * @param {HTMLElement} row
+ * @param {'user'|'bot'} role
+ * @param {string} text
+ * @param {{ onRegenerate?: () => void, showRegenerate?: boolean }} [opts]
+ */
+export function mountMessageToolbar(row, role, text, opts = {}) {
+    const toolbar = document.createElement("div");
+    toolbar.className = "message-toolbar";
+
+    const copyLabel = role === "user" ? "Copiar" : "Copiar resposta";
+    const copyBtn = createToolbarIconButton("message-toolbar__btn", COPY_ICON_SRC, copyLabel);
+    copyBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const ok = await copyToClipboard(text);
+        if (ok) flashCopySuccess(copyBtn, copyLabel);
+        else showToast("Não foi possível copiar");
+    });
+    toolbar.appendChild(copyBtn);
+
+    if (role === "bot" && opts.showRegenerate && typeof opts.onRegenerate === "function") {
+        const regenBtn = createToolbarIconButton(
+            "message-toolbar__btn",
+            REGENERATE_ICON_SRC,
+            "Regenerar última resposta",
+        );
+        regenBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            opts.onRegenerate?.();
+        });
+        toolbar.appendChild(regenBtn);
+    }
+
+    row.appendChild(toolbar);
+}
+
+/**
  * @param {HTMLElement} chatBox
- * @param {{ role: 'user'|'bot', text: string, isError?: boolean, sources?: string[], renderMarkdown: (t: string) => string, animated?: boolean, scrollBottom: () => void }} opts
- * @returns {HTMLElement} bubble element
+ * @param {{ role: 'user'|'bot', text: string, isError?: boolean, sources?: string[], sourceDetails?: Array<Record<string, unknown>>, renderMarkdown: (t: string) => string, animated?: boolean, scrollBottom: () => void, sourceHandlers?: { onPinSource?: (d: Record<string, unknown>) => void }, toolbarHandlers?: { onRegenerate?: () => void, isLastBot?: boolean } }} opts
  */
 export function appendMessageRow(chatBox, opts) {
     const {
@@ -42,9 +487,12 @@ export function appendMessageRow(chatBox, opts) {
         text,
         isError = false,
         sources,
+        sourceDetails,
         renderMarkdown,
         animated = true,
         scrollBottom,
+        sourceHandlers,
+        toolbarHandlers,
     } = opts;
 
     const row = document.createElement("div");
@@ -54,30 +502,42 @@ export function appendMessageRow(chatBox, opts) {
     const meta = document.createElement("div");
     meta.className = "message-meta";
     const now = new Date();
-    // meta.textContent = role === "user" ? `Você · ${fmt(now)}` : `ACL · ${fmt(now)}`;
-    meta.textContent = role === "user" ? `Você · ${fmt(now)}` : '';
+    meta.textContent = role === "user" ? `Você · ${fmt(now)}` : `Kernel · ${fmt(now)}`;
 
-    // const breadcrumbs = document.createElement("div");
-    // breadcrumbs.className = "message-breadcrumbs";
-    // if (role === "bot" && !isError) {
-    //     setBreadcrumbsContent(breadcrumbs, sources);
-    // } else {
-    //     breadcrumbs.hidden = true;
-    // }
+    const breadcrumbs = document.createElement("div");
+    breadcrumbs.className = "message-breadcrumbs";
+    if (role === "bot" && !isError) {
+        setBreadcrumbsContent(breadcrumbs, sources, undefined, sourceDetails, sourceHandlers);
+    } else {
+        breadcrumbs.hidden = true;
+    }
 
     const bubble = document.createElement("div");
     bubble.classList.add("message", role);
     if (isError) bubble.classList.add("error");
 
     if (role === "bot" && !isError) {
-        bubble.innerHTML = renderMarkdown(text);
+        bubble.innerHTML = renderMarkdown(
+            text,
+            buildIssMarkdownContext({ sourceDetails }),
+        );
     } else {
-        bubble.textContent = text;
+        bubble.textContent =
+            role === "user" ? stripDisciplinePrefixForDisplay(text) : text;
     }
 
     row.appendChild(meta);
-    // if (role === "bot") row.appendChild(breadcrumbs);
-    row.appendChild(bubble);
+    if (role === "bot") row.appendChild(bubble);
+    if (role === "bot") row.appendChild(breadcrumbs);
+    else row.appendChild(bubble);
+
+    if (!isError) {
+        mountMessageToolbar(row, role, text, {
+            onRegenerate: toolbarHandlers?.onRegenerate,
+            showRegenerate: role === "bot" && Boolean(toolbarHandlers?.isLastBot),
+        });
+    }
+
     chatBox.appendChild(row);
     scrollBottom();
     return bubble;
@@ -91,22 +551,31 @@ export function createStreamingBotRow(chatBox, scrollBottom) {
     const row = document.createElement("div");
     row.classList.add("message-row", "bot");
 
-    // const meta = document.createElement("div");
-    // meta.className = "message-meta";
-    // meta.textContent = `ACL · ${fmt(new Date())}`;
+    const meta = document.createElement("div");
+    meta.className = "message-meta";
+    meta.textContent = `Kernel · ${fmt(new Date())}`;
 
-    // const breadcrumbs = document.createElement("div");
-    // breadcrumbs.className = "message-breadcrumbs";
-    // breadcrumbs.hidden = true;
+    const breadcrumbs = document.createElement("div");
+    breadcrumbs.className = "message-breadcrumbs";
+    breadcrumbs.hidden = true;
 
     const bubble = document.createElement("div");
     bubble.classList.add("message", "bot", "cursor-blink");
 
-    // row.appendChild(meta);
-    // row.appendChild(breadcrumbs);
+    const prose = document.createElement("div");
+    prose.className = "stream-prose";
+    const ambiguitySlot = document.createElement("div");
+    ambiguitySlot.className = "stream-ambiguity-slot";
+    const postAmbiguity = document.createElement("div");
+    postAmbiguity.className = "stream-post-ambiguity";
+    bubble.appendChild(prose);
+    bubble.appendChild(ambiguitySlot);
+    bubble.appendChild(postAmbiguity);
+
+    row.appendChild(meta);
     row.appendChild(bubble);
+    row.appendChild(breadcrumbs);
     chatBox.appendChild(row);
     scrollBottom();
-    return { row, bubble };
-    // return { row, bubble, breadcrumbs };
+    return { row, bubble, breadcrumbs, prose, ambiguitySlot, postAmbiguity };
 }

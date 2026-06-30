@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 
-from core.structured_log import AclLogFormatter
+from core.structured_log import AclLogFormatter, SecretRedactingFilter
 
 
 def configure_logging(level: int | None = None) -> None:
@@ -22,6 +22,7 @@ def configure_logging(level: int | None = None) -> None:
         level = getattr(logging, name, logging.INFO)
     json_mode = (os.getenv("ACL_LOG_FORMAT") or "text").strip().lower() == "json"
     handler = logging.StreamHandler()
+    handler.addFilter(SecretRedactingFilter())
     handler.setFormatter(AclLogFormatter(json_mode=json_mode))
     root.addHandler(handler)
     root.setLevel(level)

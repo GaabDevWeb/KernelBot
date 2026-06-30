@@ -1,12 +1,10 @@
-export function createStatusBadge(element) {
+const noop = () => {};
+
+/** Indicador de status removido da UI — API mantida para o TurnController. */
+export function createStatusBadge(_element) {
     return {
-        setProcessing() {
-            element.textContent = "Processando...";
-            element.className = "header-badge";
-        },
-        setOnline() {
-            element.textContent = "Online";
-            element.className = "header-badge online";
-        },
+        setProcessing: noop,
+        setOnline: noop,
+        setWarning: noop,
     };
 }

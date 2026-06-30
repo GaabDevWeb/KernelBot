@@ -1,42 +1,87 @@
 import { ChatService } from "./api.js";
+import { buildDisambiguationFollowUp } from "./acl/parseAclMeta.js";
+import { createComposerController } from "./chat/ComposerController.js";
+import { createMetaRenderer } from "./chat/MetaRenderer.js";
+import { createStreamController } from "./chat/StreamController.js";
+import { createTurnController } from "./chat/TurnController.js";
+import { restoreSessionPinFromHistory } from "./chat/restoreTurn.js";
+import { createSlashCommandMenu } from "./components/SlashCommandMenu.js";
+import { createConversationSidebar } from "./components/ConversationSidebar.js";
+import { createContextWindowNotice } from "./components/ContextWindowNotice.js";
 import { createComposer } from "./components/Composer.js";
 import { createChatView } from "./components/ChatView.js";
+import { createDisciplinePanel } from "./components/DisciplinePanel.js";
 import { createStatusBadge } from "./components/StatusBadge.js";
-import { setBreadcrumbsContent } from "./components/MessageRow.js";
-import { siloClassSuffix, siloDisplayName } from "./utils/contextLabel.js";
-import { loadHistory, saveHistory } from "./utils/history.js";
-import { getOrCreateSessionId } from "./utils/sessionId.js";
-import { highlightCodeBlocks, renderMarkdown } from "./utils/markdown.js";
-import { createGlobe } from "./globe.js";
+import {
+    getHistoryForApi,
+    loadConversation,
+    loadHistory,
+    saveHistory,
+} from "./utils/history.js";
+import {
+    activateEmptyOrCreateConversation,
+    getActiveConversation,
+    getConversationDiscipline,
+    setConversationDiscipline,
+} from "./utils/conversations.js";
+import {
+    applyConversationDeepLink,
+    applyDisciplineDeepLink,
+    rejectInvalidDisciplineDeepLink,
+    syncDisciplineQueryParam,
+    syncUrlState,
+} from "./utils/deepLink.js";
+import { rebuildProgressFromHistory } from "./utils/progress.js";
+import { getOrCreateSessionId, regenerateSessionId } from "./utils/sessionId.js";
+import { renderMarkdown } from "./utils/markdown.js";
+import { setIssLinkDisciplineResolver } from "./utils/issLinks.js";
+import { syncBodyUiState } from "./utils/uiState.js";
+import { initShortcutsOverlay } from "./components/ShortcutsOverlay.js";
+import {
+    refreshHeaderConversationLabelVisibility,
+    updateHeaderConversationLabel,
+} from "./utils/headerLabel.js";
 
 export function init() {
     const chatBox = document.getElementById("chat");
-    const input = document.getElementById("message-input");
+    const input = /** @type {HTMLTextAreaElement | null} */ (document.getElementById("message-input"));
     const sendBtn = document.getElementById("send-button");
     const emptyState = document.getElementById("empty-state");
-    const statusBadge = document.getElementById("status-badge");
     const inputArea = document.querySelector(".input-area");
     const siloPill = document.getElementById("silo-pill");
     const pinBadge = document.getElementById("context-pin-badge");
     const contextStack = document.getElementById("context-stack");
-    const sessionId = getOrCreateSessionId();
+    const scopeBtn = document.getElementById("scope-btn");
+    const contextWindowNoticeEl = document.getElementById("context-window-notice");
+    const composerWrap = document.getElementById("composer-wrap");
+    const sidebarEl = document.getElementById("conversation-sidebar");
+    const conversationList = document.getElementById("conversation-list");
+    const sidebarOverlay = document.getElementById("sidebar-overlay");
+    const sidebarToggle = document.getElementById("sidebar-toggle");
+    const sidebarNewBtn = document.getElementById("sidebar-new-chat");
+    const sidebarSearch = /** @type {HTMLInputElement | null} */ (
+        document.getElementById("sidebar-search")
+    );
+    const sidebarSearchToggle = document.getElementById("sidebar-search-toggle");
+    const sidebarCollapseBtn = document.getElementById("sidebar-collapse-toggle");
+    const sidebarLogoBtn = document.getElementById("sidebar-logo-btn");
 
-    if (!chatBox || !input || !sendBtn || !statusBadge) {
-        console.error("[ACL] DOM esperado ausente (chat, input, send ou status).");
+    let sessionId = getOrCreateSessionId();
+
+    if (!chatBox || !input || !sendBtn) {
+        console.error("[ACL] DOM esperado ausente (chat, input ou send).");
         return;
     }
 
     const chatService = new ChatService();
-    const status = createStatusBadge(statusBadge);
-    const chatView = createChatView({ chatBox, emptyState, renderMarkdown });
+    const streamController = createStreamController(chatService);
+    const status = createStatusBadge();
+    const contextWindowNotice = createContextWindowNotice(contextWindowNoticeEl);
 
-    let sending = false;
-    /** @type {ReturnType<typeof createComposer>} */
-    let composer;
+    function refreshContextWindowNotice(turnCount) {
+        contextWindowNotice.refresh(turnCount);
+    }
 
-    const SILO_CLASS_PREFIX = "input-area--silo-";
-
-    // The gray panel only shows when the silo and/or pin badge has content.
     function refreshContextStack() {
         if (!contextStack) return;
         const siloVisible = siloPill && !siloPill.hidden;
@@ -44,141 +89,200 @@ export function init() {
         contextStack.hidden = !(siloVisible || pinVisible);
     }
 
-    function refreshPinBadge(meta) {
-        if (!pinBadge) return;
-        const labelEl = pinBadge.querySelector(".context-pin-label");
-        const active = Boolean(meta?.pinned_active);
-        const label = typeof meta?.pinned_display === "string" ? meta.pinned_display.trim() : "";
-        if (active && label) {
-            pinBadge.hidden = false;
-            if (labelEl) labelEl.textContent = `aula: "${label}"`;
-        } else {
-            pinBadge.hidden = true;
-            if (labelEl) labelEl.textContent = "";
-        }
-        refreshContextStack();
+    const metaRenderer = createMetaRenderer({ pinBadge, contextStack, refreshContextStack });
+    const { refreshPinBadge, hidePinBadge } = metaRenderer;
+
+    const { refreshSiloUi, getActiveDisciplineId } = createComposerController({
+        input,
+        inputArea,
+        siloPill,
+        scopeBtn,
+        contextStack,
+        refreshContextStack,
+        hidePinBadge,
+        onDisciplineChange: syncDisciplineQueryParam,
+        getStoredDisciplineId: () => getConversationDiscipline(getActiveConversation().id),
+        setStoredDisciplineId: (disciplineId) =>
+            setConversationDiscipline(getActiveConversation().id, disciplineId),
+    });
+
+    setIssLinkDisciplineResolver(() => getActiveDisciplineId());
+
+    /** @type {ReturnType<typeof createTurnController> | null} */
+    let turnController = null;
+
+    function pinFromSource(detail) {
+        const followUp = buildDisambiguationFollowUp({
+            discipline: String(detail?.discipline || ""),
+            slug: String(detail?.slug || ""),
+            title: String(detail?.lesson_title || ""),
+        });
+        input.value = followUp;
+        input.dispatchEvent(new Event("input"));
+        refreshSiloUi();
+        if (turnController?.queueFollowUp(followUp)) return;
+        void turnController?.send(followUp);
     }
 
-    function refreshSiloUi() {
-        if (!inputArea) return;
-        [...inputArea.classList].forEach((c) => {
-            if (c === "input-area--silo" || c.startsWith(SILO_CLASS_PREFIX)) {
-                inputArea.classList.remove(c);
-            }
-        });
-        const suffix = siloClassSuffix(input.value);
-        if (suffix && siloPill) {
-            inputArea.classList.add("input-area--silo", SILO_CLASS_PREFIX + suffix);
-            siloPill.hidden = false;
-            const name = siloDisplayName(input.value);
-            siloPill.textContent = name ? `Matéria: ${name}` : "";
-        } else if (siloPill) {
-            siloPill.hidden = true;
-            siloPill.textContent = "";
-        }
-        refreshContextStack();
+    const sourceHandlers = { onPinSource: pinFromSource };
+
+    function chipSelectFromRestore(candidate) {
+        const followUp = buildDisambiguationFollowUp(candidate);
+        input.value = followUp;
+        input.dispatchEvent(new Event("input"));
+        refreshSiloUi();
+        if (turnController?.queueFollowUp(followUp)) return;
+        void turnController?.send(followUp);
     }
 
-    async function sendMessage() {
-        if (sending) return;
-        const text = input.value.trim();
-        if (!text) return;
+    const chipHandlers = { onSelect: chipSelectFromRestore };
 
-        sending = true;
-        composer.clear();
-        composer.setEnabled(false);
-        status.setProcessing();
+    const chatView = createChatView({
+        chatBox,
+        emptyState,
+        renderMarkdown,
+        sourceHandlers,
+        chipHandlers,
+        onRegenerate: () => void turnController?.regenerateLast(),
+    });
 
-        chatView.appendMessage("user", text);
+    /** @type {ReturnType<typeof createComposer>} */
+    let composer;
 
-        const history = loadHistory();
-        history.push({ role: "user", text });
-        saveHistory(history);
+    /** @type {ReturnType<typeof createConversationSidebar> | null} */
+    let sidebar = null;
 
-        // "Thinking" indicator: the entrance globe returns here as a small
-        // spinner while the response loads.
-        const statusEl = document.createElement("div");
-        statusEl.className = "context-search-status thinking-indicator";
-        const thinkingCanvas = document.createElement("canvas");
-        thinkingCanvas.className = "thinking-globe";
-        thinkingCanvas.setAttribute("aria-hidden", "true");
-        const thinkingLabel = document.createElement("span");
-        thinkingLabel.textContent = "Thinking";
-        statusEl.append(thinkingCanvas, thinkingLabel);
-        chatBox.appendChild(statusEl);
+    /** @type {ReturnType<typeof createDisciplinePanel> | null} */
+    let disciplinePanel = null;
 
-        const thinkingGlobe = createGlobe(thinkingCanvas, {
-            sizeTo: "self",
-            formed: true,
-            spin: true,
-            particles: false,
-        });
-        thinkingGlobe.state.scale = 1.35; // fill the tiny canvas
+    function restorePinFromActiveConversation() {
+        const turns = loadConversation().turns;
+        restoreSessionPinFromHistory(turns, refreshPinBadge, hidePinBadge);
+    }
 
-        const { bubble, breadcrumbs } = chatView.startBotStream();
-
-        let streamSources = [];
-
-        const result = await chatService.sendStream(text, {
-            sessionId,
-            onMeta(meta) {
-                refreshPinBadge(meta);
-                streamSources = Array.isArray(meta?.sources) ? meta.sources : [];
-                setBreadcrumbsContent(breadcrumbs, streamSources);
-            },
-            onFirstToken() {
-                statusEl.classList.add("context-search-status--hidden");
-            },
-            onDelta: (fullText) => {
-                bubble.innerHTML = renderMarkdown(fullText);
-                chatView.scrollBottom();
-            },
-        });
-
-        if (!result.ok || result.isError || !String(result.fullText || "").length) {
-            statusEl.classList.add("context-search-status--hidden");
+    function bootstrapConversationView() {
+        const turns = loadHistory();
+        rebuildProgressFromHistory(turns);
+        if (turns.length) {
+            chatView.renderSavedHistory(turns);
+            window.__kernelGlobe?.dismiss(0);
         }
+        refreshContextWindowNotice(loadConversation().turns.length);
+        restorePinFromActiveConversation();
+        refreshSiloUi();
+        syncUrlState({
+            conversationId: getActiveConversation().id,
+            disciplineId: getActiveDisciplineId(),
+        });
+        updateHeaderConversationLabel(getActiveConversation().title);
+        disciplinePanel?.refresh();
+        syncBodyUiState();
+    }
 
-        bubble.classList.remove("cursor-blink");
+    function reloadConversationView() {
+        sessionId = getOrCreateSessionId();
+        chatView.clearChat();
+        bootstrapConversationView();
+        sidebar?.render();
+        updateHeaderConversationLabel(getActiveConversation().title);
+    }
 
-        if (!result.ok) {
-            bubble.classList.add("error");
-            bubble.textContent = result.message;
-            history.push({ role: "bot", text: result.message });
-        } else if (result.isError) {
-            bubble.classList.add("error");
-            bubble.textContent = result.fullText;
-            history.push({ role: "bot", text: result.fullText });
-        } else {
-            bubble.innerHTML = renderMarkdown(result.fullText);
-            highlightCodeBlocks(bubble);
-            history.push({
-                role: "bot",
-                text: result.fullText,
-                ...(streamSources.length ? { sources: streamSources } : {}),
-            });
-        }
-
-        saveHistory(history);
-
-        thinkingGlobe.stop();
-        composer.setEnabled(true);
-        status.setOnline();
+    function finishConversationReset() {
+        const { created } = activateEmptyOrCreateConversation();
+        sessionId = created ? regenerateSessionId() : getOrCreateSessionId();
+        chatView.clearChat();
+        chatView.showLanding();
+        input.value = "";
+        input.dispatchEvent(new Event("input"));
+        hidePinBadge();
+        refreshSiloUi();
+        refreshContextWindowNotice(0);
+        sidebar?.render();
+        syncUrlState({
+            conversationId: getActiveConversation().id,
+            disciplineId: getActiveDisciplineId(),
+        });
+        updateHeaderConversationLabel(getActiveConversation().title);
+        syncBodyUiState();
         composer.focus();
-        chatView.scrollBottom();
-        sending = false;
     }
 
     composer = createComposer({
         input,
         sendButton: sendBtn,
-        onSend: sendMessage,
+        onSend: () => void turnController?.send(),
+        onStop: () => turnController?.abortStream(),
         pillsRoot: document,
     });
 
-    input.addEventListener("input", refreshSiloUi);
-    refreshSiloUi();
+    turnController = createTurnController({
+        chatBox,
+        input,
+        chatView,
+        streamController,
+        composer,
+        status,
+        metaRenderer,
+        sourceHandlers,
+        refreshSiloUi,
+        getSessionId: () => sessionId,
+        getHistoryForApi,
+        loadHistory,
+        saveHistory,
+        onConversationReset: finishConversationReset,
+        refreshContextWindowNotice,
+    });
 
-    chatView.renderSavedHistory(loadHistory());
+    if (composerWrap) {
+        createSlashCommandMenu(input, composerWrap);
+    }
+
+    disciplinePanel = createDisciplinePanel({
+        input,
+        refreshSiloUi,
+        getDisciplineId: getActiveDisciplineId,
+        scopeBtn,
+        siloPill,
+    });
+
+    sidebar = createConversationSidebar({
+        sidebar: sidebarEl,
+        listEl: conversationList,
+        overlay: sidebarOverlay,
+        toggleBtn: sidebarToggle,
+        newBtn: sidebarNewBtn,
+        searchInput: sidebarSearch,
+        searchToggleBtn: sidebarSearchToggle,
+        collapseBtn: sidebarCollapseBtn,
+        logoBtn: sidebarLogoBtn,
+        getActiveId: () => getActiveConversation().id,
+        getActiveTitle: () => getActiveConversation().title || "Nova conversa",
+        onSelect: () => reloadConversationView(),
+        onNew: () => finishConversationReset(),
+        onDeleteActive: () => reloadConversationView(),
+    });
+
+    initShortcutsOverlay();
+
+    rejectInvalidDisciplineDeepLink();
+    applyDisciplineDeepLink(input, () => {
+        refreshSiloUi();
+        disciplinePanel?.refresh();
+    });
+    const deepLinked = applyConversationDeepLink(() => reloadConversationView());
+
+    input.addEventListener("input", refreshSiloUi);
+    window.addEventListener("kernel:chat-active", () => {
+        refreshSiloUi();
+        refreshHeaderConversationLabelVisibility();
+    });
+    refreshSiloUi();
+    refreshContextStack();
+
+    if (!deepLinked) {
+        bootstrapConversationView();
+    }
+    sidebar.render();
+    updateHeaderConversationLabel(getActiveConversation().title);
     composer.focus();
 }

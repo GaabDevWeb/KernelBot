@@ -8,6 +8,7 @@
 
    createGlobe(canvas, {
      sizeTo: "window" | "self",  // viewport, or the canvas' own CSS box
+     variant: "hero" | "thinking", // compact accent globe for loading state
      formed:  boolean,            // start fully assembled (no fly-in)
      spin:    boolean,            // self-rotate every frame
      spinSpeed: number,           // radians per second when spin is on
@@ -18,11 +19,17 @@
 export function createGlobe(canvas, opts = {}) {
   const {
     sizeTo = "window",
+    variant = "hero",
     formed = false,
     spin = false,
     spinSpeed = 0.7,
     particles: withParticles = true,
   } = opts;
+
+  const isThinking = variant === "thinking";
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const ctx = canvas.getContext("2d");
 
@@ -31,10 +38,10 @@ export function createGlobe(canvas, opts = {}) {
   let DPR = 1;
 
   function resize() {
-    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    DPR = Math.min(window.devicePixelRatio || 1, isThinking ? 2 : 2);
     if (sizeTo === "self") {
-      W = canvas.clientWidth || 32;
-      H = canvas.clientHeight || 32;
+      W = canvas.clientWidth || (isThinking ? 40 : 32);
+      H = canvas.clientHeight || (isThinking ? 40 : 32);
     } else {
       W = window.innerWidth;
       H = window.innerHeight;
@@ -45,8 +52,8 @@ export function createGlobe(canvas, opts = {}) {
   }
 
   /* ---------- geometry ---------- */
-  const LAT = 5;
-  const LON = 10;
+  const LAT = isThinking ? 4 : 5;
+  const LON = isThinking ? 9 : 10;
 
   const state = {
     rotY: -0.6,
@@ -83,7 +90,15 @@ export function createGlobe(canvas, opts = {}) {
       const dir = randomUnitVec();
       const mag = 2.6 + Math.random() * 2.4;
       const offset = { x: dir.x * mag, y: dir.y * mag, z: dir.z * mag };
-      faces.push({ corners, offset, p: formed ? 1 : 0 });
+      faces.push({
+        corners,
+        offset,
+        p: formed ? 1 : 0,
+        lat: i,
+        lon: j,
+        id: i * LON + j,
+        lesson: null,
+      });
     }
   }
 
@@ -105,9 +120,29 @@ export function createGlobe(canvas, opts = {}) {
     : [];
 
   /* ---------- projection ---------- */
-  const FOCAL = 2.7;
-  const PLATE_SCALE = 0.9;
-  const CORNER_R = 7;
+  const FOCAL = isThinking ? 2.4 : 2.7;
+  const PLATE_SCALE = isThinking ? 0.88 : 0.9;
+
+  const PALETTES = {
+    dark: {
+      hero: { fill: [220, 222, 228], stroke: [235, 237, 242], vertex: [248, 249, 252] },
+      thinking: { fill: [176, 147, 62], stroke: [200, 175, 110], vertex: [225, 210, 170] },
+    },
+    light: {
+      hero: { fill: [100, 108, 124], stroke: [75, 82, 98], vertex: [55, 62, 78] },
+      thinking: { fill: [176, 147, 62], stroke: [200, 175, 110], vertex: [225, 210, 170] },
+    },
+  };
+
+  function isLightTheme() {
+    return typeof document !== "undefined" &&
+      document.documentElement.getAttribute("data-theme") === "light";
+  }
+
+  function getPalette() {
+    const mode = isLightTheme() ? "light" : "dark";
+    return isThinking ? PALETTES[mode].thinking : PALETTES[mode].hero;
+  }
 
   function rotate(p) {
     const cy = Math.cos(state.rotY);
@@ -134,25 +169,127 @@ export function createGlobe(canvas, opts = {}) {
   /* ---------- render loop ---------- */
   let rafId = 0;
   let running = true;
+  let spinPaused = false;
+  let renderPaused = false;
   let startTime = performance.now();
   let prev = startTime;
 
+  const isMobileViewport =
+    sizeTo === "window" &&
+    variant === "hero" &&
+    typeof window !== "undefined" &&
+    window.innerWidth <= 820;
+
+  if (prefersReducedMotion || isMobileViewport) {
+    spinPaused = true;
+  }
+
+  const defaultTilt = state.tilt;
+
+  let pointerClientX = -1;
+  let pointerClientY = -1;
+  let hoveredFace = null;
+  let hoveredAnchor = null;
+  let lastDrawList = [];
+  const hoverListeners = new Set();
+
+  function pointInPolygon(x, y, pts) {
+    let inside = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const xi = pts[i].x;
+      const yi = pts[i].y;
+      const xj = pts[j].x;
+      const yj = pts[j].y;
+      const intersect =
+        yi > y !== yj > y &&
+        x < ((xj - xi) * (y - yi)) / (yj - yi + 1e-12) + xi;
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function pickFaceAt(canvasX, canvasY) {
+    for (let i = lastDrawList.length - 1; i >= 0; i--) {
+      const d = lastDrawList[i];
+      if (d.facing < 0.22) continue;
+      if (pointInPolygon(canvasX, canvasY, d.shape)) {
+        return d;
+      }
+    }
+    return null;
+  }
+
+  function updateHoverPick() {
+    if (pointerClientX < 0) {
+      if (hoveredFace !== null) {
+        hoveredFace = null;
+        hoveredAnchor = null;
+        for (const fn of hoverListeners) fn(null, null);
+      }
+      return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const x = pointerClientX - rect.left;
+    const y = pointerClientY - rect.top;
+    const hit = pickFaceAt(x, y);
+    const nextFace = hit?.face ?? null;
+
+    if (nextFace !== hoveredFace) {
+      hoveredFace = nextFace;
+      hoveredAnchor = hit
+        ? {
+            clientX: rect.left + hit.anchorX,
+            clientY: rect.top + hit.anchorY,
+          }
+        : null;
+      for (const fn of hoverListeners) fn(hoveredFace, hoveredAnchor);
+    } else if (hit && hoveredAnchor) {
+      hoveredAnchor.clientX = rect.left + hit.anchorX;
+      hoveredAnchor.clientY = rect.top + hit.anchorY;
+      for (const fn of hoverListeners) fn(hoveredFace, hoveredAnchor);
+    } else if (!hit && hoveredFace !== null) {
+      hoveredFace = null;
+      hoveredAnchor = null;
+      for (const fn of hoverListeners) fn(null, null);
+    }
+  }
+
   function frame(now) {
-    rafId = requestAnimationFrame(frame);
     if (!running) return;
+    rafId = requestAnimationFrame(frame);
+    if (renderPaused) return;
 
     const dt = (now - prev) / 1000;
     prev = now;
-    if (spin) state.rotY += spinSpeed * dt;
+    if (spin && !prefersReducedMotion && !spinPaused && !isMobileViewport) {
+      state.rotY += (isThinking ? spinSpeed * 0.85 : spinSpeed) * dt;
+    }
 
     const t = now - startTime;
     ctx.clearRect(0, 0, W, H);
 
-    const baseR = Math.min(W, H) * 0.28 * state.scale;
+    const palette = getPalette();
+    const light = isLightTheme();
+
+    const sizeMin = Math.min(W, H);
+    const baseR = sizeMin * (isThinking ? 0.4 : 0.28) * state.scale;
+    const cornerR = isThinking
+      ? Math.max(0.28, sizeMin * 0.032)
+      : 7;
+    const lineW = isThinking
+      ? Math.max(0.28, sizeMin / 88)
+      : 1;
+    const vertexR = isThinking
+      ? Math.max(0.35, sizeMin / 48)
+      : 1.6;
     const cxPix = state.cx * W;
-    const bob = Math.sin(t * 0.0006) * 0.012 * H;
+    const bob = isThinking
+      ? Math.sin(t * 0.0012) * 0.008 * H
+      : Math.sin(t * 0.0006) * 0.012 * H;
     const cyPix = state.cy * H + bob;
 
+    if (isThinking) drawThinkingGlow(t, cxPix, cyPix, baseR);
     if (withParticles) drawParticles(t);
 
     const drawList = [];
@@ -177,55 +314,118 @@ export function createGlobe(canvas, opts = {}) {
       }
 
       const facing = faceFacing(rotated);
-      const plate = buildPlate(proj);
+      const plate = buildPlate(proj, cornerR);
+      let ax = 0;
+      let ay = 0;
+      for (const p of plate.pts) {
+        ax += p.x;
+        ay += p.y;
+      }
+      ax /= plate.pts.length;
+      ay /= plate.pts.length;
+
       drawList.push({
+        face: f,
         proj,
         shape: plate.pts,
         radius: plate.r,
         z: zSum / proj.length,
         facing,
         op: lerp,
+        anchorX: ax,
+        anchorY: ay,
       });
     }
 
     drawList.sort((a, b) => a.z - b.z);
+    lastDrawList = drawList;
+    updateHoverPick();
 
     for (const d of drawList) {
       const front = (d.facing + 1) / 2;
-      const a = d.op * (0.05 + front * 0.18);
+      const isHovered = d.face === hoveredFace;
+      const fillMul = isThinking ? 0.06 : 0.18;
+      const hoverFillBoost = isHovered ? 1.55 : 1;
+      const a = d.op * (0.03 + front * fillMul) * hoverFillBoost;
       roundedPath(d.shape, d.radius);
-      ctx.fillStyle = `rgba(220, 222, 228, ${a})`;
+      const [fr, fg, fb] = palette.fill;
+      ctx.fillStyle = `rgba(${fr}, ${fg}, ${fb}, ${Math.min(0.42, a)})`;
       ctx.fill();
+      if (isHovered && !isThinking) {
+        const hoverRgb = light ? "40, 44, 52" : "255, 255, 255";
+        ctx.fillStyle = `rgba(${hoverRgb}, ${d.op * 0.045})`;
+        ctx.fill();
+      }
     }
 
-    ctx.globalCompositeOperation = "lighter";
+    ctx.globalCompositeOperation = isThinking ? "source-over" : "lighter";
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     for (const d of drawList) {
       const front = (d.facing + 1) / 2;
-      const edgeA = d.op * (0.12 + front * 0.6);
+      const isHovered = d.face === hoveredFace;
+      const edgeMul = isThinking ? 0.38 : 0.6;
+      const hoverEdgeBoost = isHovered ? 1.35 : 1;
+      const edgeA = d.op * (0.08 + front * edgeMul) * hoverEdgeBoost;
 
       roundedPath(d.shape, d.radius);
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = `rgba(235, 237, 242, ${edgeA})`;
-      ctx.shadowColor = "rgba(255, 255, 255, 0.85)";
-      ctx.shadowBlur = front > 0.5 ? 8 : 0;
+      ctx.lineWidth = isHovered ? lineW * 1.15 : lineW;
+      const [sr, sg, sb] = palette.stroke;
+      ctx.strokeStyle = `rgba(${sr}, ${sg}, ${sb}, ${Math.min(0.95, edgeA)})`;
+      if (!isThinking) {
+        ctx.shadowColor = light
+          ? (isHovered ? "rgba(60, 65, 80, 0.45)" : "rgba(80, 85, 100, 0.3)")
+          : (isHovered ? "rgba(255, 255, 255, 0.95)" : "rgba(255, 255, 255, 0.85)");
+        ctx.shadowBlur = isHovered ? 14 : front > 0.5 ? 8 : 0;
+      }
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      if (front > 0.55) {
+      const vtxThreshold = isThinking ? 0.92 : 0.55;
+      if (!isThinking && front > vtxThreshold) {
+        const [vr, vg, vb] = palette.vertex;
         for (const v of d.proj) {
           ctx.beginPath();
-          ctx.arc(v.x, v.y, 1.6, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(248, 249, 252, ${d.op * 0.55})`;
+          ctx.arc(v.x, v.y, vertexR, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${vr}, ${vg}, ${vb}, ${d.op * 0.55})`;
           ctx.fill();
         }
       }
     }
     ctx.globalCompositeOperation = "source-over";
+
+    if (isThinking) drawThinkingOrbit(t, cxPix, cyPix, baseR);
   }
 
-  function buildPlate(proj) {
+  function drawThinkingGlow(t, cxPix, cyPix, baseR) {
+    const pulse = 0.5 + 0.5 * Math.sin(t * 0.0028);
+    const glowR = baseR * (1.18 + pulse * 0.05);
+    const grd = ctx.createRadialGradient(cxPix, cyPix, 0, cxPix, cyPix, glowR);
+    grd.addColorStop(0, `rgba(176, 147, 62, ${0.14 + pulse * 0.06})`);
+    grd.addColorStop(0.6, "rgba(176, 147, 62, 0.04)");
+    grd.addColorStop(1, "rgba(176, 147, 62, 0)");
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(cxPix, cyPix, glowR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawThinkingOrbit(t, cxPix, cyPix, baseR) {
+    const orbitR = baseR * 1.05;
+    ctx.globalCompositeOperation = "source-over";
+    for (let i = 0; i < 2; i++) {
+      const angle = t * 0.0014 + (i * Math.PI * 2) / 2;
+      const x = cxPix + Math.cos(angle) * orbitR;
+      const y = cyPix + Math.sin(angle) * orbitR * 0.35;
+      const tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 0.003 + i));
+      ctx.beginPath();
+      ctx.arc(x, y, 0.55, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(164, 196, 228, ${0.22 * tw})`;
+      ctx.fill();
+    }
+  }
+
+  function buildPlate(proj, cornerR) {
     const pts = dedupe(proj);
     let cx = 0;
     let cy = 0;
@@ -247,7 +447,7 @@ export function createGlobe(canvas, opts = {}) {
       const b = inset[(i + 1) % inset.length];
       minEdge = Math.min(minEdge, Math.hypot(a.x - b.x, a.y - b.y));
     }
-    const r = Math.max(1.2, Math.min(CORNER_R, minEdge * 0.42));
+    const r = Math.max(isThinking ? 0.35 : 1.2, Math.min(cornerR, minEdge * (isThinking ? 0.28 : 0.42)));
     return { pts: inset, r };
   }
 
@@ -312,11 +512,13 @@ export function createGlobe(canvas, opts = {}) {
 
   function drawParticles(t) {
     ctx.globalCompositeOperation = "lighter";
+    const light = isLightTheme();
+    const particleRgb = light ? "80, 85, 100" : "200, 202, 210";
     for (const p of particles) {
       const tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 0.001 + p.tw));
       ctx.beginPath();
       ctx.arc(p.x * W, p.y * H, p.r * p.z, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(200, 202, 210, ${0.06 * tw * p.z})`;
+      ctx.fillStyle = `rgba(${particleRgb}, ${0.06 * tw * p.z})`;
       ctx.fill();
     }
     ctx.globalCompositeOperation = "source-over";
@@ -327,13 +529,99 @@ export function createGlobe(canvas, opts = {}) {
   if (sizeTo === "window") {
     window.addEventListener("resize", resize);
   }
+
+  function onVisibilityChange() {
+    renderPaused = document.hidden;
+  }
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    onVisibilityChange();
+  }
+
   rafId = requestAnimationFrame(frame);
 
   function stop() {
     running = false;
+    renderPaused = true;
     cancelAnimationFrame(rafId);
     if (sizeTo === "window") window.removeEventListener("resize", resize);
+    if (typeof document !== "undefined") {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    }
   }
 
-  return { state, faces, resize, stop };
+  function globeMetrics() {
+    const sizeMin = Math.min(W, H);
+    const baseR = sizeMin * (isThinking ? 0.4 : 0.28) * state.scale;
+    return {
+      cx: state.cx * W,
+      cy: state.cy * H,
+      radius: baseR * 1.06,
+    };
+  }
+
+  function hitTest(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const { cx, cy, radius } = globeMetrics();
+    const dx = x - cx;
+    const dy = y - cy;
+    return dx * dx + dy * dy <= radius * radius;
+  }
+
+  function getAutoSpinOmega() {
+    if (!spin || prefersReducedMotion) return 0;
+    return (isThinking ? spinSpeed * 0.85 : spinSpeed);
+  }
+
+  function setSpinPaused(paused) {
+    spinPaused = Boolean(paused);
+  }
+
+  function setRenderPaused(paused) {
+    renderPaused = Boolean(paused);
+    if (!renderPaused && running) {
+      prev = performance.now();
+    }
+  }
+
+  function setPointer(clientX, clientY) {
+    if (clientX < 0 || clientY < 0) {
+      pointerClientX = -1;
+      pointerClientY = -1;
+      updateHoverPick();
+      return;
+    }
+    pointerClientX = clientX;
+    pointerClientY = clientY;
+    if (lastDrawList.length) updateHoverPick();
+  }
+
+  function getHoveredFace() {
+    return hoveredFace;
+  }
+
+  function onHoverChange(fn) {
+    hoverListeners.add(fn);
+    return () => hoverListeners.delete(fn);
+  }
+
+  return {
+    state,
+    faces,
+    resize,
+    stop,
+    hitTest,
+    globeMetrics,
+    getDefaultTilt: () => defaultTilt,
+    getAutoSpinOmega,
+    setSpinPaused,
+    setRenderPaused,
+    setPointer,
+    getHoveredFace,
+    onHoverChange,
+    getLatCount: () => LAT,
+    getLonCount: () => LON,
+  };
 }

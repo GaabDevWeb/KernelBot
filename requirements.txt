@@ -6,7 +6,9 @@ jinja2
 rank-bm25
 watchdog
 pytest
+playwright
 PyMySQL
 cryptography
 PyYAML
 jsonschema
+cursor-sdk
