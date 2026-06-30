@@ -45,12 +45,10 @@ export function init() {
     const input = /** @type {HTMLTextAreaElement | null} */ (document.getElementById("message-input"));
     const sendBtn = document.getElementById("send-button");
     const emptyState = document.getElementById("empty-state");
-    const statusBadge = document.getElementById("status-badge");
     const inputArea = document.querySelector(".input-area");
     const siloPill = document.getElementById("silo-pill");
     const pinBadge = document.getElementById("context-pin-badge");
     const contextStack = document.getElementById("context-stack");
-    const activeDisciplineBadge = document.getElementById("active-discipline-badge");
     const scopeBtn = document.getElementById("scope-btn");
     const contextWindowNoticeEl = document.getElementById("context-window-notice");
     const composerWrap = document.getElementById("composer-wrap");
@@ -68,14 +66,14 @@ export function init() {
 
     let sessionId = getOrCreateSessionId();
 
-    if (!chatBox || !input || !sendBtn || !statusBadge) {
-        console.error("[ACL] DOM esperado ausente (chat, input, send ou status).");
+    if (!chatBox || !input || !sendBtn) {
+        console.error("[ACL] DOM esperado ausente (chat, input ou send).");
         return;
     }
 
     const chatService = new ChatService();
     const streamController = createStreamController(chatService);
-    const status = createStatusBadge(statusBadge);
+    const status = createStatusBadge();
     const contextWindowNotice = createContextWindowNotice(contextWindowNoticeEl);
 
     function refreshContextWindowNotice(turnCount) {
@@ -96,7 +94,6 @@ export function init() {
         input,
         inputArea,
         siloPill,
-        activeDisciplineBadge,
         scopeBtn,
         contextStack,
         refreshContextStack,

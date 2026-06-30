@@ -59,7 +59,7 @@ export function createComposer({
             input.classList.toggle("composer-input--streaming", streaming);
             sendButton.setAttribute(
                 "aria-label",
-                streaming ? "Gerando resposta…" : defaultSendLabel,
+                streaming ? "Parar geração" : defaultSendLabel,
             );
             sendButton.setAttribute(
                 "title",

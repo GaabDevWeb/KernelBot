@@ -160,19 +160,6 @@
     background: var(--brand-surface);
 }
 
-.active-discipline-badge {
-    cursor: pointer;
-}
-
-.active-discipline-badge:focus-visible {
-    outline: 2px solid var(--brand-primary);
-    outline-offset: 2px;
-}
-
-.active-discipline-badge--panel-open {
-    box-shadow: 0 0 0 1px var(--brand-primary);
-}
-
 @media (prefers-reduced-motion: reduce) {
     .discipline-panel {
         transition: none;

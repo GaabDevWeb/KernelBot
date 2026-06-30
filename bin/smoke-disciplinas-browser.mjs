@@ -158,9 +158,9 @@ async function preparePage(page) {
 async function waitForOnline(page, timeoutMs = 90_000) {
   await page.waitForFunction(
     () => {
-      const badge = document.getElementById("status-badge");
       const send = document.getElementById("send-button");
-      return badge?.textContent?.trim() === "Online" && send && !send.disabled;
+      const input = document.getElementById("message-input");
+      return send && !send.disabled && input;
     },
     { timeout: timeoutMs },
   );
@@ -210,9 +210,9 @@ async function askQuestion(page, question, index, disciplineId) {
   await page.waitForTimeout(200);
 
   const feBeforeSend = await page.evaluate(() => ({
-    status: document.getElementById("status-badge")?.textContent?.trim(),
-    activeDiscipline: document.querySelector(".active-discipline-badge__label")?.textContent?.trim() || null,
-    activeBadgeVisible: document.getElementById("active-discipline-badge")?.hidden === false,
+    sendReady: Boolean(document.getElementById("send-button") && !document.getElementById("send-button")?.disabled),
+    activeDiscipline: document.querySelector(".silo-pill__name")?.textContent?.trim() || null,
+    siloPillVisible: document.getElementById("silo-pill")?.hidden === false,
     scopeItems: document.querySelectorAll("#scope-menu-list .scope-option").length,
     sendDisabled: document.getElementById("send-button")?.disabled,
   }));
@@ -255,7 +255,6 @@ async function askQuestion(page, question, index, disciplineId) {
         richSources: botRow?.querySelectorAll(".source-card--rich").length || 0,
         sourcesHeading: botRow?.querySelector(".message-sources__heading")?.textContent?.trim() || null,
         sourceMeta,
-        status: document.getElementById("status-badge")?.textContent?.trim(),
         pinVisible: document.getElementById("context-pin-badge")?.hidden === false,
         thinkingSeen: !!document.querySelector(".thinking-indicator"),
       };
@@ -269,7 +268,6 @@ async function askQuestion(page, question, index, disciplineId) {
     feAfter = await page.evaluate(() => ({
       userText: document.querySelector(".message-row.user .message")?.textContent?.trim(),
       botLen: [...document.querySelectorAll(".message-row.bot .message")].pop()?.textContent?.length || 0,
-      status: document.getElementById("status-badge")?.textContent?.trim(),
     }));
   }
 
@@ -296,11 +294,11 @@ async function askQuestion(page, question, index, disciplineId) {
       pageErrors,
       networkLog,
       checks: {
-        statusOnline: (feAfter.status || feBeforeSend.status) === "Online",
+        sendReady: feBeforeSend.sendReady,
         userMessageMatch: feAfter.userText === question,
         gotBotReply: (feAfter.botLen || 0) > 20,
         scopeMenuPopulated: feBeforeSend.scopeItems >= 7,
-        activeBadgeWhenCommand: !hasCommand || feBeforeSend.activeBadgeVisible,
+        siloPillWhenCommand: !hasCommand || feBeforeSend.siloPillVisible,
         hasSources: (feAfter.richSources || 0) > 0 || (sources.length || 0) > 0,
       },
     },
@@ -380,7 +378,7 @@ async function main() {
       (r) =>
         r.frontend.consoleErrors.length ||
         r.frontend.pageErrors.length ||
-        !r.frontend.checks.statusOnline ||
+        !r.frontend.checks.sendReady ||
         !r.frontend.checks.gotBotReply,
     ).length,
     byDiscipline: DISCIPLINES.map((d) => {

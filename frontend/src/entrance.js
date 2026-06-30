@@ -82,7 +82,6 @@ import { createLandingGlobeController } from "./globe/landingController.js";
     if (sub) sub.style.opacity = "1";
     controller.mountResting();
   } else {
-    const badge = document.getElementById("status-badge");
     const inputArea = document.querySelector(".input-area");
 
     function cycleSuggestions() {
@@ -140,7 +139,6 @@ import { createLandingGlobeController } from "./globe/landingController.js";
       tl.to(".entrance-subtitle", { autoAlpha: 1, y: 0, duration: 0.4 }, "-=0.25");
       tl.to(".entrance-discipline-pills", { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.03 }, "-=0.15");
 
-      tl.to("#status-badge", { autoAlpha: 1, y: 0, duration: 0.45 }, "-=0.3");
       tl.to(".input-area", {
         autoAlpha: 1,
         y: 0,
@@ -163,9 +161,8 @@ import { createLandingGlobeController } from "./globe/landingController.js";
     gsap.set(".entrance-discipline-pills", { autoAlpha: 0, y: 8 });
     gsap.set(".entrance-subtitle", { autoAlpha: 0, y: 6 });
 
-    [badge, inputArea].forEach((el) => el && el.classList.remove("entrance-init-hidden"));
-    gsap.set(badge, { autoAlpha: 0, y: 0 });
-    gsap.set(inputArea, { autoAlpha: 0, y: 20 });
+    inputArea?.classList.remove("entrance-init-hidden");
+    if (inputArea) gsap.set(inputArea, { autoAlpha: 0, y: 20 });
 
     master = buildTimeline();
   }

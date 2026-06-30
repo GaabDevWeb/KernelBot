@@ -2,6 +2,7 @@
 /* Brand accent: #B0933E — use tokens, never hardcode. Error red is semantic only (--error). */
 :root {
     --bg: #0a0a0a;
+    --white: #F5F5F5;
     --surface: #27272A;
     --surface-2: #2F2F33;
     --border: #3F3F46;
@@ -13,7 +14,7 @@
     --accent: var(--brand-primary);
     --color-hint: var(--text-muted);
     --color-code-inline: #D4BC82;
-    --text: #E4E4E7;
+    --text: var(--white);
     --text-muted: #B4B4BC;
     --bot-bg: #27272A;
     --error: #F87171;
@@ -157,7 +158,7 @@ body.ui-landing .header-conversation-label {
     margin-bottom: 0;
 }
 
-/* Pinned-context badge — same look as the silo: gray bg, white icon + text. */
+/* Pinned-context badge — same look as the silo: gray bg, bright icon + text. */
 .context-pin-badge {
     display: inline-flex;
     align-items: center;
@@ -184,68 +185,6 @@ body.ui-landing .header-conversation-label {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.header-badge {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 3px 8px;
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    text-transform: uppercase;
-    border-radius: var(--radius-2xl);
-}
-
-.header-badge.online {
-    border-color: var(--success);
-    color: var(--success);
-}
-
-.header-badge.warning {
-    border-color: var(--warning);
-    color: var(--warning);
-    background: var(--warning-bg);
-}
-
-/* ===== Disciplina activa (header) ===== */
-.active-discipline-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    max-width: min(52vw, 320px);
-    padding: 4px 10px;
-    border: 1px solid var(--accent);
-    background: var(--brand-surface);
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text);
-    overflow: hidden;
-}
-
-.active-discipline-badge[hidden] {
-    display: none;
-}
-
-.active-discipline-badge__dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--accent);
-    flex-shrink: 0;
-    box-shadow: 0 0 8px var(--brand-muted);
-}
-
-.active-discipline-badge__label {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.active-discipline-badge__cmd {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text-muted);
-    flex-shrink: 0;
 }
 
 /* ===== Chat Area ===== */
@@ -439,16 +378,7 @@ body.ui-landing .header-conversation-label {
 .message-toolbar {
     display: flex;
     gap: 6px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s ease;
     margin-top: 2px;
-}
-
-.message-row:hover .message-toolbar,
-.message-row:focus-within .message-toolbar {
-    opacity: 1;
-    pointer-events: auto;
 }
 
 .message-row.user .message-toolbar {
@@ -462,18 +392,48 @@ body.ui-landing .header-conversation-label {
 }
 
 .message-toolbar__btn {
-    font-size: 10px;
-    padding: 2px 8px;
-    border: 1px solid var(--border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
     border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-muted);
     cursor: pointer;
+    transition: opacity 0.15s ease;
 }
 
-.message-toolbar__btn:hover {
-    color: var(--text);
-    border-color: var(--brand-muted);
+.message-toolbar__icon {
+    display: block;
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    opacity: 0.72;
+    pointer-events: none;
+    transition: opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: scale(1);
+}
+
+.message-toolbar__icon--fade {
+    opacity: 0 !important;
+    transform: scale(0.88);
+}
+
+.message-toolbar__btn:hover .message-toolbar__icon {
+    opacity: 1;
+}
+
+.message-toolbar__btn--copied .message-toolbar__icon {
+    opacity: 1;
+}
+
+.message-toolbar__btn:focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
 }
 
 .acl-disclaimer-collapsible {
@@ -593,12 +553,6 @@ body.ui-landing .header-conversation-label {
     backdrop-filter: blur(14px);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     animation: fade-in-up 1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
-}
-
-body.chat-active .input-area {
-    max-width: min(var(--chat-read-max), 82%);
-    margin-left: 24px;
-    margin-right: auto;
 }
 
 body.chat-active .composer-wrap {
@@ -787,16 +741,10 @@ body.chat-active .composer-wrap {
 
 #send-button.send-button--streaming::after {
     content: "";
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(10, 10, 10, 0.25);
-    border-top-color: var(--brand-on-primary);
-    border-radius: 50%;
-    animation: send-spin 0.75s linear infinite;
-}
-
-@keyframes send-spin {
-    to { transform: rotate(360deg); }
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    background: var(--brand-on-primary);
 }
 
 .composer-input--streaming {
@@ -1702,7 +1650,7 @@ body.chat-active .app-shell {
     border: none;
     border-radius: var(--radius-md);
     background: transparent;
-    color: #E1E2E6;
+    color: var(--text);
     cursor: pointer;
     flex-shrink: 0;
     transition: background 0.15s ease, opacity 0.15s ease;
@@ -1829,7 +1777,7 @@ body.chat-active .app-shell {
     border: none;
     border-radius: var(--radius-md);
     background: transparent;
-    color: #E1E2E6;
+    color: var(--text);
     cursor: pointer;
     transition: background 0.15s ease;
 }
@@ -2305,11 +2253,6 @@ textarea:focus-visible,
         padding: 5px;
     }
 
-    body.chat-active .input-area {
-        margin-left: 16px;
-        max-width: min(var(--chat-read-max), 94%);
-    }
-
     .input-row {
         gap: 6px;
         padding: 3px 4px 3px 3px;
@@ -2361,12 +2304,9 @@ textarea:focus-visible,
         transform: none;
     }
 
-    #send-button.send-button--streaming::after {
-        animation: none;
-    }
-
     .scroll-to-bottom-fab,
     .message-toolbar,
+    .message-toolbar__icon,
     .conversation-sidebar__menu-trigger,
     .code-copy-btn {
         transition: none;

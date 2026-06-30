@@ -5,14 +5,12 @@ import {
     siloDisplayName,
 } from "../utils/contextLabel.js";
 import { commandForDiscipline, getDisciplines, labelForDiscipline } from "../config/disciplines.js";
-import { isLanding } from "../utils/uiState.js";
 
 /**
  * @param {{
  *   input: HTMLTextAreaElement,
  *   inputArea: HTMLElement | null,
  *   siloPill: HTMLElement | null,
- *   activeDisciplineBadge: HTMLElement | null,
  *   scopeBtn: HTMLElement | null,
  *   contextStack: HTMLElement | null,
  *   refreshContextStack: () => void,
@@ -27,7 +25,6 @@ export function createComposerController(deps) {
         input,
         inputArea,
         siloPill,
-        activeDisciplineBadge,
         scopeBtn,
         refreshContextStack,
         hidePinBadge,
@@ -132,23 +129,6 @@ export function createComposerController(deps) {
             siloPill.removeAttribute("role");
             siloPill.removeAttribute("tabindex");
             siloPill.removeAttribute("title");
-        }
-
-        if (activeDisciplineBadge) {
-            const labelEl = activeDisciplineBadge.querySelector(".active-discipline-badge__label");
-            const cmdEl = activeDisciplineBadge.querySelector(".active-discipline-badge__cmd");
-            const showInHeader = Boolean(active) && isLanding();
-            if (showInHeader) {
-                activeDisciplineBadge.hidden = false;
-                if (labelEl) labelEl.textContent = active.label;
-                if (cmdEl) cmdEl.textContent = active.command;
-                activeDisciplineBadge.title = `Buscando em: ${active.label}`;
-            } else {
-                activeDisciplineBadge.hidden = true;
-                if (labelEl) labelEl.textContent = "";
-                if (cmdEl) cmdEl.textContent = "";
-                activeDisciplineBadge.removeAttribute("title");
-            }
         }
 
         if (scopeBtn) {

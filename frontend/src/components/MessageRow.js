@@ -298,6 +298,86 @@ function buildRichSourceCard(detail, handlers) {
     return li;
 }
 
+const COPY_ICON_SRC = "/assets/images/copy_icon.svg";
+const OK_ICON_SRC = "/assets/images/ok_icon.svg";
+const REGENERATE_ICON_SRC = "/assets/images/regenerate_icon.svg";
+const COPY_SUCCESS_MS = 1500;
+const ICON_FADE_MS = 220;
+
+function prefersReducedMotion() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/**
+ * @param {HTMLImageElement} img
+ * @param {string} nextSrc
+ */
+function crossfadeToolbarIcon(img, nextSrc) {
+    const current = img.getAttribute("src") || "";
+    if (current === nextSrc || img.src.endsWith(nextSrc)) {
+        return Promise.resolve();
+    }
+    if (prefersReducedMotion()) {
+        img.src = nextSrc;
+        return Promise.resolve();
+    }
+    img.classList.add("message-toolbar__icon--fade");
+    return new Promise((resolve) => {
+        window.setTimeout(() => {
+            img.src = nextSrc;
+            requestAnimationFrame(() => {
+                img.classList.remove("message-toolbar__icon--fade");
+                window.setTimeout(resolve, ICON_FADE_MS);
+            });
+        }, ICON_FADE_MS);
+    });
+}
+
+/**
+ * @param {HTMLButtonElement} btn
+ * @param {string} defaultLabel
+ */
+function flashCopySuccess(btn, defaultLabel) {
+    const img = btn.querySelector(".message-toolbar__icon");
+    if (!img) return;
+    if (btn._copyRevertTimer) clearTimeout(btn._copyRevertTimer);
+
+    void (async () => {
+        await crossfadeToolbarIcon(img, OK_ICON_SRC);
+        btn.setAttribute("aria-label", "Copiado");
+        btn.classList.add("message-toolbar__btn--copied");
+        btn._copyRevertTimer = window.setTimeout(() => {
+            void (async () => {
+                btn.classList.remove("message-toolbar__btn--copied");
+                await crossfadeToolbarIcon(img, COPY_ICON_SRC);
+                btn.setAttribute("aria-label", defaultLabel);
+                btn._copyRevertTimer = null;
+            })();
+        }, COPY_SUCCESS_MS);
+    })();
+}
+
+/**
+ * @param {string} className
+ * @param {string} iconSrc
+ * @param {string} ariaLabel
+ */
+function createToolbarIconButton(className, iconSrc, ariaLabel) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = className;
+    btn.setAttribute("aria-label", ariaLabel);
+    const img = document.createElement("img");
+    img.className = "message-toolbar__icon";
+    img.src = iconSrc;
+    img.alt = "";
+    img.setAttribute("aria-hidden", "true");
+    img.width = 14;
+    img.height = 14;
+    btn.appendChild(img);
+    return btn;
+}
+
 /**
  * @param {HTMLElement} row
  * @param {'user'|'bot'} role
@@ -308,24 +388,22 @@ export function mountMessageToolbar(row, role, text, opts = {}) {
     const toolbar = document.createElement("div");
     toolbar.className = "message-toolbar";
 
-    const copyBtn = document.createElement("button");
-    copyBtn.type = "button";
-    copyBtn.className = "message-toolbar__btn";
-    copyBtn.textContent = role === "user" ? "Copiar" : "Copiar resposta";
-    copyBtn.setAttribute("aria-label", copyBtn.textContent);
+    const copyLabel = role === "user" ? "Copiar" : "Copiar resposta";
+    const copyBtn = createToolbarIconButton("message-toolbar__btn", COPY_ICON_SRC, copyLabel);
     copyBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
         const ok = await copyToClipboard(text);
-        showToast(ok ? "Copiado" : "Não foi possível copiar");
+        if (ok) flashCopySuccess(copyBtn, copyLabel);
+        else showToast("Não foi possível copiar");
     });
     toolbar.appendChild(copyBtn);
 
     if (role === "bot" && opts.showRegenerate && typeof opts.onRegenerate === "function") {
-        const regenBtn = document.createElement("button");
-        regenBtn.type = "button";
-        regenBtn.className = "message-toolbar__btn";
-        regenBtn.textContent = "Regenerar";
-        regenBtn.setAttribute("aria-label", "Regenerar última resposta");
+        const regenBtn = createToolbarIconButton(
+            "message-toolbar__btn",
+            REGENERATE_ICON_SRC,
+            "Regenerar última resposta",
+        );
         regenBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             opts.onRegenerate?.();
