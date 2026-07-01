@@ -19,6 +19,8 @@ build/
 *.egg-info/
 
 .cursor-chat-workspace/
+.playwright-mcp/
+audit-*.png
 
 content/
 scripts/

@@ -138,7 +138,7 @@ Se a resposta for vaga ou disser que não encontrou na base:
 | Chat não abre (`connection refused`) | Servidor local não está em http://127.0.0.1:8001 |
 | Perdeu o histórico | Clicou Nova conversa, outro browser, ou limpou dados do site |
 
-Operadores: [TESTE-LOCAL.md](../../TESTE-LOCAL.md).
+Operadores: [13-staging-testes.md](13-staging-testes.md).
 
 ---
 

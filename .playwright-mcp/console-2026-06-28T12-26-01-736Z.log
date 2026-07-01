@@ -1,2 +1,0 @@
-[    8370ms] [ERROR] [ACL] Falha no stream: TypeError: network error @ http://127.0.0.1:8001/src/api.js:196
-[  139651ms] [ERROR] [ACL] Falha no stream: TypeError: network error @ http://127.0.0.1:8001/src/api.js:196

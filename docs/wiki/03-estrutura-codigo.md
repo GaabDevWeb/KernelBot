@@ -31,7 +31,6 @@ KernelBot/
 ├── bin/                         # staging-setup.sh, staging-serve.sh, …
 ├── docs/wiki/                   # Esta documentação
 ├── docker-compose.staging.yml
-├── TESTE-LOCAL.md
 ├── .env / .env.example
 └── .env.staging.local           # MySQL local :3307 (não commitar)
 ```

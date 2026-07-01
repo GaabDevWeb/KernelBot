@@ -27,3 +27,15 @@ export function syncBodyUiState() {
     document.body.classList.toggle("ui-landing", isLanding());
     refreshHeaderConversationLabelVisibility();
 }
+
+/** Garante composer visível após skip da landing (F5 com histórico, deep link, etc.). */
+export function revealComposerChrome() {
+    document.querySelectorAll(".entrance-init-hidden").forEach((el) => {
+        el.classList.remove("entrance-init-hidden");
+    });
+    const inputArea = document.querySelector(".input-area");
+    const gsap = typeof window.gsap !== "undefined" ? window.gsap : null;
+    if (inputArea && gsap) {
+        gsap.set(inputArea, { autoAlpha: 1, y: 0, clearProps: "transform" });
+    }
+}

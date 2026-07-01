@@ -26,7 +26,7 @@
 - Mascaram tokens em mensagens de log.
 - `exc_info=True` preservado — **não** amputar stack traces por defeito.
 
-**Backlog:** expandir padrões (API keys adicionais, URLs com credenciais) — [16-backlog.md](16-backlog.md).
+**Melhoria futura:** expandir padrões (API keys adicionais, URLs com credenciais).
 
 ## Erros de ingest (ISS)
 
@@ -67,4 +67,4 @@
 
 ## Ver também
 
-- [16-backlog.md](16-backlog.md)
+- [12-configuracao.md](12-configuracao.md)

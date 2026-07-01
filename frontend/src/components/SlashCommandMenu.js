@@ -1,5 +1,5 @@
 import { DISCIPLINES } from "../config/disciplines.js";
-import { stripLeadingDisciplineCommand } from "../scopeMenu.js";
+import { applyDisciplineCommand } from "../scopeMenu.js";
 
 const EXTRA_COMMANDS = [
     { command: "/doc", label: "Documentação", description: "Documentação interna do sistema" },
@@ -73,6 +73,10 @@ export function createSlashCommandMenu(input, anchor) {
             } else {
                 btn.setAttribute("aria-selected", "false");
             }
+            btn.setAttribute(
+                "aria-label",
+                `${item.command} — ${item.label}. ${item.description}`,
+            );
             btn.innerHTML =
                 `<span class="slash-command-option__row">` +
                 `<span class="slash-command-option__cmd">${item.command}</span>` +
@@ -88,8 +92,7 @@ export function createSlashCommandMenu(input, anchor) {
     }
 
     function select(command) {
-        const tail = stripLeadingDisciplineCommand(input.value);
-        input.value = tail ? `${command} ${tail}` : `${command} `;
+        input.value = applyDisciplineCommand(input.value, command);
         input.dispatchEvent(new Event("input"));
         hide();
         input.focus();

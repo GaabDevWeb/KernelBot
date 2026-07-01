@@ -49,7 +49,7 @@ chmod +x bin/*.sh
 
 **Não uses** `python main.py` directo se o `.env` apontar para produção — usa sempre `./bin/staging-serve.sh`.
 
-Guia completo: [TESTE-LOCAL.md](../../TESTE-LOCAL.md) · wiki [13-staging-testes.md](13-staging-testes.md).
+Guia completo: [13-staging-testes.md](13-staging-testes.md).
 
 ### Testes automatizados
 
@@ -74,12 +74,11 @@ Suites relevantes por área:
 
 Depois de mudanças em retrieval, UI ou contexto:
 
-| Bateria | Ficheiro | Foco |
-|---------|----------|------|
-| Escopo, pin, advisory | [PERGUNTAS-SMOKE-ESCOPO-PIN.md](../../PERGUNTAS-SMOKE-ESCOPO-PIN.md) | 10 turnos rápidos |
-| Memória multi-turno | [PERGUNTAS-SMOKE-HISTORICO-CHAT.md](../../PERGUNTAS-SMOKE-HISTORICO-CHAT.md) | 3 turnos H1–H3 |
+```bash
+python3 bin/validate-frontend.py
+```
 
-URL: http://127.0.0.1:8001 · hard refresh após deploy local.
+URL: http://127.0.0.1:8001 · hard refresh após deploy local. Detalhes em [13-staging-testes.md](13-staging-testes.md).
 
 ---
 
@@ -133,9 +132,6 @@ Depois: reiniciar o bot ou `POST /chat` com `message=/reload` (Bearer `ACL_RELOA
 | Wiki técnica | `docs/wiki/` — actualizar índice em [README.md](README.md) |
 | Camada pública | `00-inicio-publico.md`, `18-contribuir.md`, `19-faq-usuario.md` |
 | Entrada curta na raiz | `documentation.md` (aponta para a wiki) |
-| Prompt agente doc (Fase 6) | [PROMPT-AGENTE-DOCUMENTACAO.md](../PROMPT-AGENTE-DOCUMENTACAO.md) |
-| Prompt agente deploy Railway | [PROMPT-AGENTE-DEPLOY-RAILWAY.md](../PROMPT-AGENTE-DEPLOY-RAILWAY.md) |
-| Prompt agente produto & features | [PROMPT-AGENTE-PRODUTO-FEATURES.md](../PROMPT-AGENTE-PRODUTO-FEATURES.md) |
 
 Ao adicionar página nova: incluir no índice da wiki e, se for pública, linkar a partir de [00-inicio-publico.md](00-inicio-publico.md).
 
@@ -154,4 +150,3 @@ Ao adicionar página nova: incluir no índice da wiki e, se for pública, linkar
 
 - [FAQ — utilizador](19-faq-usuario.md) — linguagem para alunos (útil ao escrever UX)
 - [Segurança e logs](14-seguranca-observabilidade.md) — redacção de segredos
-- [Backlog](16-backlog.md) — débitos conhecidos

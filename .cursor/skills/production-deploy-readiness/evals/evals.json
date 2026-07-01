@@ -1,0 +1,183 @@
+{
+  "skill_name": "production-deploy-readiness",
+  "evals": [
+    {
+      "id": 1,
+      "name": "auditoria-completa-pre-deploy",
+      "category": "happy_path",
+      "tags": ["kernelbot", "docker", "produção"],
+      "prompt": "KernelBot aprovado para primeiro deploy público. Executa /production-deploy-readiness: audita Docker, .env.example, segurança (CSP/headers), dependências prod vs dev, valida pytest + validate-frontend + Docker build, entrega relatório final completo.",
+      "expected_output": "Relatório com 5 secções obrigatórias. Alterações de config documentadas. Sem features novas.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "five-sections",
+          "description": "Relatório contém: Arquivos removidos, modificados, Configurações revisadas, Problemas, Validação final",
+          "type": "structural"
+        },
+        {
+          "id": "docker-audited",
+          "description": "Revisa Dockerfile e docker-compose; menciona docker build ou compose config",
+          "type": "behavior"
+        },
+        {
+          "id": "env-audited",
+          "description": "Cruza .env.example com variáveis de produção do README/código",
+          "type": "behavior"
+        },
+        {
+          "id": "no-features",
+          "description": "Não implementa funcionalidades nem redesign de arquitetura",
+          "type": "negative"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "env-var-morta",
+      "category": "edge_case",
+      "tags": ["ambiente", "config"],
+      "prompt": "Revisão pré-deploy: encontrei ACL_FOO_BAR=1 no .env.example mas não sei se é usada. Valida e remove se morta.",
+      "expected_output": "rg no código antes de remover; mantém se usada; actualiza example se morta.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "grep-env",
+          "description": "Busca variável no código antes de decidir",
+          "type": "process"
+        },
+        {
+          "id": "document-decision",
+          "description": "Documenta decisão na secção Configurações revisadas",
+          "type": "structural"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "pedido-redesign-arquitetura",
+      "category": "adversarial",
+      "tags": ["escopo", "recusa"],
+      "prompt": "Antes do deploy, refatora engine/ para microserviços e depois valida Docker.",
+      "expected_output": "Recusa redesign; oferece apenas auditoria de readiness/deploy.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "no-refactor",
+          "description": "Não refactora para microserviços",
+          "type": "negative"
+        },
+        {
+          "id": "scope-readiness",
+          "description": "Mantém missão limitada a readiness",
+          "type": "behavior"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "prompt-minimo-deploy",
+      "category": "minimal_context",
+      "tags": ["trigger"],
+      "prompt": "Deixa o KernelBot pronto para deploy em produção.",
+      "expected_output": "Auditoria multi-área + validação + relatório 5 secções.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "multi-area",
+          "description": "Cobre pelo menos Docker, env, segurança e testes",
+          "type": "behavior"
+        },
+        {
+          "id": "validation-run",
+          "description": "Executa ou documenta pytest e smoke",
+          "type": "behavior"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "near-miss-cleanup-only",
+      "category": "near_miss_domain",
+      "tags": ["exclusão", "pre-publish-cleanup"],
+      "prompt": "Auditoria final: remove screenshots audit-*.png e roadmaps QA, depois valida Docker.",
+      "expected_output": "Pode limpar artefactos como parte da auditoria, mas também revisa Docker/env/segurança — não só cleanup.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "beyond-cleanup",
+          "description": "Inclui revisão Docker ou env além de remoção de ficheiros",
+          "type": "behavior"
+        },
+        {
+          "id": "not-cleanup-only",
+          "description": "Não limita entrega a lista de ficheiros apagados",
+          "type": "structural"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "dockerfile-dev-inexistente",
+      "category": "edge_case",
+      "tags": ["docker", "consistência"],
+      "prompt": "Valida Dockerfile.dev e docker-compose.dev.yml para produção.",
+      "expected_output": "Detecta que ficheiros não existem no repo; corrige docs ou reporta gap — não inventa ficheiros.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "no-invent",
+          "description": "Não cria Dockerfile.dev fictício sem pedido explícito",
+          "type": "negative"
+        },
+        {
+          "id": "reports-gap",
+          "description": "Documenta inconsistência doc vs repo",
+          "type": "behavior"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "modo-producao-headers",
+      "category": "integration",
+      "tags": ["segurança", "KERNELBOT_ENV"],
+      "prompt": "Confirma que KERNELBOT_ENV=production desactiva cache dev em /src/ e mantém security headers + CSP.",
+      "expected_output": "Lê app/factory.py; valida middleware; testa headers com curl ou documenta teste.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "reads-factory",
+          "description": "Referencia app/factory.py ou middleware de produção",
+          "type": "behavior"
+        },
+        {
+          "id": "security-section",
+          "description": "Inclui achados em Configurações revisadas → Segurança",
+          "type": "structural"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "validacao-streaming-globo",
+      "category": "integration",
+      "tags": ["puppeteer", "e2e"],
+      "prompt": "Após revisão de produção, valida streaming, ISS, sidebar, landing e globo em 1920x1080 com Puppeteer.",
+      "expected_output": "Checklist E2E completo; confirmação na secção Validação final.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "viewport",
+          "description": "Validação 1920×1080",
+          "type": "behavior"
+        },
+        {
+          "id": "globe-streaming",
+          "description": "Menciona globo e streaming/chat na validação",
+          "type": "behavior"
+        }
+      ]
+    }
+  ]
+}

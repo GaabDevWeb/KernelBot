@@ -8,7 +8,8 @@ O conteúdo completo está na **wiki** em [`docs/wiki/`](docs/wiki/README.md).
 |--------|------|
 | **Aluno / curioso** | [docs/wiki/00-inicio-publico.md](docs/wiki/00-inicio-publico.md) → [FAQ](docs/wiki/19-faq-usuario.md) |
 | **Contribuir** | [docs/wiki/18-contribuir.md](docs/wiki/18-contribuir.md) |
-| **Subir staging local** | [TESTE-LOCAL.md](TESTE-LOCAL.md) → `./bin/staging-setup.sh` + `./bin/staging-serve.sh` |
+| **Subir staging local** | [docs/wiki/13-staging-testes.md](docs/wiki/13-staging-testes.md) → `./bin/staging-setup.sh` + `./bin/staging-serve.sh` |
+| **Deploy produção** | [docs/wiki/20-deploy-railway.md](docs/wiki/20-deploy-railway.md) |
 | **Wiki técnica** | [docs/wiki/README.md](docs/wiki/README.md) |
 
 ## O que é (uma frase)
@@ -40,8 +41,8 @@ Chatbot educacional com **BM25** sobre aulas em MySQL: o LLM responde com trecho
 13. [Staging e testes](docs/wiki/13-staging-testes.md)
 14. [Segurança e logs](docs/wiki/14-seguranca-observabilidade.md)
 15. [Glossário](docs/wiki/15-glossario.md)
-16. [Backlog](docs/wiki/16-backlog.md)
-17. [Prompts — referência](docs/wiki/17-prompts-referencia.md)
+16. [Prompts — referência](docs/wiki/17-prompts-referencia.md)
+17. [Deploy Railway / Docker / VPS](docs/wiki/20-deploy-railway.md)
 
 ## Repositório ISS
 

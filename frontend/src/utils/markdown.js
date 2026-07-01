@@ -1,5 +1,5 @@
-import { marked } from "https://cdn.jsdelivr.net/npm/marked@12/+esm";
-import hljs from "https://esm.sh/highlight.js@11.9.0";
+import { marked } from "../vendor/marked.esm.js";
+import hljs from "../vendor/highlight.esm.js";
 import { copyToClipboard } from "./clipboard.js";
 import { decorateIssLessonLinks, linkifyFonteCitations } from "./issLinks.js";
 import { showToast } from "./toast.js";

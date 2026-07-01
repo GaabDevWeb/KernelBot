@@ -19,6 +19,36 @@ const HINT_VARIANTS = {
 
 const CONTEXT_BADGE_CLASS = "message-context-badge";
 const SOURCES_NOTE_CLASS = "message-sources-note";
+const LOW_GROUNDING_CLASS = "message-low-grounding-banner";
+
+/**
+ * Aviso visível quando a resposta não tem grounding no material indexado.
+ * @param {HTMLElement | null | undefined} breadcrumbsEl
+ * @param {Record<string, unknown> | null | undefined} meta
+ */
+export function mountLowGroundingNotice(breadcrumbsEl, meta) {
+    if (!breadcrumbsEl) return;
+    breadcrumbsEl.querySelector(`.${LOW_GROUNDING_CLASS}`)?.remove();
+
+    const sources = meta?.sources;
+    const hasSources = Array.isArray(sources) && sources.length > 0;
+    const reason = String(meta?.reason || "");
+    const confidence = String(meta?.confidence || "");
+    const isLowGrounding =
+        !hasSources &&
+        (reason === "insufficient_context" || confidence === "low");
+
+    if (!isLowGrounding) return;
+
+    breadcrumbsEl.hidden = false;
+    const banner = document.createElement("div");
+    banner.className = LOW_GROUNDING_CLASS;
+    banner.setAttribute("role", "note");
+    banner.innerHTML =
+        "<strong>Sem material indexado nesta busca.</strong> " +
+        "Escolha uma matéria no botão de grade ou refine a pergunta para respostas mais fundamentadas.";
+    breadcrumbsEl.prepend(banner);
+}
 
 /**
  * @param {string[] | undefined} sources

@@ -3,6 +3,7 @@
  */
 import { commandForDiscipline, getDisciplines } from "../config/disciplines.js";
 import { switchConversation } from "./conversations.js";
+import { showToast } from "./toast.js";
 
 /**
  * @returns {string | null} discipline id
@@ -25,6 +26,23 @@ export function conversationIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const raw = (params.get("c") || "").trim();
     return raw || null;
+}
+
+/**
+ * @returns {boolean} false se o parâmetro ?d= existe mas é inválido (URL limpa).
+ */
+export function rejectInvalidDisciplineDeepLink() {
+    const params = new URLSearchParams(window.location.search);
+    const raw = (params.get("d") || params.get("discipline") || "").trim();
+    if (!raw) return true;
+    if (disciplineIdFromUrl()) return true;
+
+    showToast("Disciplina inválida no link compartilhado");
+    const url = new URL(window.location.href);
+    url.searchParams.delete("d");
+    url.searchParams.delete("discipline");
+    window.history.replaceState({}, "", url);
+    return false;
 }
 
 /**

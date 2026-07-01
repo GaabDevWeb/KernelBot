@@ -18,8 +18,9 @@ Toda a configuração de runtime vem do ambiente (`.env`), carregada por `Settin
 
 | Valor | Comportamento |
 |-------|---------------|
+| `production` | Middleware `no-store` em `/src/` **desactivado**; exige `ACL_RELOAD_BEARER_TOKEN` para `/health/catalog` e `/reload` |
 | `staging` | `Settings` carrega `.env.staging.local` com prioridade (`override=True`) |
-| (outro / vazio) | `.env` padrão |
+| `development` ou vazio | `.env` padrão; middleware dev activo (`Cache-Control: no-store` em `/src/`) |
 
 Scripts `bin/staging-*.sh` exportam `KERNELBOT_ENV=staging`.
 

@@ -94,7 +94,7 @@ Boot e `/reload` **não** falham — aula continua indexável.
 | Query keyword | Tende a recuperar chunk 0 → LLM vê meta no trecho |
 | Query sobre meio da aula | Pode recuperar chunk 2 sem meta no texto do prompt |
 
-Backlog: injecção de meta uma vez por `source` no prompt — [16-backlog.md](16-backlog.md).
+Opcional: injecção de meta uma vez por `source` no prompt.
 
 ## Ver também
 

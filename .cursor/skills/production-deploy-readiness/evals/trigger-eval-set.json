@@ -1,0 +1,102 @@
+[
+  {
+    "query": "Prepara o KernelBot para o primeiro deploy público em produção",
+    "should_trigger": true,
+    "notes": "intent directo"
+  },
+  {
+    "query": "/production-deploy-readiness — revisão final antes do lançamento",
+    "should_trigger": true,
+    "notes": "invocação explícita"
+  },
+  {
+    "query": "Auditoria completa de produção: Docker, env, segurança, dependências",
+    "should_trigger": true,
+    "notes": "scope técnico readiness"
+  },
+  {
+    "query": "Valida Dockerfile e docker-compose antes de publicar no Railway",
+    "should_trigger": true,
+    "notes": "deploy platform + docker"
+  },
+  {
+    "query": "Revisão final como Principal Release Engineer — assinar deploy",
+    "should_trigger": true,
+    "notes": "papel da missão"
+  },
+  {
+    "query": "Confirma KERNELBOT_ENV=production, CSP e variáveis obrigatórias",
+    "should_trigger": true,
+    "notes": "config produção específica"
+  },
+  {
+    "query": "Audita requirements-prod.txt vs requirements.txt e build Docker",
+    "should_trigger": true,
+    "notes": "deps + build"
+  },
+  {
+    "query": "Garante que o projeto pode ir para VPS Ubuntu sem alterações",
+    "should_trigger": true,
+    "notes": "multi-plataforma deploy"
+  },
+  {
+    "query": "Remove lixo do repositório e screenshots de QA",
+    "should_trigger": false,
+    "notes": "pre-publish-cleanup skill irmã"
+  },
+  {
+    "query": "Organiza o GitHub para publicação — só limpeza de ficheiros",
+    "should_trigger": false,
+    "notes": "cleanup público, não deploy prod"
+  },
+  {
+    "query": "Implementa dark mode antes do deploy",
+    "should_trigger": false,
+    "notes": "feature + deploy"
+  },
+  {
+    "query": "Redesenha a arquitetura para microserviços",
+    "should_trigger": false,
+    "notes": "explicitamente excluído"
+  },
+  {
+    "query": "Escreve testes unitários para retrieval.py",
+    "should_trigger": false,
+    "notes": "testes novos, não readiness"
+  },
+  {
+    "query": "Como fazer deploy Docker em geral?",
+    "should_trigger": false,
+    "notes": "pergunta conceptual"
+  },
+  {
+    "query": "Gera CHANGELOG da v1.0",
+    "should_trigger": false,
+    "notes": "release notes ≠ readiness audit"
+  },
+  {
+    "query": "Corrigir bug no streaming SSE",
+    "should_trigger": false,
+    "notes": "bugfix"
+  },
+  {
+    "query": "Code review do PR #50",
+    "should_trigger": false,
+    "notes": "review skill"
+  },
+  {
+    "query": "Optimiza queries MySQL com índices novos",
+    "should_trigger": false,
+    "notes": "performance feature work"
+  },
+  {
+    "query": "Atualiza README com instruções de setup",
+    "should_trigger": false,
+    "notes": "docs parcial — não auditoria completa"
+  },
+  {
+    "query": "Configura CI GitHub Actions do zero",
+    "should_trigger": false,
+    "notes": "implementação CI, não auditoria (a menos que pedido explícito de readiness incluindo gap CI)"
+  }
+]

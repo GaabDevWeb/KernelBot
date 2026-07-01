@@ -27,6 +27,7 @@ import {
 import {
     applyConversationDeepLink,
     applyDisciplineDeepLink,
+    rejectInvalidDisciplineDeepLink,
     syncDisciplineQueryParam,
     syncUrlState,
 } from "./utils/deepLink.js";
@@ -165,6 +166,8 @@ export function init() {
         if (turns.length) {
             chatView.renderSavedHistory(turns);
             window.__kernelGlobe?.dismiss(0);
+        } else {
+            chatView.showLanding();
         }
         refreshContextWindowNotice(loadConversation().turns.length);
         restorePinFromActiveConversation();
@@ -263,6 +266,7 @@ export function init() {
 
     initShortcutsOverlay();
 
+    rejectInvalidDisciplineDeepLink();
     applyDisciplineDeepLink(input, () => {
         refreshSiloUi();
         disciplinePanel?.refresh();

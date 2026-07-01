@@ -1,6 +1,6 @@
 import { appendMessageRowWithMeta } from "../chat/restoreTurn.js";
 import { appendMessageRow, createStreamingBotRow } from "./MessageRow.js";
-import { syncBodyUiState } from "../utils/uiState.js";
+import { syncBodyUiState, revealComposerChrome } from "../utils/uiState.js";
 
 const LANDING_CROSSFADE_MS = 250;
 const SCROLL_BOTTOM_THRESHOLD = 80;
@@ -79,7 +79,11 @@ export function createChatView({
         if (!fab.hidden) positionScrollFab();
     }
 
-    chatBox.addEventListener("scroll", updateScrollFab, { passive: true });
+        chatBox.addEventListener("scroll", updateScrollFab, { passive: true });
+        new MutationObserver(() => updateScrollFab()).observe(chatBox, {
+            childList: true,
+            subtree: true,
+        });
 
     function showLanding() {
         if (!emptyState) {
@@ -97,6 +101,7 @@ export function createChatView({
             syncBodyUiState();
             return;
         }
+        revealComposerChrome();
         if (!emptyState.classList.contains("empty-state--dismissed")) {
             emptyState.classList.add("empty-state--dismissed");
             window.setTimeout(() => {
