@@ -5,11 +5,7 @@ import { initScopeMenu } from "./scopeMenu.js";
 import { initOnboarding } from "./onboarding.js";
 import { setIssLessonBase } from "./utils/issLinks.js";
 import { showToast } from "./utils/toast.js";
-import {
-    applyCatalogScopeUi,
-    initCatalogFromConfig,
-    isCatalogAvailable,
-} from "./utils/catalogAvailability.js";
+import { initCatalogFromConfig, isCatalogAvailable } from "./utils/catalogAvailability.js";
 
 /**
  * @returns {Promise<boolean>}
@@ -39,7 +35,6 @@ async function boot() {
     if (catalogEnabled) {
         await isCatalogAvailable();
     }
-    applyCatalogScopeUi();
     initScopeMenu();
     initOnboarding();
     init();

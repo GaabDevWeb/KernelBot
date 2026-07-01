@@ -46,9 +46,10 @@
     --radius-2xl: 16px;
     --radius-full: 9999px;
     --radius: var(--radius-none);
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.28);
-    --shadow-md: 0 10px 36px rgba(0, 0, 0, 0.38);
-    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+    --composer-max-width: 1120px;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
     /* Spacing rhythm — 4/8/16/24/32/48 */
     --space-1: 4px;
@@ -126,9 +127,9 @@
     --bot-bg: #F4F4F5;
     --error-bg: #FEE2E2;
     --warning-bg: #FEF3C7;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 10px 36px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.10);
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
     --btn-secondary-hover-bg: rgba(0, 0, 0, 0.04);
     --surface-user: rgba(244, 244, 245, 0.95);
     --bg-gradient-start: #F5F5F5;
@@ -164,6 +165,17 @@
     box-sizing: border-box;
     /* margin: 0; */
     /* padding: 0; */
+}
+
+button {
+    border: none;
+}
+
+/* Flat UI — sem sombras em nenhum componente */
+*,
+*::before,
+*::after {
+    box-shadow: none !important;
 }
 
 @keyframes bg-pulse {
@@ -248,14 +260,14 @@ body.ui-landing .header-conversation-label {
     display: none !important;
 }
 
-.theme-toggle {
+.theme-toggle,
+.shortcuts-toggle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 32px;
     height: 32px;
     padding: 0;
-    border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: transparent;
     color: var(--text-muted);
@@ -264,15 +276,20 @@ body.ui-landing .header-conversation-label {
     transition: var(--transition-interactive);
 }
 
-.theme-toggle:hover {
+.theme-toggle:hover,
+.shortcuts-toggle:hover {
     color: var(--text);
     background: var(--hover-overlay-medium);
-    border-color: var(--border);
 }
 
-.theme-toggle:focus-visible {
+.theme-toggle:focus-visible,
+.shortcuts-toggle:focus-visible {
     outline: 2px solid var(--brand-primary);
     outline-offset: 2px;
+}
+
+.shortcuts-toggle__icon {
+    display: block;
 }
 
 .theme-toggle__icon {
@@ -586,7 +603,6 @@ body.ui-landing .header-conversation-label {
     padding: 2px 8px;
     font-size: var(--font-size-xs);
     font-weight: 600;
-    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: var(--surface-2);
     color: var(--text-muted);
@@ -602,7 +618,7 @@ body.ui-landing .header-conversation-label {
 
 .code-copy-btn:hover {
     color: var(--text);
-    border-color: var(--brand-muted);
+    background: var(--hover-overlay-medium);
 }
 
 .message-toolbar {
@@ -778,7 +794,6 @@ body.ui-landing .header-conversation-label {
     font-size: var(--font-size-xs);
     font-weight: 500;
     padding: 6px 12px;
-    border: 1px solid var(--btn-secondary-border);
     border-radius: var(--radius-md);
     background: var(--btn-secondary-bg);
     color: var(--btn-secondary-color);
@@ -788,7 +803,6 @@ body.ui-landing .header-conversation-label {
 
 .onboarding-banner__dismiss:hover {
     background: var(--btn-secondary-hover-bg);
-    border-color: var(--btn-secondary-hover-border);
     color: var(--text);
 }
 
@@ -816,20 +830,32 @@ body.ui-landing .header-conversation-label {
     margin: 0 16px 16px;
     padding: 6px;
     background: var(--composer-bg);
-    border: 1px solid var(--border);
+    border: none;
+    outline: none;
     border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow-md), inset 0 1px 0 var(--hover-overlay);
     backdrop-filter: blur(14px);
-    transition: border-color var(--duration-normal) var(--ease-default),
-        box-shadow var(--duration-normal) var(--ease-default);
     animation: fade-in-up 1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
     position: relative;
     z-index: 30;
 }
 
-.input-area:focus-within {
-    border-color: var(--brand-muted);
-    box-shadow: var(--shadow-md), 0 0 0 2px var(--brand-surface);
+.input-area:focus-within,
+.input-area.input-area--silo {
+    border: none;
+    outline: none;
+}
+
+.input-area .context-stack {
+    border-bottom: none;
+}
+
+@media (min-width: 1200px) {
+    .input-area {
+        width: 100%;
+        max-width: var(--composer-max-width);
+        margin-left: auto;
+        margin-right: auto;
+    }
 }
 
 body.chat-active .composer-wrap {
@@ -853,8 +879,8 @@ body.ui-landing .onboarding-banner {
 }
 
 .input-area.input-area--silo {
-    border-color: var(--brand-muted);
-    box-shadow: var(--shadow-md), 0 0 0 1px var(--brand-surface);
+    border: none;
+    outline: none;
 }
 
 .silo-pill {
@@ -968,7 +994,9 @@ body.ui-landing .onboarding-banner {
 }
 
 #message-input {
-    flex: 1;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
     min-width: 0;
     background: transparent;
     border: none;
@@ -1125,7 +1153,6 @@ body.ui-landing .onboarding-banner {
 
 .cmd-pill {
     background: var(--surface-2);
-    border: 1px solid var(--border);
     padding: 5px 12px;
     font-size: var(--font-size-xs);
     cursor: pointer;
@@ -1133,7 +1160,6 @@ body.ui-landing .onboarding-banner {
 }
 
 .cmd-pill:hover {
-    border-color: var(--brand-primary);
     color: var(--brand-primary);
     background: var(--brand-surface);
 }
@@ -1143,7 +1169,6 @@ body.ui-landing .onboarding-banner {
     width: 44px;
     height: 44px;
     padding: 0;
-    border: 1px solid var(--border);
     border-radius: 50%;
     background: var(--surface-2);
     color: var(--text-muted);
@@ -1151,12 +1176,11 @@ body.ui-landing .onboarding-banner {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
 }
 
 #scope-btn:hover {
     background: var(--brand-surface);
-    border-color: var(--accent);
     color: var(--text);
 }
 
@@ -1165,15 +1189,14 @@ body.ui-landing .onboarding-banner {
 }
 
 #scope-btn[aria-expanded="true"] {
-    border-color: var(--accent);
     color: var(--accent);
     background: var(--brand-surface);
 }
 
 #scope-btn.scope-btn--active {
     color: var(--accent);
-    border-color: var(--brand-muted);
-    box-shadow: 0 0 0 2px var(--brand-surface);
+    outline: 2px solid var(--brand-surface);
+    outline-offset: 0;
 }
 
 #scope-btn.scope-btn--disabled,
@@ -1186,7 +1209,6 @@ body.ui-landing .onboarding-banner {
 #scope-btn.scope-btn--disabled:hover,
 #scope-btn:disabled:hover {
     background: var(--surface-2);
-    border-color: var(--border);
     color: var(--text-muted);
 }
 
@@ -1508,13 +1530,11 @@ body.ui-landing .onboarding-banner {
     padding: 5px 10px;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    border: 1px solid var(--border);
     background: transparent;
     color: var(--text);
 }
 
 .source-card__action--primary {
-    border-color: var(--accent);
     color: var(--accent);
 }
 
@@ -1526,14 +1546,12 @@ body.ui-landing .onboarding-banner {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    border-color: var(--brand-muted);
     color: var(--brand-primary-hover);
     text-decoration: none;
 }
 
 .source-card__action--iss:hover {
     background: var(--brand-surface);
-    border-color: var(--accent);
 }
 
 .source-card__action--unavailable {
@@ -1543,7 +1561,7 @@ body.ui-landing .onboarding-banner {
 }
 
 .source-card__action--secondary:hover {
-    border-color: var(--text-muted);
+    background: var(--hover-overlay-medium);
 }
 
 .message-sources__toggle {
@@ -1686,16 +1704,14 @@ body.ui-landing .onboarding-banner {
     width: 100%;
     text-align: left;
     padding: 10px 12px;
-    border: 1px solid var(--border);
     background: var(--surface);
     color: var(--text);
     cursor: pointer;
     border-radius: var(--radius-md);
-    transition: border-color 0.15s ease, background 0.15s ease;
+    transition: background 0.15s ease;
 }
 
 .disambiguation-chip:hover:not(:disabled) {
-    border-color: var(--accent);
     background: var(--brand-surface);
 }
 
@@ -2319,25 +2335,21 @@ body.chat-active .app-shell {
     min-width: 44px;
     margin: 2px auto;
     border-radius: 50%;
-    border: 1px solid transparent;
     background: var(--hover-overlay-medium);
     color: var(--text);
     font-size: var(--font-size-xs);
     font-weight: 500;
     cursor: pointer;
-    transition: background var(--duration-fast) var(--ease-default),
-        border-color var(--duration-fast) var(--ease-default);
+    transition: background var(--duration-fast) var(--ease-default);
 }
 
 .conversation-sidebar--collapsed .conversation-sidebar__item-initial:hover,
 .conversation-sidebar--collapsed .conversation-sidebar__item-initial:focus-visible {
     background: var(--hover-overlay-strong);
-    border-color: var(--brand-muted);
     outline: none;
 }
 
 .conversation-sidebar__item-wrap--active .conversation-sidebar__item-initial {
-    border-color: var(--brand-muted);
     background: var(--brand-surface);
 }
 
@@ -2452,7 +2464,6 @@ body.chat-active .app-shell {
 .conversation-sidebar__menu-confirm-actions button {
     flex: 1;
     padding: 6px 8px;
-    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-muted);
@@ -2462,12 +2473,12 @@ body.chat-active .app-shell {
 
 .conversation-sidebar__menu-confirm-actions button:hover {
     color: var(--text);
-    border-color: var(--text-muted);
+    background: var(--hover-overlay-medium);
 }
 
 .conversation-sidebar__menu-confirm-yes:hover {
     color: var(--error);
-    border-color: var(--error);
+    background: var(--error-bg);
 }
 
 .conversation-sidebar__rename-input {
@@ -2548,6 +2559,10 @@ body.chat-active .app-shell {
 
 .conversation-sidebar--collapsed .conversation-sidebar__row-label,
 .conversation-sidebar--collapsed .conversation-sidebar__search-field {
+    display: none;
+}
+
+.conversation-sidebar--collapsed .conversation-sidebar__storage-note {
     display: none;
 }
 
@@ -2652,7 +2667,6 @@ body.chat-active .app-shell {
         margin-right: auto;
         font-size: var(--font-size-xs);
         padding: 4px 10px;
-        border: 1px solid var(--border);
         border-radius: var(--radius-md);
         background: transparent;
         color: var(--text-muted);
@@ -2699,12 +2713,11 @@ textarea:focus-visible,
     }
 
     .input-area:focus-within {
-        border-color: var(--brand-muted);
-        box-shadow: var(--shadow-md), 0 0 0 1px var(--brand-surface);
+        border: none;
+        outline: none;
     }
 
     .cmd-pill:hover {
-        border-color: var(--brand-muted);
         color: var(--brand-inline);
     }
 
@@ -2813,7 +2826,6 @@ textarea:focus-visible,
 .toast__action {
     flex-shrink: 0;
     padding: 2px 8px;
-    border: 1px solid var(--brand-muted);
     border-radius: var(--radius-sm);
     background: transparent;
     color: var(--brand-primary-hover);
@@ -2840,7 +2852,6 @@ textarea:focus-visible,
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--border);
     border-radius: 50%;
     background: var(--surface-2);
     color: var(--text-muted);
@@ -2855,7 +2866,7 @@ textarea:focus-visible,
 
 .scroll-to-bottom-fab:hover {
     color: var(--text);
-    border-color: var(--brand-muted);
+    background: var(--hover-overlay-medium);
 }
 
 /* ===== Shortcuts overlay ===== */
@@ -2899,13 +2910,17 @@ textarea:focus-visible,
 .shortcuts-overlay__close {
     width: 32px;
     height: 32px;
-    border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: transparent;
     color: var(--text-muted);
     font-size: var(--font-size-md);
     line-height: 1;
     cursor: pointer;
+}
+
+.shortcuts-overlay__close:hover {
+    color: var(--text);
+    background: var(--hover-overlay-medium);
 }
 
 .shortcuts-overlay__list {

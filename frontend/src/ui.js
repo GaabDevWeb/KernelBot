@@ -166,6 +166,8 @@ export function init() {
         if (turns.length) {
             chatView.renderSavedHistory(turns);
             window.__kernelGlobe?.dismiss(0);
+        } else {
+            chatView.showLanding();
         }
         refreshContextWindowNotice(loadConversation().turns.length);
         restorePinFromActiveConversation();

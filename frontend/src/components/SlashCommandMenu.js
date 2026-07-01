@@ -1,5 +1,5 @@
 import { DISCIPLINES } from "../config/disciplines.js";
-import { stripLeadingDisciplineCommand } from "../scopeMenu.js";
+import { applyDisciplineCommand } from "../scopeMenu.js";
 
 const EXTRA_COMMANDS = [
     { command: "/doc", label: "Documentação", description: "Documentação interna do sistema" },
@@ -92,8 +92,7 @@ export function createSlashCommandMenu(input, anchor) {
     }
 
     function select(command) {
-        const tail = stripLeadingDisciplineCommand(input.value);
-        input.value = tail ? `${command} ${tail}` : `${command} `;
+        input.value = applyDisciplineCommand(input.value, command);
         input.dispatchEvent(new Event("input"));
         hide();
         input.focus();

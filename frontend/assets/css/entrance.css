@@ -61,7 +61,6 @@ body.ui-landing .app .entrance-suggestion {
   background: var(--glass-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  box-shadow: var(--shadow-md);
   pointer-events: none;
   opacity: 0;
   transform: translateY(10px) scale(0.965);
@@ -253,7 +252,6 @@ body.ui-landing .app .entrance-suggestion {
   font-weight: 500;
   line-height: 1.3;
   letter-spacing: 0.01em;
-  box-shadow: 0 8px 22px var(--brand-glow);
   cursor: pointer;            /* click to drop the suggestion into the input */
   pointer-events: auto;       /* re-enable clicks (overlay is click-through) */
 }
@@ -305,7 +303,6 @@ body.ui-landing .app .entrance-suggestion {
       color-mix(in srgb, var(--bg) 72%, transparent) 0%,
       color-mix(in srgb, var(--bg) 88%, transparent) 100%
     );
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
   }
 
   .entrance-headline {
@@ -369,7 +366,6 @@ body.ui-landing .app .entrance-suggestion {
   }
 
   .entrance-discipline-pills .cmd-pill:hover {
-    border-color: var(--brand-muted);
     color: var(--brand-inline);
     background: var(--brand-surface);
   }

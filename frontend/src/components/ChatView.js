@@ -1,6 +1,6 @@
 import { appendMessageRowWithMeta } from "../chat/restoreTurn.js";
 import { appendMessageRow, createStreamingBotRow } from "./MessageRow.js";
-import { syncBodyUiState } from "../utils/uiState.js";
+import { syncBodyUiState, revealComposerChrome } from "../utils/uiState.js";
 
 const LANDING_CROSSFADE_MS = 250;
 const SCROLL_BOTTOM_THRESHOLD = 80;
@@ -101,6 +101,7 @@ export function createChatView({
             syncBodyUiState();
             return;
         }
+        revealComposerChrome();
         if (!emptyState.classList.contains("empty-state--dismissed")) {
             emptyState.classList.add("empty-state--dismissed");
             window.setTimeout(() => {

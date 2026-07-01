@@ -2,11 +2,6 @@
  * Menu de escopo gerado a partir de disciplines.json (SSOT).
  */
 import { DISCIPLINES } from "./config/disciplines.js";
-import {
-    CATALOG_UNAVAILABLE_TITLE,
-    getCatalogAvailableSync,
-} from "./utils/catalogAvailability.js";
-import { showToast } from "./utils/toast.js";
 
 /** @type {string[]} */
 const COMMAND_PREFIXES = DISCIPLINES.map((d) => d.command).sort(
@@ -35,6 +30,26 @@ export function stripLeadingDisciplineCommand(text) {
         if (!tail.length || tail[0].match(/\s/)) return tail.trimStart();
     }
     return trimmed;
+}
+
+/**
+ * Aplica comando de disciplina sem duplicar prefixo parcial (/fluen → /fluencia-ia).
+ * @param {string} inputValue
+ * @param {string} command
+ * @returns {string}
+ */
+export function applyDisciplineCommand(inputValue, command) {
+    const raw = inputValue || "";
+    const leadMatch = raw.match(/^(\s*)/);
+    const lead = leadMatch ? leadMatch[1] : "";
+    const trimmed = raw.slice(lead.length);
+
+    if (trimmed.startsWith("/") && trimmed.indexOf(" ") === -1) {
+        return `${lead}${command} `;
+    }
+
+    const tail = stripLeadingDisciplineCommand(raw);
+    return tail ? `${command} ${tail}` : `${command} `;
 }
 
 /**
@@ -103,10 +118,6 @@ export function initScopeMenu(opts = {}) {
     }
 
     function openMenu() {
-        if (getCatalogAvailableSync() === false) {
-            showToast(`${CATALOG_UNAVAILABLE_TITLE} neste ambiente`);
-            return;
-        }
         menu.classList.add("open");
         btn.setAttribute("aria-expanded", "true");
     }
@@ -118,10 +129,6 @@ export function initScopeMenu(opts = {}) {
 
     btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        if (btn.disabled || getCatalogAvailableSync() === false) {
-            showToast(`${CATALOG_UNAVAILABLE_TITLE} neste ambiente`);
-            return;
-        }
         menu.classList.contains("open") ? closeMenu() : openMenu();
     });
 
@@ -129,8 +136,8 @@ export function initScopeMenu(opts = {}) {
         opt.addEventListener("click", () => {
             const cmd = String(opt.dataset.cmd || "").trim();
             if (!cmd) return;
-            const stripped = stripLeadingDisciplineCommand(input.value);
-            input.value = stripped ? `${cmd} ${stripped}` : `${cmd} `;
+            const stripped = applyDisciplineCommand(input.value, cmd);
+            input.value = stripped;
             input.dispatchEvent(new Event("input"));
             opts.onScopeChange?.();
             closeMenu();

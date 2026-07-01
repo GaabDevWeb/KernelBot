@@ -32,25 +32,4 @@ export function getCatalogAvailableSync() {
 
 const CATALOG_UNAVAILABLE_TITLE = "Mapa curricular indisponível";
 
-/**
- * Desativa #scope-btn quando o catálogo está off ou indisponível.
- */
-export function applyCatalogScopeUi() {
-    const disabled = getCatalogAvailableSync() === false;
-    const scopeBtn = document.getElementById("scope-btn");
-    if (!scopeBtn) return;
-
-    scopeBtn.disabled = disabled;
-    scopeBtn.setAttribute("aria-disabled", disabled ? "true" : "false");
-    scopeBtn.classList.toggle("scope-btn--disabled", disabled);
-
-    if (disabled) {
-        scopeBtn.setAttribute("title", CATALOG_UNAVAILABLE_TITLE);
-        scopeBtn.setAttribute("aria-label", CATALOG_UNAVAILABLE_TITLE);
-        scopeBtn.setAttribute("aria-expanded", "false");
-    } else {
-        scopeBtn.removeAttribute("title");
-    }
-}
-
 export { CATALOG_UNAVAILABLE_TITLE };

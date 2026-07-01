@@ -294,7 +294,6 @@ export function createLandingGlobeController({
     setCanvasInteractive(false);
     globe?.setSpinPaused?.(true);
     globe?.setRenderPaused?.(true);
-    globe?.stop?.();
 
     if (gsap) {
       gsap.to(canvas, {
