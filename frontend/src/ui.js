@@ -21,6 +21,7 @@ import {
 import {
     activateEmptyOrCreateConversation,
     getActiveConversation,
+    getConversationAvatarUrl,
     getConversationDiscipline,
     setConversationDiscipline,
 } from "./utils/conversations.js";
@@ -144,6 +145,7 @@ export function init() {
         sourceHandlers,
         chipHandlers,
         onRegenerate: () => void turnController?.regenerateLast(),
+        getBotAvatarUrl: () => getConversationAvatarUrl(getActiveConversation().id),
     });
 
     /** @type {ReturnType<typeof createComposer>} */
@@ -176,7 +178,10 @@ export function init() {
             conversationId: getActiveConversation().id,
             disciplineId: getActiveDisciplineId(),
         });
-        updateHeaderConversationLabel(getActiveConversation().title);
+        updateHeaderConversationLabel(
+            getActiveConversation().title,
+            getConversationAvatarUrl(getActiveConversation().id),
+        );
         disciplinePanel?.refresh();
         syncBodyUiState();
     }
@@ -186,7 +191,10 @@ export function init() {
         chatView.clearChat();
         bootstrapConversationView();
         sidebar?.render();
-        updateHeaderConversationLabel(getActiveConversation().title);
+        updateHeaderConversationLabel(
+            getActiveConversation().title,
+            getConversationAvatarUrl(getActiveConversation().id),
+        );
     }
 
     function finishConversationReset() {
@@ -204,7 +212,10 @@ export function init() {
             conversationId: getActiveConversation().id,
             disciplineId: getActiveDisciplineId(),
         });
-        updateHeaderConversationLabel(getActiveConversation().title);
+        updateHeaderConversationLabel(
+            getActiveConversation().title,
+            getConversationAvatarUrl(getActiveConversation().id),
+        );
         syncBodyUiState();
         composer.focus();
     }
@@ -285,6 +296,9 @@ export function init() {
         bootstrapConversationView();
     }
     sidebar.render();
-    updateHeaderConversationLabel(getActiveConversation().title);
+    updateHeaderConversationLabel(
+            getActiveConversation().title,
+            getConversationAvatarUrl(getActiveConversation().id),
+        );
     composer.focus();
 }
