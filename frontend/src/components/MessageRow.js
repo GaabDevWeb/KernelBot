@@ -478,8 +478,38 @@ export function mountMessageToolbar(row, role, text, opts = {}) {
 }
 
 /**
+ * Monta a linha `.message-meta` (avatar do bot opcional + rótulo/timestamp).
+ * @param {'user'|'bot'} role
+ * @param {string} [botAvatarUrl]
+ * @returns {HTMLDivElement}
+ */
+export function buildMessageMeta(role, botAvatarUrl) {
+    const meta = document.createElement("div");
+    meta.className = "message-meta";
+    const now = new Date();
+
+    if (role === "bot" && botAvatarUrl) {
+        const avatar = document.createElement("img");
+        avatar.className = "message-avatar";
+        avatar.src = botAvatarUrl;
+        avatar.alt = "";
+        avatar.setAttribute("aria-hidden", "true");
+        avatar.width = 24;
+        avatar.height = 24;
+        meta.appendChild(avatar);
+    }
+
+    const label = document.createElement("span");
+    label.className = "message-meta__label";
+    label.textContent = role === "user" ? `Você · ${fmt(now)}` : `Kernel · ${fmt(now)}`;
+    meta.appendChild(label);
+
+    return meta;
+}
+
+/**
  * @param {HTMLElement} chatBox
- * @param {{ role: 'user'|'bot', text: string, isError?: boolean, sources?: string[], sourceDetails?: Array<Record<string, unknown>>, renderMarkdown: (t: string) => string, animated?: boolean, scrollBottom: () => void, sourceHandlers?: { onPinSource?: (d: Record<string, unknown>) => void }, toolbarHandlers?: { onRegenerate?: () => void, isLastBot?: boolean } }} opts
+ * @param {{ role: 'user'|'bot', text: string, isError?: boolean, sources?: string[], sourceDetails?: Array<Record<string, unknown>>, renderMarkdown: (t: string) => string, animated?: boolean, scrollBottom: () => void, sourceHandlers?: { onPinSource?: (d: Record<string, unknown>) => void }, toolbarHandlers?: { onRegenerate?: () => void, isLastBot?: boolean }, botAvatarUrl?: string }} opts
  */
 export function appendMessageRow(chatBox, opts) {
     const {
@@ -493,16 +523,14 @@ export function appendMessageRow(chatBox, opts) {
         scrollBottom,
         sourceHandlers,
         toolbarHandlers,
+        botAvatarUrl,
     } = opts;
 
     const row = document.createElement("div");
     row.classList.add("message-row", role);
     if (animated) row.style.animationDelay = "0ms";
 
-    const meta = document.createElement("div");
-    meta.className = "message-meta";
-    const now = new Date();
-    meta.textContent = role === "user" ? `Você · ${fmt(now)}` : `Kernel · ${fmt(now)}`;
+    const meta = buildMessageMeta(role, botAvatarUrl);
 
     const breadcrumbs = document.createElement("div");
     breadcrumbs.className = "message-breadcrumbs";
@@ -546,14 +574,13 @@ export function appendMessageRow(chatBox, opts) {
 /**
  * @param {HTMLElement} chatBox
  * @param {() => void} scrollBottom
+ * @param {string} [botAvatarUrl]
  */
-export function createStreamingBotRow(chatBox, scrollBottom) {
+export function createStreamingBotRow(chatBox, scrollBottom, botAvatarUrl) {
     const row = document.createElement("div");
     row.classList.add("message-row", "bot");
 
-    const meta = document.createElement("div");
-    meta.className = "message-meta";
-    meta.textContent = `Kernel · ${fmt(new Date())}`;
+    const meta = buildMessageMeta("bot", botAvatarUrl);
 
     const breadcrumbs = document.createElement("div");
     breadcrumbs.className = "message-breadcrumbs";

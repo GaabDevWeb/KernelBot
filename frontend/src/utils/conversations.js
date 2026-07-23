@@ -1,11 +1,12 @@
 import { getDisciplines } from "../config/disciplines.js";
+import { pickRandomAvatar, avatarUrl } from "./avatars.js";
 
 export const CONVERSATIONS_STORE_KEY = "kernel_conversations_v2";
 export const LEGACY_CONVERSATION_KEY = "acl_conversation_v1";
 
 /**
  * @typedef {import('../utils/history.js').ConversationTurn} ConversationTurn
- * @typedef {{ id: string, title: string, createdAt: number, updatedAt: number, session_id: string | null, disciplineId: string | null, turns: ConversationTurn[] }} StoredConversation
+ * @typedef {{ id: string, title: string, createdAt: number, updatedAt: number, session_id: string | null, disciplineId: string | null, avatar: string, turns: ConversationTurn[] }} StoredConversation
  */
 
 /**
@@ -178,6 +179,7 @@ function normalizeConversation(conv) {
         typeof conv.disciplineId === "string" || conv.disciplineId === null
             ? conv.disciplineId
             : inferDisciplineFromTurns(turns);
+    const avatar = typeof conv.avatar === "string" && conv.avatar ? conv.avatar : pickRandomAvatar();
     return {
         id: conv.id,
         title: conv.title || "Nova conversa",
@@ -185,6 +187,7 @@ function normalizeConversation(conv) {
         updatedAt: conv.updatedAt || Date.now(),
         session_id: typeof conv.session_id === "string" ? conv.session_id : null,
         disciplineId,
+        avatar,
         turns,
     };
 }
@@ -203,6 +206,18 @@ export function getConversationDiscipline(id) {
         return conv.disciplineId;
     }
     return inferDisciplineFromTurns(conv.turns);
+}
+
+/**
+ * URL do avatar do bot para a conversa (por defeito, a conversa ativa).
+ * @param {string} [id] — defaults to active conversation
+ * @returns {string}
+ */
+export function getConversationAvatarUrl(id) {
+    const store = loadStore();
+    const targetId = id || store.activeId;
+    const conv = targetId ? store.conversations.find((c) => c.id === targetId) : null;
+    return avatarUrl(conv?.avatar);
 }
 
 /**
@@ -236,6 +251,7 @@ function migrateLegacyIfNeeded() {
             updatedAt: Date.now(),
             session_id: typeof parsed?.session_id === "string" ? parsed.session_id : null,
             disciplineId: inferDisciplineFromTurns(turns),
+            avatar: pickRandomAvatar(),
             turns,
         };
         localStorage.setItem(
@@ -256,9 +272,13 @@ export function loadStore() {
         const raw = localStorage.getItem(CONVERSATIONS_STORE_KEY);
         if (!raw) return emptyStore();
         const parsed = JSON.parse(raw);
-        const conversations = Array.isArray(parsed?.conversations)
-            ? parsed.conversations.filter((c) => c && c.id).map(normalizeConversation)
+        const rawConversations = Array.isArray(parsed?.conversations)
+            ? parsed.conversations.filter((c) => c && c.id)
             : [];
+        const missingAvatar = rawConversations.some(
+            (c) => typeof c.avatar !== "string" || !c.avatar,
+        );
+        const conversations = rawConversations.map(normalizeConversation);
         const store = {
             activeId: typeof parsed?.activeId === "string" ? parsed.activeId : null,
             conversations,
@@ -267,6 +287,9 @@ export function loadStore() {
         if (deduped.conversations.length !== store.conversations.length) {
             saveStore(deduped);
             return deduped;
+        }
+        if (missingAvatar) {
+            saveStore(store);
         }
         return store;
     } catch {
@@ -314,6 +337,7 @@ export function createConversation(opts = {}) {
         updatedAt: Date.now(),
         session_id: null,
         disciplineId: null,
+        avatar: pickRandomAvatar(),
         turns: [],
     };
     store.conversations.unshift(conv);
@@ -417,6 +441,7 @@ export function deleteConversation(id) {
                 updatedAt: Date.now(),
                 session_id: null,
                 disciplineId: null,
+                avatar: pickRandomAvatar(),
                 turns: [],
             };
             store.conversations.unshift(fresh);
