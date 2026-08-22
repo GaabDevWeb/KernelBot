@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trace {{ trace_id }}</title>
+  <link rel="stylesheet" href="/traces-static/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    {% include "_nav.html" %}
+    <p><a href="/traces">← lista</a></p>
+    <h1>Flight Recorder</h1>
+    <p class="meta">
+      <code>{{ trace_id }}</code>
+      {% if replay_of %} · replay de <a href="/traces/{{ replay_of }}"><code>{{ replay_of }}</code></a>{% endif %}
+      <br />
+      {% if trace %}
+      origem <span class="badge origin">{{ trace.origin }}</span> ·
+      status <span class="badge {{ trace.status }}">{{ trace.status }}</span> ·
+      {% if trace.duration_ms is not none %}duração {{ '%.0f'|format(trace.duration_ms) }}ms · {% endif %}
+      {{ trace.created_at }} → {{ trace.updated_at }}
+      {% endif %}
+    </p>
+    <div class="toolbar">
+      <a class="btn" href="/traces/{{ trace_id }}/export.zip">Exportar ZIP</a>
+      <form method="post" action="/traces/{{ trace_id }}/replay" style="display:inline">
+        <button class="btn secondary" type="submit">Replay</button>
+      </form>
+    </div>
+
+    {% if performance %}
+    <div class="panel">
+      <h2>Performance</h2>
+      <dl class="kv">
+        {% for k, v in performance.items() %}
+        <dt>{{ k }}</dt><dd class="mono">{% if v is not none %}{{ v }}{% if k.endswith('_ms') %} ms{% endif %}{% else %}—{% endif %}</dd>
+        {% endfor %}
+      </dl>
+    </div>
+    {% endif %}
+
+    {% if conversation %}
+    <div class="panel">
+      <h2>Conversa</h2>
+      <dl class="kv">
+        <dt>Utilizador</dt><dd class="mono">{{ conversation.user or '—' }}</dd>
+        <dt>Canal</dt><dd class="mono">{{ conversation.channel or '—' }}</dd>
+        <dt>Grupo</dt><dd class="mono">{{ conversation.group or '—' }}</dd>
+      </dl>
+      <div style="color:var(--muted);font-size:0.8rem;margin-top:0.75rem;">Mensagem</div>
+      <div class="conv-msg">{{ conversation.message or '(sem preview)' }}</div>
+      <div style="color:var(--muted);font-size:0.8rem;">Resposta</div>
+      <div class="conv-msg">{{ conversation.answer or '(sem preview)' }}</div>
+    </div>
+    {% endif %}
+
+    {% if prompt and prompt.context %}
+    <div class="panel">
+      <h2>Contexto (camadas)</h2>
+      <dl class="kv">
+        {% if prompt.context.temporal %}
+        <dt>Data (servidor)</dt><dd class="mono">{{ prompt.context.temporal.date }} ({{ prompt.context.temporal.weekday }})</dd>
+        <dt>Hora (servidor)</dt><dd class="mono">{{ prompt.context.temporal.time }}</dd>
+        <dt>Timezone</dt><dd class="mono">{{ prompt.context.temporal.timezone }}</dd>
+        {% endif %}
+        <dt>Intent temporal</dt><dd class="mono">{{ prompt.context.temporal_intent or '—' }}</dd>
+        <dt>RAG dispensado</dt><dd class="mono">{{ prompt.context.rag_skipped }}</dd>
+        <dt>Identidade ativa</dt><dd class="mono">{{ prompt.context.identity_active }}</dd>
+        <dt>Transcript (turnos)</dt><dd class="mono">{{ prompt.context.transcript_turns_used }}</dd>
+      </dl>
+      {% if prompt.context.institutional_files %}
+      <div style="color:var(--muted);font-size:0.8rem;margin-top:0.75rem;">Contexto institucional carregado</div>
+      <ul>{% for f in prompt.context.institutional_files %}<li class="mono">{{ f }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if prompt.context.calendar_events_used %}
+      <div style="color:var(--muted);font-size:0.8rem;margin-top:0.75rem;">Eventos de calendário usados</div>
+      <ul>
+        {% for ev in prompt.context.calendar_events_used %}
+        <li class="mono">{{ ev.date }} · {{ ev.title }}{% if ev.discipline %} ({{ ev.discipline }}){% endif %} · Δ {{ ev.days_delta }}d</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% if prompt.context.rag_sources_used %}
+      <div style="color:var(--muted);font-size:0.8rem;margin-top:0.75rem;">Fontes RAG usadas</div>
+      <ul>{% for s in prompt.context.rag_sources_used %}<li class="mono">{{ s }}</li>{% endfor %}</ul>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if rag %}
+    <div class="panel">
+      <h2>RAG forensics</h2>
+      <dl class="kv">
+        <dt>Query</dt><dd>{{ rag.query or '—' }}</dd>
+        <dt>Normalized</dt><dd>{{ rag.normalized_query or '—' }}</dd>
+        <dt>Reason</dt><dd>{{ rag.reason or '—' }}</dd>
+        <dt>Confidence</dt><dd>{{ rag.confidence or '—' }}</dd>
+        <dt>Discipline</dt><dd>{{ rag.discipline or '—' }}</dd>
+      </dl>
+      {% if rag.sources %}
+      <div style="color:var(--muted);font-size:0.8rem;margin-top:0.75rem;">Sources</div>
+      <ul>{% for s in rag.sources %}<li class="mono">{{ s }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if rag.candidates %}
+      <div style="color:var(--muted);font-size:0.8rem;margin-top:0.75rem;">Candidates / scores</div>
+      <ul>
+        {% for c in rag.candidates %}
+        <li class="mono">{{ c.source }} · raw={{ c.raw_score }} · norm={{ c.normalized_score }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if prompt %}
+    <div class="panel">
+      <h2>Prompt forensics</h2>
+      <dl class="kv">
+        <dt>Chars</dt><dd class="mono">{{ prompt.prompt_chars or '—' }}</dd>
+        <dt>Tokens (est.)</dt><dd class="mono">{{ prompt.prompt_tokens_est or '—' }}</dd>
+        <dt>Stored full</dt><dd>{{ prompt.stored_full }}</dd>
+      </dl>
+      {% if prompt.system_prompt %}
+      <div style="color:var(--muted);font-size:0.8rem;margin-top:0.75rem;">System</div>
+      <pre>{{ prompt.system_prompt[:4000] }}</pre>
+      {% endif %}
+      {% if prompt.messages %}
+      <div style="color:var(--muted);font-size:0.8rem;margin-top:0.75rem;">Messages ({{ prompt.messages|length }})</div>
+      <pre>{{ prompt.messages | tojson(indent=2) }}</pre>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if tokens %}
+    <div class="panel">
+      <h2>Tokens</h2>
+      <dl class="kv">
+        <dt>Prompt</dt><dd class="mono">{{ tokens.prompt_tokens }}</dd>
+        <dt>Completion</dt><dd class="mono">{{ tokens.completion_tokens }}</dd>
+        <dt>Total</dt><dd class="mono">{{ tokens.total_tokens }}</dd>
+        <dt>Estimated</dt><dd>{{ tokens.estimated }}</dd>
+      </dl>
+    </div>
+    {% endif %}
+
+    {% if system_metrics %}
+    <div class="panel">
+      <h2>System (sample)</h2>
+      <pre>{{ system_metrics | tojson(indent=2) }}</pre>
+    </div>
+    {% endif %}
+
+    <div class="panel">
+      <h2>Timeline</h2>
+      {% if not events %}
+      <p>Sem eventos.</p>
+      {% else %}
+      <div class="timeline">
+        {% for e in events %}
+        <div class="ev {% if e.stage == 'ERROR' %}error{% endif %}">
+          <div>
+            <span class="mono">{{ e.timestamp }}</span>
+            <span class="stage"> {{ e.stage }}</span>
+            <span class="svc">· {{ e.service }}</span>
+            {% if e.delta_ms is not none %}<span class="delta">+{{ '%.0f'|format(e.delta_ms) }}ms</span>{% endif %}
+          </div>
+          {% if e.data %}<pre>{{ e.data | tojson(indent=2) }}</pre>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

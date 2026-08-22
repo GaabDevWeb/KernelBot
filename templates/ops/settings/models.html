@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Modelos — Configurações{% endblock %}
+{% block crumb %}Modelos{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Modelos</h1>
+  <p class="sub">Parâmetros activos do LLM (leitura a partir de Settings / env).</p>
+</div>
+
+{% if not model.editable %}
+<div class="panel" style="border-color:#fcd34d;background:var(--warn-bg)">
+  <p style="margin:0">{{ model.edit_note }}</p>
+</div>
+{% endif %}
+
+<div class="cards">
+  <div class="card">
+    <div class="label">Provider</div>
+    <div class="value" style="font-size:1.1rem">{{ model.llm_provider }}</div>
+  </div>
+  <div class="card">
+    <div class="label">Modelo activo</div>
+    <div class="value mono" style="font-size:1.05rem">{{ model.active_model }}</div>
+  </div>
+  <div class="card">
+    <div class="label">Temperature</div>
+    <div class="value">{{ model.temperature }}</div>
+  </div>
+  <div class="card">
+    <div class="label">Timeout HTTP</div>
+    <div class="value">{{ model.http_timeout_s }}s</div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Detalhe</h2>
+  <table>
+    <tbody>
+      <tr><th style="width:14rem">ACL_CURSOR_MODEL</th><td class="mono">{{ model.cursor_model }}</td></tr>
+      <tr><th>Cursor chat-only</th><td>{{ model.cursor_chat_only }}</td></tr>
+      <tr><th>Max tokens</th><td>{{ model.max_tokens }}</td></tr>
+      <tr><th>Temperature</th><td class="mono">{{ model.temperature }} <span class="sub">(fixo no OpenRouter payload)</span></td></tr>
+      <tr><th>HTTP timeout</th><td class="mono">{{ model.http_timeout_s }}s <span class="sub">(Settings.http_timeout)</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>Lista OpenRouter (hardcoded)</h2>
+  <ul>
+    {% for m in model.openrouter_models %}
+    <li class="mono">{{ m }}{% if model.llm_provider == 'openrouter' and loop.first %} <span class="badge INFO">default</span>{% endif %}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

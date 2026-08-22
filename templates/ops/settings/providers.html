@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Providers — Configurações{% endblock %}
+{% block crumb %}Providers{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Providers</h1>
+  <p class="sub">Probe best-effort · provider activo: <code class="mono">{{ active_provider }}</code>.</p>
+</div>
+
+<div class="panel">
+  <table>
+    <thead>
+      <tr>
+        <th>Provider</th>
+        <th>Activo</th>
+        <th>Status</th>
+        <th>Latência</th>
+        <th>Último erro</th>
+        <th>Detalhe</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in providers %}
+      <tr>
+        <td class="mono">{{ p.name }}</td>
+        <td>{% if p.active %}<span class="badge ok">sim</span>{% else %}—{% endif %}</td>
+        <td>
+          {% if p.status in ('reachable', 'configured') %}
+            <span class="badge ok">{{ p.status }}</span>
+          {% elif p.status == 'unconfigured' %}
+            <span class="badge WARN">{{ p.status }}</span>
+          {% else %}
+            <span class="badge error">{{ p.status }}</span>
+          {% endif %}
+        </td>
+        <td class="mono">{% if p.latency_ms is not none %}{{ p.latency_ms }} ms{% else %}—{% endif %}</td>
+        <td class="mono err">{{ p.last_error or '—' }}</td>
+        <td class="sub">{{ p.detail or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="sub" style="margin-top:0.75rem">OpenRouter: GET público <code class="mono">/api/v1/models</code> (sem enviar API key no probe). Cursor: confirma presença da chave; sem HTTP remoto.</p>
+</div>
+{% endblock %}

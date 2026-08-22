@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}WhatsApp — Adapters{% endblock %}
+{% block crumb %}WhatsApp{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>WhatsApp</h1>
+  <p class="sub">Status outbound via Orbit (<code class="mono">ORBIT_INTERNAL_URL</code> → <code class="mono">/internal/outbound/status</code>).</p>
+</div>
+
+<div class="cards">
+  <div class="card {% if ready %}{% else %}danger{% endif %}">
+    <div class="label">Sessão</div>
+    <div class="value" style="font-size:1.05rem">{% if ready %}<span class="badge ok">ready</span>{% else %}<span class="badge error">offline</span>{% endif %}</div>
+  </div>
+  <div class="card">
+    <div class="label">Probe ok</div>
+    <div class="value" style="font-size:1.05rem">{% if ok %}<span class="badge ok">sim</span>{% else %}<span class="badge error">não</span>{% endif %}</div>
+  </div>
+  <div class="card">
+    <div class="label">Reconexões</div>
+    <div class="value">{% if reconnections is not none %}{{ reconnections }}{% else %}—{% endif %}</div>
+  </div>
+  <div class="card">
+    <div class="label">Msgs hoje*</div>
+    <div class="value">{% if msgs_today is not none %}{{ msgs_today }}{% else %}—{% endif %}</div>
+  </div>
+  <div class="card">
+    <div class="label">Msgs / hora*</div>
+    <div class="value">{% if msgs_hour is not none %}{{ msgs_hour }}{% else %}—{% endif %}</div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Ligação Orbit</h2>
+  <table>
+    <tbody>
+      <tr><th style="width:12rem">Base URL</th><td class="mono">{{ orbit_url }}</td></tr>
+      <tr><th>Token interno</th><td>{% if token_configured %}<span class="badge ok">configured</span>{% else %}<span class="badge error">missing</span>{% endif %}</td></tr>
+      <tr><th>Sessão / identidade</th><td class="mono">{% if session_label %}{{ session_label }}{% else %}—{% endif %}</td></tr>
+      {% if error %}
+      <tr><th>Último erro</th><td class="err mono">{{ error }}</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+  <p class="sub" style="margin-top:0.75rem">* Contagens de mensagens vêm de traces do Kernel (todas as plataformas), não só WhatsApp — best-effort.</p>
+</div>
+
+<div class="panel">
+  <h2>Status bruto (sanitizado)</h2>
+  <pre class="mono" style="white-space:pre-wrap;margin:0;font-size:0.8rem;max-height:20rem;overflow:auto">{{ status_json }}</pre>
+</div>
+{% endblock %}

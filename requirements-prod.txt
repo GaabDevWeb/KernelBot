@@ -1,12 +1,13 @@
-fastapi
+fastapi>=0.100
+pydantic>=2
 uvicorn
 httpx
 python-dotenv
 jinja2
+python-multipart
 rank-bm25
 PyMySQL
 cryptography
 PyYAML
 jsonschema
 cursor-sdk
-

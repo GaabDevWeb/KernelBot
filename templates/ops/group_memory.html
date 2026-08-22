@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Memória de Grupos — Kernel Ops{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Memória de Grupos e Perfil Social</h1>
+  <p class="sub">Inspeção de histórico persistente (BM25 + recência) e perfil dinâmico de turmas.</p>
+</div>
+
+<div class="cards">
+  <div class="card">
+    <div class="label">Total de Grupos</div>
+    <div class="value">{{ stats.total_groups }}</div>
+  </div>
+  <div class="card">
+    <div class="label">Mensagens Indexadas</div>
+    <div class="value">{{ stats.total_messages }}</div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 320px 1fr; gap: 24px; margin-top: 24px;">
+  <!-- Coluna esquerda: Lista de Grupos -->
+  <div class="card" style="height: fit-content;">
+    <h3>Grupos Ativos</h3>
+    {% if stats.groups %}
+      <ul style="list-style: none; padding: 0; margin: 12px 0;">
+        {% for g in stats.groups %}
+        <li style="margin-bottom: 8px;">
+          <a href="/ops/groups?channel_id={{ g.channel_id }}" 
+             style="text-decoration: none; display: block; padding: 8px; border-radius: 6px; background: {% if selected_group == g.channel_id %}#1e293b{% else %}#0f172a{% endif %}; border: 1px solid #334155; color: #f8fafc;">
+            <div style="font-weight: 600; font-size: 13px;">{{ g.channel_id }}</div>
+            <div style="font-size: 11px; color: #94a3b8;">{{ g.message_count }} msgs | {{ g.platform }}</div>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p style="color: #94a3b8; font-size: 13px;">Nenhum grupo com histórico indexado ainda.</p>
+    {% endif %}
+  </div>
+
+  <!-- Coluna direita: Detalhes do Grupo Selecionado -->
+  <div>
+    {% if selected_group %}
+      <div class="card" style="margin-bottom: 20px;">
+        <h2>Grupo: <span style="color: #38bdf8;">{{ selected_group }}</span></h2>
+        
+        <div style="display: flex; gap: 16px; margin: 12px 0; font-size: 13px;">
+          <div><strong>Apresentação realizada:</strong> {% if selected_state and selected_state.introduction_sent %}✅ Sim ({{ selected_state.introduction_sent_at[:10] }}){% else %}❌ Não{% endif %}</div>
+        </div>
+
+        {% if selected_profile %}
+          <div style="background: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid #334155; margin-top: 16px;">
+            <h3 style="color: #a78bfa; margin-top: 0;">Perfil Dinâmico do Grupo (Group Profile)</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
+              <div>
+                <strong>Estilo de Comunicação:</strong> {{ selected_profile.communication_style or 'informal' }}<br>
+                <strong>Tópicos Frequentes:</strong> {{ selected_profile.common_topics|join(', ') or 'Geral' }}<br>
+                <strong>Dúvidas Recorrentes:</strong> {{ selected_profile.recurring_questions|join(', ') or 'Nenhuma detectada' }}
+              </div>
+              <div>
+                <strong>Percepções Sociais Observadas (Opiniões ≠ Fatos):</strong>
+                {% if selected_profile.social_context %}
+                  <ul style="margin: 4px 0; padding-left: 20px;">
+                    {% for target, pdata in selected_profile.social_context.items() %}
+                    <li>{{ target }}: <em>{{ pdata.sentiment }}</em> (confiança: {{ pdata.confidence }}, {{ pdata.evidence_count }} evidências)</li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <div style="color: #94a3b8;">Nenhuma percepção social consolidada.</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div style="background: #0f172a; padding: 12px; border-radius: 6px; color: #94a3b8; font-size: 13px; margin-top: 12px;">
+            Nenhum perfil derivado para este grupo ainda (atualizado após lote de mensagens).
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Busca no Histórico do Grupo -->
+      <div class="card">
+        <h3>Histórico de Mensagens</h3>
+        <form method="get" action="/ops/groups" style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <input type="hidden" name="channel_id" value="{{ selected_group }}">
+          <input type="text" name="query" value="{{ query }}" placeholder="Buscar por BM25 no grupo..." 
+                 style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white;">
+          <button type="submit" style="padding: 8px 16px; border-radius: 6px; background: #2563eb; color: white; border: none; font-weight: 600; cursor: pointer;">Buscar</button>
+        </form>
+
+        {% if historical_results %}
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            {% for r in historical_results %}
+            <div style="padding: 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; font-size: 13px;">
+              <div style="display: flex; justify-content: space-between; color: #94a3b8; font-size: 11px; margin-bottom: 4px;">
+                <span><strong>{{ r.sender_name or 'membro' }}</strong> ({{ r.user_id }})</span>
+                <span>{{ r.timestamp[:19] }} {% if r.final_score is defined %}| Score: {{ '%.3f'|format(r.final_score) }}{% endif %}</span>
+              </div>
+              <div style="color: #f1f5f9;">{{ r.content }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="color: #94a3b8; font-size: 13px;">Nenhuma mensagem encontrada para esta busca.</p>
+        {% endif %}
+      </div>
+
+    {% else %}
+      <div class="card" style="text-align: center; padding: 48px; color: #94a3b8;">
+        Selecione um grupo na barra lateral esquerda para visualizar o histórico e o Group Profile.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

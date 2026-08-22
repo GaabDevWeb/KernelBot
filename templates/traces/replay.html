@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Replay / Diff</title>
+  <link rel="stylesheet" href="/traces-static/styles.css" />
+  <style>
+    .diff-box { background:#1c1917; color:#fafaf9; padding:0.85rem; border-radius:0.5rem; overflow:auto; font-family:var(--mono); font-size:0.78rem; white-space:pre-wrap; }
+    .col2 { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; }
+    @media (max-width:800px){ .col2{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    {% include "_nav.html" %}
+    <p><a href="/traces/{{ original_id }}">← trace original</a> · <a href="/traces/{{ replay_id }}">abrir replay</a></p>
+    <h1>Replay / Diff</h1>
+    <p class="meta">
+      original <code>{{ original_id }}</code> → replay <code>{{ replay_id }}</code><br />
+      similaridade {{ diff.similarity }} ·
+      {% if diff.identical %}<span class="badge ok">idêntico</span>{% else %}<span class="badge error">diferente</span>{% endif %}
+    </p>
+    {% if message %}
+    <div class="panel">
+      <h2>Mensagem</h2>
+      <div class="conv-msg">{{ message }}</div>
+    </div>
+    {% endif %}
+    <div class="col2">
+      <div class="panel">
+        <h2>Original</h2>
+        <div class="conv-msg">{{ original_answer or '(vazio)' }}</div>
+      </div>
+      <div class="panel">
+        <h2>Replay</h2>
+        <div class="conv-msg">{{ replay_answer or '(vazio)' }}</div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Diff unificado</h2>
+      <div class="diff-box">{{ diff.unified or '(sem diferenças textuais / vazio)' }}</div>
+    </div>
+  </div>
+</body>
+</html>

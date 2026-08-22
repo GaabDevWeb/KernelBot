@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Histórico — Comunicações{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Histórico</h1>
+  <p class="sub">Todas as campanhas — clique para mensagem, anexos e entregas.</p>
+</div>
+<div class="toolbar">
+  <a class="btn secondary" href="/ops/comms/export.zip">Exportar ZIP (JSON+CSV)</a>
+</div>
+<div class="panel">
+  <table>
+    <thead>
+      <tr><th>Título</th><th>Destino</th><th>Canal</th><th>Data</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for c in items %}
+      <tr class="{% if c.status == 'failed' %}err-row{% endif %}">
+        <td><a href="/ops/comms/campaigns/{{ c.id }}">{{ c.title }}</a></td>
+        <td class="mono">{{ c.dest_type }}:{{ c.dest_ref }}</td>
+        <td>{{ c.channel }}</td>
+        <td class="mono">{{ c.created_at }}</td>
+        <td><span class="badge {% if c.status == 'sent' %}ok{% elif c.status == 'failed' %}error{% else %}INFO{% endif %}">{{ c.status }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">Sem histórico.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Traces — login</title>
+  <link rel="stylesheet" href="/traces-static/styles.css" />
+  <style>
+    .login-box { max-width: 26rem; margin: 4rem auto; }
+  </style>
+</head>
+<body>
+  <div class="wrap login-box">
+    <h1>Traces</h1>
+    <p class="sub">Autenticação com token interno (<code>ACL_INTERNAL_BEARER_TOKEN</code>).</p>
+    {% if error %}<p class="err">{{ error }}</p>{% endif %}
+    <form method="post" action="/traces/login" class="panel">
+      <label for="token">Token</label>
+      <input id="token" name="token" type="password" autocomplete="current-password" required style="width:100%;margin:0.4rem 0 0.75rem;padding:0.55rem;border-radius:0.45rem;border:1px solid var(--line);" />
+      <button type="submit" class="btn">Entrar</button>
+    </form>
+  </div>
+</body>
+</html>

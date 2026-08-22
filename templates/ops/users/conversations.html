@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Conversas — Usuários{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Conversas</h1>
+  <p class="sub">Transcript live (RAM) · pin RAG · traces recentes.</p>
+</div>
+<div class="toolbar">
+  <a class="btn secondary" href="/ops/users/export.zip">Exportar ZIP (JSON+CSV)</a>
+</div>
+<div class="panel">
+  {% if not items %}
+  <p>Sem sessões. O histórico longo permanente ainda depende de traces; o transcript live só existe neste processo.</p>
+  {% else %}
+  <table>
+    <thead>
+      <tr><th>Utilizador</th><th>Platform</th><th>Msgs</th><th>Transcript live</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for s in items %}
+      <tr>
+        <td class="mono">{{ s.user_id }}</td>
+        <td>{{ s.platform }}</td>
+        <td>{{ s.message_count }}</td>
+        <td>
+          {% if s.memory_key in live_keys %}
+          <span class="badge ok">em memória</span>
+          {% else %}
+          <span class="badge INFO">só registo</span>
+          {% endif %}
+        </td>
+        <td><a href="/ops/users/conversations/{{ s.id }}">Abrir</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

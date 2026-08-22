@@ -1,0 +1,25 @@
+{
+  "_comment": "EXEMPLO — este ficheiro NÃO é carregado pelo Kernel. Copie a estrutura para calendar.json substituindo os placeholders por dados reais.",
+  "events": [
+    {
+      "id": "event-001",
+      "title": "<AT de NOME-DA-DISCIPLINA — substitua>",
+      "type": "assessment",
+      "discipline": "<nome da disciplina — substitua>",
+      "date": "<YYYY-MM-DD — substitua>",
+      "time": null,
+      "description": "<conteúdo cobrado, sala, observações — opcional>",
+      "source": "official"
+    },
+    {
+      "id": "event-002",
+      "title": "<Entrega do trabalho X — substitua>",
+      "type": "delivery",
+      "discipline": "<nome da disciplina — substitua>",
+      "date": "<YYYY-MM-DD — substitua>",
+      "time": "<HH:MM ou null>",
+      "description": "",
+      "source": "official"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Sessões — Usuários{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Sessões</h1>
+  <p class="sub">Identidade por canal · primeiro/último acesso · mensagens · status de bloqueio.</p>
+</div>
+{% if flash %}<p class="sub">{{ flash }}</p>{% endif %}
+<div class="toolbar">
+  <a class="btn secondary" href="/ops/users/export.zip">Exportar ZIP (JSON+CSV)</a>
+</div>
+<form class="filters" method="get" action="/ops/users/sessions">
+  <label>Pesquisar
+    <input name="q" value="{{ q }}" placeholder="user_id, platform, canal…" />
+  </label>
+  <label>&nbsp;<button class="btn" type="submit">Filtrar</button></label>
+</form>
+<div class="panel">
+  {% if not items %}
+  <p>Nenhuma sessão registada. Aparecem após tráfego em <code>POST /v1/chat</code>.</p>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>Utilizador</th>
+        <th>Canal</th>
+        <th>Primeiro</th>
+        <th>Último</th>
+        <th>Msgs</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in items %}
+      <tr class="{% if s.blocked %}err-row{% endif %}">
+        <td class="mono">{{ s.user_id }}</td>
+        <td>{{ s.platform }} <span class="mono">{{ s.channel_id[:24] }}{% if s.channel_id|length > 24 %}…{% endif %}</span></td>
+        <td class="mono">{{ s.first_seen }}</td>
+        <td class="mono">{{ s.last_seen }}</td>
+        <td>{{ s.message_count }}</td>
+        <td>
+          {% if s.blocked %}<span class="badge error">bloqueado</span>
+          {% else %}<span class="badge ok">activo</span>{% endif %}
+        </td>
+        <td>
+          <a href="/ops/users/conversations/{{ s.id }}">Conversa</a>
+          {% if not s.blocked %}
+          ·
+          <form method="post" action="/ops/users/sessions/{{ s.id }}/block" style="display:inline">
+            <button class="btn secondary" type="submit" style="min-height:2rem;padding:0.2rem 0.5rem">Bloquear</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

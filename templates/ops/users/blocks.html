@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Bloqueios — Usuários{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Bloqueios</h1>
+  <p class="sub">Utilizadores bloqueados recebem <code>403</code> em <code>POST /v1/chat</code>.</p>
+</div>
+{% if flash %}<p class="sub">{{ flash }}</p>{% endif %}
+{% if error %}<p class="err" role="alert">{{ error }}</p>{% endif %}
+
+<div class="panel">
+  <h2>Bloquear</h2>
+  <form method="post" action="/ops/users/blocks" class="filters">
+    <label>Platform
+      <select name="platform">
+        <option value="whatsapp" {% if form.platform == 'whatsapp' or not form.platform %}selected{% endif %}>whatsapp</option>
+        <option value="discord" {% if form.platform == 'discord' %}selected{% endif %}>discord</option>
+        <option value="web" {% if form.platform == 'web' %}selected{% endif %}>web</option>
+        <option value="api" {% if form.platform == 'api' %}selected{% endif %}>api</option>
+        <option value="cli" {% if form.platform == 'cli' %}selected{% endif %}>cli</option>
+      </select>
+    </label>
+    <label>User ID <input name="user_id" required value="{{ form.user_id or '' }}" placeholder="jid / id" /></label>
+    <label>Motivo <input name="reason" value="{{ form.reason or '' }}" /></label>
+    <label>&nbsp;<button class="btn" type="submit">Bloquear</button></label>
+  </form>
+</div>
+
+<div class="toolbar">
+  <a class="btn secondary" href="/ops/users/export.zip">Exportar ZIP (JSON+CSV)</a>
+  {% if show_all %}
+  <a class="btn secondary" href="/ops/users/blocks">Só activos</a>
+  {% else %}
+  <a class="btn secondary" href="/ops/users/blocks?all=1">Incluir histórico</a>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2>{% if show_all %}Todos{% else %}Activos{% endif %}</h2>
+  {% if not items %}
+  <p>Nenhum bloqueio.</p>
+  {% else %}
+  <table>
+    <thead>
+      <tr><th>Utilizador</th><th>Platform</th><th>Motivo</th><th>Data</th><th>Estado</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for b in items %}
+      <tr class="{% if b.active %}err-row{% endif %}">
+        <td class="mono">{{ b.user_id }}</td>
+        <td>{{ b.platform }}</td>
+        <td>{{ b.reason or '—' }}</td>
+        <td class="mono">{{ b.created_at }}</td>
+        <td>
+          {% if b.active %}<span class="badge error">activo</span>
+          {% else %}<span class="badge INFO">levantado {{ b.lifted_at or '' }}</span>{% endif %}
+        </td>
+        <td>
+          {% if b.active %}
+          <form method="post" action="/ops/users/blocks/unblock">
+            <input type="hidden" name="platform" value="{{ b.platform }}" />
+            <input type="hidden" name="user_id" value="{{ b.user_id }}" />
+            <button class="btn secondary" type="submit">Desbloquear</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

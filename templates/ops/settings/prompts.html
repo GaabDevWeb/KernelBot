@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Prompts — Configurações{% endblock %}
+{% block crumb %}Prompts{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Prompts</h1>
+  <p class="sub">Ficheiros em <code class="mono">{{ prompts_dir }}</code> · versionamento = mtime do ficheiro.</p>
+</div>
+
+<div class="panel" style="border-color:#fcd34d;background:var(--warn-bg)">
+  <p style="margin:0">{{ write_note }}</p>
+</div>
+
+<div class="panel">
+  <h2>Ficheiros</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Path</th>
+        <th>Tamanho</th>
+        <th>mtime (UTC)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for f in files %}
+      <tr {% if f.name == selected %}style="background:#e0f2fe"{% endif %}>
+        <td><a href="/ops/settings/prompts?file={{ f.name }}">{{ f.name }}</a></td>
+        <td class="mono">{{ f.rel_path }}</td>
+        <td class="mono">{{ f.size }}</td>
+        <td class="mono">{{ f.mtime }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">Nenhum .txt encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if error %}
+<div class="panel"><p class="err">{{ error }}</p></div>
+{% endif %}
+
+{% if content is not none %}
+<div class="panel">
+  <div class="toolbar" style="justify-content:space-between;align-items:center">
+    <h2 style="margin:0">{{ selected_meta.name if selected_meta else selected }}</h2>
+    <button type="button" class="btn secondary" id="copy-prompt">Copiar</button>
+  </div>
+  {% if selected_meta %}
+  <p class="sub">{{ selected_meta.rel_path }} · {{ selected_meta.mtime }} · {{ selected_meta.size }} bytes</p>
+  {% endif %}
+  <pre id="prompt-body" class="mono" style="white-space:pre-wrap;margin:0.5rem 0 0;font-size:0.8rem;max-height:28rem;overflow:auto;background:#f8fafc;padding:0.75rem;border-radius:0.4rem;border:1px solid var(--line)">{{ content }}</pre>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const btn = document.getElementById("copy-prompt");
+  const body = document.getElementById("prompt-body");
+  if (!btn || !body) return;
+  btn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(body.textContent || "");
+      btn.textContent = "Copiado";
+      setTimeout(() => { btn.textContent = "Copiar"; }, 1500);
+    } catch (_) {
+      btn.textContent = "Falhou";
+      setTimeout(() => { btn.textContent = "Copiar"; }, 1500);
+    }
+  });
+})();
+</script>
+{% endblock %}

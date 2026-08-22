@@ -20,14 +20,12 @@ RUN pip install --no-cache-dir -r requirements-prod.txt
 
 COPY api/ ./api/
 COPY app/ ./app/
-COPY core/ ./core/
-COPY engine/ ./engine/
-COPY frontend/ ./frontend/
+COPY kernel/ ./kernel/
 COPY templates/ ./templates/
 COPY main.py .
 
 RUN useradd --create-home --shell /usr/sbin/nologin kernelbot \
-    && mkdir -p content \
+    && mkdir -p content data \
     && chown -R kernelbot:kernelbot /app
 
 USER kernelbot

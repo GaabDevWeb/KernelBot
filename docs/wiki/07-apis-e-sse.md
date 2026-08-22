@@ -2,6 +2,8 @@
 
 [← Índice](README.md)
 
+> Atualização True Kernel: `POST /chat` devolve JSON por padrão; SSE permanece disponível com `"stream": true`. `POST /search` expõe retrieval sem LLM e `GET /` foi removido. Consulte `docs/API_SPEC.md`.
+
 **Última revisão:** junho/2026 (alinhado a `api/routes.py` + `engine/chat_provider.py`).
 
 ## Endpoints HTTP

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — Kernel Ops{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ title }}</h1>
+  <p class="sub">Módulo planeado — shell de navegação já disponível.</p>
+</div>
+<div class="placeholder-box">
+  <div class="phase">{{ phase }}</div>
+  <p>{{ description }}</p>
+  {% if hint_href %}
+  <p><a class="btn" href="{{ hint_href }}">{{ hint_label or 'Continuar' }}</a></p>
+  {% else %}
+  <p class="sub">Implementação na fase {{ phase }}. O critério de sucesso continua: o quê / porquê / reproduzir / corrigir.</p>
+  {% endif %}
+</div>
+{% endblock %}

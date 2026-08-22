@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Benchmark — Lab{% endblock %}
+{% block crumb %}Benchmark{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Benchmark</h1>
+  <p class="sub">Mesma pergunta em Model A/B/C (config <code>ACL_LAB_BENCHMARK_MODELS</code>). Compara tempo, tokens e resposta.</p>
+</div>
+
+{% if models %}
+<p class="sub">Modelos activos: {% for m in models %}<code class="mono">{{ m }}</code>{% if not loop.last %}, {% endif %}{% endfor %}</p>
+{% else %}
+<p class="sub">Defina <code>ACL_LAB_BENCHMARK_MODELS=modelA,modelB,modelC</code> no ambiente (fallback: settings do provider).</p>
+{% endif %}
+
+<form class="filters" method="post" action="/ops/lab/benchmark">
+  <label style="grid-column:1/-1">Pergunta
+    <textarea name="message" rows="3" required placeholder="Pergunta a comparar…">{{ form.message }}</textarea>
+  </label>
+  <label>Temperatura
+    <input name="temperature" type="number" step="0.1" min="0" max="2" value="{{ form.temperature }}" />
+  </label>
+  <label>top_k
+    <input name="top_k" type="number" min="1" max="20" value="{{ form.top_k }}" />
+  </label>
+  <label>max_tokens
+    <input name="max_tokens" type="number" min="1" max="8192" value="{{ form.max_tokens }}" />
+  </label>
+  <label>&nbsp;<button class="btn" type="submit">Comparar</button></label>
+</form>
+
+{% if error %}
+<div class="panel"><p class="badge error">{{ error }}</p></div>
+{% endif %}
+
+{% if rows %}
+<div class="panel">
+  <h2>Resultados</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Modelo</th>
+        <th>Status</th>
+        <th>Latência</th>
+        <th>Tokens</th>
+        <th>Trace</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
+      <tr class="{% if not r.ok %}err-row{% endif %}">
+        <td class="mono">{{ r.model }}</td>
+        <td>{% if r.ok %}<span class="badge ok">ok</span>{% else %}<span class="badge error">erro</span>{% endif %}</td>
+        <td class="mono">{% if r.latency_ms is not none %}{{ '%.0f'|format(r.latency_ms) }} ms{% else %}—{% endif %}</td>
+        <td class="mono">{{ r.tokens_used if r.tokens_used is not none else '—' }}</td>
+        <td class="mono">{% if r.trace_id %}<a href="/traces/{{ r.trace_id }}">{{ r.trace_id[:12] }}…</a>{% else %}—{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% for r in rows %}
+<div class="panel">
+  <h2>{{ r.model }}</h2>
+  {% if r.error %}<p class="badge error">{{ r.error }}</p>{% endif %}
+  <div class="lab-pre">{{ r.answer or '(vazio)' }}</div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

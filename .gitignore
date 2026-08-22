@@ -32,4 +32,5 @@ results.md
 results/
 Features.canvas
 docs/PROMPT-AGENTE-*.md
-tests/
+# Suíte pytest versionada (CI corre `pytest tests/ -q`).
+# Não ignorar o directório `tests/` — SEC-002 / kernel-orbit-integration.

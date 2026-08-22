@@ -1,8 +1,8 @@
-# Wiki ACL (KernelBot)
+# Wiki Kernel
 
 Documentação do projecto. Cada página cobre um domínio; o índice abaixo é o ponto de entrada.
 
-**Última revisão:** junho/2026 (camada pública, histórico de conversa, B3.1 advisory, alinhamento provider Cursor SDK default + contrato API/SSE).
+**Última revisão:** 2026-07-24 — **True Kernel**: UI removida; produto = API HTTP. Contratos: [`../API_SPEC.md`](../API_SPEC.md), [`../ARCHITECTURE.md`](../ARCHITECTURE.md). A página [08-frontend-ui](08-frontend-ui.md) é histórica.
 
 ---
 
@@ -29,7 +29,7 @@ Para **alunos**, **curiosos** e **primeiro contacto** — linguagem directa, sem
 | 5 | [BM25 e chunking](05-bm25-chunking.md) | Silos, janelas, Opção B2, IDF |
 | 6 | [Gates e decisões](06-gates-e-decisoes.md) | Classificação retrieval, pós-geração, advisory |
 | 7 | [APIs e SSE](07-apis-e-sse.md) | `/chat`, `history`, `/health/catalog`, `ACL_META` |
-| 8 | [Frontend](08-frontend-ui.md) | UI, sessão, histórico, pin, componentes |
+| 8 | [Frontend](08-frontend-ui.md) | **Removido do produto** — referência histórica |
 | 9 | [Fluxos operacionais](09-fluxos-operacionais.md) | Boot, chat, pin, reload |
 | 10 | [Integração ISS (Fase 5b)](10-integracao-iss-fase5b.md) | Pipeline, CI, secrets |
 | 11 | [Enriquecimento léxico B2](11-enriquecimento-lexico-b2.md) | Histórico completo de engenharia |

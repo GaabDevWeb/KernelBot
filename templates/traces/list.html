@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Traces — lista</title>
+  <link rel="stylesheet" href="/traces-static/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    {% include "_nav.html" %}
+    <h1>Lista de traces</h1>
+    <p class="sub">Filtros por trace_id, telefone, grupo, texto e período.</p>
+
+    <form class="filters" method="get" action="/traces">
+      <label>trace_id
+        <input name="q" value="{{ filters.trace_id }}" placeholder="UUID exacto" />
+      </label>
+      <label>telefone / JID
+        <input name="phone" value="{{ filters.phone }}" placeholder="ex. 5511" />
+      </label>
+      <label>grupo
+        <input name="group" value="{{ filters.group }}" placeholder="@g.us / id" />
+      </label>
+      <label>texto
+        <input name="text" value="{{ filters.text }}" placeholder="stage ou data" />
+      </label>
+      <label>desde (ISO)
+        <input name="since" value="{{ filters.since }}" placeholder="2026-07-28T00:00:00.000Z" />
+      </label>
+      <label>até (ISO)
+        <input name="until" value="{{ filters.until }}" placeholder="2026-07-28T23:59:59.000Z" />
+      </label>
+      <label>só erros
+        <select name="errors">
+          <option value="" {% if not filters.errors_only %}selected{% endif %}>não</option>
+          <option value="1" {% if filters.errors_only %}selected{% endif %}>sim</option>
+        </select>
+      </label>
+      <div class="actions">
+        <button type="submit" class="btn">Filtrar</button>
+        <a class="btn secondary" href="/traces">Limpar</a>
+      </div>
+    </form>
+
+    <div class="toolbar">
+      <a class="btn secondary" href="/traces/export.zip?scope=filtered{% if export_qs %}&{{ export_qs }}{% endif %}">Exportar filtrados (ZIP)</a>
+      <a class="btn secondary" href="/traces/export.zip?scope=all">Exportar todos (ZIP)</a>
+      {% if filters.since or filters.until %}
+      <a class="btn secondary" href="/traces/export.zip?scope=period&since={{ filters.since }}&until={{ filters.until }}">Exportar período (ZIP)</a>
+      {% endif %}
+    </div>
+
+    {% if error %}<p class="err">{{ error }}</p>{% endif %}
+    {% if not items %}
+    <p>Nenhum trace.</p>
+    {% else %}
+    <table>
+      <thead>
+        <tr>
+          <th>Horário</th>
+          <th>trace_id</th>
+          <th>Origem</th>
+          <th>Utilizador</th>
+          <th>Duração</th>
+          <th>Status</th>
+          <th>Resumo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in items %}
+        <tr class="{% if t.has_error %}err-row{% endif %}">
+          <td class="mono">{{ t.updated_at }}</td>
+          <td><a href="/traces/{{ t.trace_id }}"><code>{{ t.trace_id }}</code></a></td>
+          <td><span class="badge origin">{{ t.origin or '—' }}</span></td>
+          <td class="mono">{{ t.user_label or '—' }}</td>
+          <td class="mono">{% if t.duration_ms is not none %}{{ '%.0f'|format(t.duration_ms) }}ms{% else %}—{% endif %}</td>
+          <td><span class="badge {{ t.status }}">{{ t.status }}</span></td>
+          <td>{{ t.summary }} · {{ t.event_count }} ev</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+</body>
+</html>

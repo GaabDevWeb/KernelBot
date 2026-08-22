@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Logs — Kernel Ops{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Logs</h1>
+  <p class="sub">Ring buffer em memória (Kernel) + fallback de traces com erro.</p>
+</div>
+
+<form class="filters" method="get" action="/ops/logs">
+  <label>Serviço
+    <select name="service">
+      <option value="" {% if not filters.service %}selected{% endif %}>Todos</option>
+      <option value="kernel" {% if filters.service == 'kernel' %}selected{% endif %}>Kernel</option>
+      <option value="whatsapp" {% if filters.service == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
+      <option value="discord" {% if filters.service == 'discord' %}selected{% endif %}>Discord</option>
+    </select>
+  </label>
+  <label>Nível
+    <select name="level">
+      <option value="" {% if not filters.level %}selected{% endif %}>Todos</option>
+      <option value="ERROR" {% if filters.level == 'ERROR' %}selected{% endif %}>Errors</option>
+      <option value="WARNING" {% if filters.level == 'WARNING' %}selected{% endif %}>Warnings</option>
+      <option value="INFO" {% if filters.level == 'INFO' %}selected{% endif %}>Info</option>
+    </select>
+  </label>
+  <label>Texto
+    <input name="text" value="{{ filters.text }}" placeholder="filtrar mensagem" />
+  </label>
+  <label>Limite
+    <input name="limit" type="number" min="1" max="500" value="{{ filters.limit }}" />
+  </label>
+  <label>&nbsp;<button type="submit" class="btn">Filtrar</button></label>
+</form>
+
+<div class="cards">
+  <div class="card"><div class="label">Buffer</div><div class="value">{{ stats.buffered }}</div></div>
+  <div class="card danger"><div class="label">Errors no buffer</div><div class="value">{{ stats.errors }}</div></div>
+  <div class="card warn"><div class="label">Warnings</div><div class="value">{{ stats.warnings }}</div></div>
+</div>
+
+<div class="panel">
+  <h2>Entradas</h2>
+  {% if entries %}
+  <table>
+    <thead>
+      <tr><th>Quando</th><th>Nível</th><th>Serviço</th><th>Logger</th><th>Mensagem</th></tr>
+    </thead>
+    <tbody>
+      {% for e in entries %}
+      <tr class="{% if e.level in ['ERROR','CRITICAL'] %}err-row{% endif %}">
+        <td class="mono">{{ e.ts_human }}</td>
+        <td><span class="badge {{ e.level }}">{{ e.level }}</span></td>
+        <td>{{ e.service }}</td>
+        <td class="mono">{{ e.logger }}</td>
+        <td>{{ e.message }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% elif trace_errors %}
+  <p>Ring vazio — a mostrar traces com erro como proxy:</p>
+  <table>
+    <thead><tr><th>Atualizado</th><th>trace_id</th><th>Resumo</th></tr></thead>
+    <tbody>
+      {% for t in trace_errors %}
+      <tr class="err-row">
+        <td class="mono">{{ t.updated_at }}</td>
+        <td><a href="/traces/{{ t.trace_id }}"><code>{{ t.trace_id }}</code></a></td>
+        <td>{{ t.summary or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>Sem logs no buffer. Gera tráfego no Kernel para popular o ring.</p>
+  {% endif %}
+</div>
+{% endblock %}

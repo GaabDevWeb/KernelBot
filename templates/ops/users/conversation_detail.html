@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Conversa {{ session.user_id }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Conversa</h1>
+  <p class="sub mono">{{ session.platform }} · {{ session.user_id }} · canal {{ session.channel_id }}</p>
+</div>
+{% if flash %}<p class="sub">{{ flash }}</p>{% endif %}
+<div class="toolbar">
+  <a class="btn secondary" href="/ops/users/conversations">Lista</a>
+  <a class="btn secondary" href="/traces?text={{ session.user_id }}">Traces</a>
+  <form method="post" action="/ops/users/conversations/{{ session.id }}/clear-memory" style="display:inline"
+        onsubmit="return confirm('Limpar transcript e pin em memória desta sessão?');">
+    <button class="btn secondary" type="submit">Limpar memória live</button>
+  </form>
+  {% if not session.blocked %}
+  <form method="post" action="/ops/users/sessions/{{ session.id }}/block" style="display:inline">
+    <button class="btn secondary" type="submit">Bloquear utilizador</button>
+  </form>
+  {% else %}
+  <span class="badge error">bloqueado</span>
+  {% endif %}
+</div>
+
+<div class="cards">
+  <div class="card"><div class="label">Msgs registadas</div><div class="value">{{ session.message_count }}</div></div>
+  <div class="card"><div class="label">Pares live</div><div class="value">{{ live_pairs }}</div></div>
+  <div class="card"><div class="label">Primeiro</div><div class="value" style="font-size:0.85rem">{{ session.first_seen }}</div></div>
+  <div class="card"><div class="label">Último</div><div class="value" style="font-size:0.85rem">{{ session.last_seen }}</div></div>
+</div>
+
+<div class="panel">
+  <h2>Transcript (live)</h2>
+  {% if not transcript %}
+  <p>Vazio neste processo (reinício do Kernel limpa a RAM, ou ainda não houve turno JSON).</p>
+  {% else %}
+  {% for m in transcript %}
+  <div style="margin-bottom:0.75rem;padding-bottom:0.75rem;border-bottom:1px solid var(--line)">
+    <strong>{{ m.role }}</strong>
+    <pre style="white-space:pre-wrap;margin:0.35rem 0 0;font-size:0.85rem">{{ m.content }}</pre>
+  </div>
+  {% endfor %}
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2>Pin RAG</h2>
+  {% if not pin %}
+  <p>Sem contexto fixado activo.</p>
+  {% else %}
+  <p><strong>{{ pin.display_name or '—' }}</strong> · scope <code>{{ pin.scope_key }}</code> · turnos {{ pin.turns_left }} · chunks {{ pin.chunks }}</p>
+  {% for c in pin.chunk_previews %}
+  <pre style="white-space:pre-wrap;font-size:0.8rem;background:#f8fafc;padding:0.5rem;border-radius:0.4rem">{{ c.source }}
+{{ c.text }}</pre>
+  {% endfor %}
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2>Traces recentes</h2>
+  {% if not traces %}
+  <p>Nenhum trace encontrado para este user_id.</p>
+  {% else %}
+  <table>
+    <thead><tr><th>Quando</th><th>trace_id</th><th>Origem</th><th>Duração</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for t in traces %}
+      <tr class="{% if t.has_error %}err-row{% endif %}">
+        <td class="mono">{{ t.updated_at }}</td>
+        <td><a href="/traces/{{ t.trace_id }}"><code>{{ t.trace_id }}</code></a></td>
+        <td>{{ t.origin or '—' }}</td>
+        <td class="mono">{% if t.duration_ms is not none %}{{ '%.0f'|format(t.duration_ms) }}ms{% else %}—{% endif %}</td>
+        <td><span class="badge {{ t.status }}">{{ t.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

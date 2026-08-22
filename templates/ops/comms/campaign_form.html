@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Nova campanha{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Nova campanha</h1>
+  <p class="sub">Pré-visualize, envie teste ao operador, depois envie ou agende.</p>
+</div>
+{% if error %}<p class="err" role="alert">{{ error }}</p>{% endif %}
+<form class="panel" method="post" action="/ops/comms/campaigns/new" enctype="multipart/form-data">
+  <label>Título
+    <input name="title" required value="{{ form.title or '' }}" style="width:100%;min-height:2.5rem;margin:0.35rem 0 0.75rem" />
+  </label>
+  <label>Template (opcional)
+    <select name="template_id" style="width:100%;min-height:2.5rem;margin:0.35rem 0 0.75rem">
+      <option value="">— nenhum —</option>
+      {% for t in templates_list %}
+      <option value="{{ t.id }}" {% if form.template_id == t.id %}selected{% endif %}>{{ t.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Mensagem
+    <textarea name="body" rows="8" style="width:100%;font-family:var(--mono);margin:0.35rem 0 0.75rem">{{ form.body or '' }}</textarea>
+  </label>
+  <div class="filters" style="padding:0;border:0;background:transparent">
+    <label>hora <input name="var_hora" value="{{ form.var_hora or '' }}" placeholder="19h" /></label>
+    <label>link <input name="var_link" value="{{ form.var_link or '' }}" placeholder="https://…" /></label>
+    <label>mensagem <input name="var_mensagem" value="{{ form.var_mensagem or '' }}" /></label>
+  </div>
+  <label>Canal
+    <select name="channel" style="width:100%;min-height:2.5rem;margin:0.35rem 0 0.75rem">
+      <option value="whatsapp" {% if form.channel != 'discord' %}selected{% endif %}>WhatsApp</option>
+      <option value="discord" {% if form.channel == 'discord' %}selected{% endif %}>Discord (preparado)</option>
+    </select>
+  </label>
+  <label>Tipo de destino
+    <select name="dest_type" id="dest_type" style="width:100%;min-height:2.5rem;margin:0.35rem 0 0.75rem">
+      <option value="user" {% if form.dest_type == 'user' or not form.dest_type %}selected{% endif %}>Utilizador</option>
+      <option value="group" {% if form.dest_type == 'group' %}selected{% endif %}>Grupo</option>
+      <option value="audience" {% if form.dest_type == 'audience' %}selected{% endif %}>Público</option>
+    </select>
+  </label>
+  <label>Destino (JID / número / groupJid)
+    <input name="dest_ref" value="{{ form.dest_ref or '' }}" style="width:100%;min-height:2.5rem;margin:0.35rem 0 0.75rem" placeholder="5511…@s.whatsapp.net" />
+  </label>
+  <label>Público
+    <select name="audience_id" style="width:100%;min-height:2.5rem;margin:0.35rem 0 0.75rem">
+      <option value="">—</option>
+      {% for a in audiences %}
+      <option value="{{ a.id }}">{{ a.name }} ({{ a.member_count }})</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Anexos (png jpg webp pdf docx mp4 mp3 zip)
+    <input type="file" name="files" multiple style="margin:0.35rem 0 0.75rem" />
+  </label>
+  <div class="filters" style="padding:0;border:0;background:transparent">
+    <label>Data (UTC) <input type="date" name="scheduled_date" value="{{ form.scheduled_date or '' }}" /></label>
+    <label>Hora (UTC) <input type="time" name="scheduled_time" value="{{ form.scheduled_time or '' }}" /></label>
+  </div>
+  <div class="toolbar">
+    <button class="btn secondary" type="submit" name="action" value="preview">Pré-visualizar</button>
+    <button class="btn secondary" type="submit" name="action" value="send_test">Enviar Teste</button>
+    <button class="btn" type="submit" name="action" value="send_now">Enviar Agora</button>
+    <button class="btn secondary" type="submit" name="action" value="schedule">Agendar</button>
+    <button class="btn secondary" type="submit" name="action" value="save">Guardar rascunho</button>
+  </div>
+</form>
+{% if preview %}
+<div class="panel">
+  <h2>Pré-visualização</h2>
+  <pre style="white-space:pre-wrap;background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:0.5rem">{{ preview }}</pre>
+</div>
+{% endif %}
+{% if not operator %}
+<p class="err">Sem <code>ACL_COMM_OPERATOR_JID</code> — Enviar Teste falhará.</p>
+{% endif %}
+{% endblock %}

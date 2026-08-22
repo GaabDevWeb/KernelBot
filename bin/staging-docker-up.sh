@@ -25,7 +25,7 @@ else
   echo "A criar MySQL staging (porta $PORT_HOST)..."
   docker run -d \
     --name "$CONTAINER" \
-    -p "${PORT_HOST}:3306" \
+    -p "127.0.0.1:${PORT_HOST}:3306" \
     -e MYSQL_ROOT_PASSWORD=staging_root \
     -e MYSQL_DATABASE=kernelbot_staging \
     -e MYSQL_USER=kb_staging \

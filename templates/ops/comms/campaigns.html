@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Campanhas — Comunicações{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Campanhas</h1>
+  <p class="sub">Envio manual, teste ao operador e agendamento via adapters.</p>
+</div>
+{% if flash %}<p class="sub">{{ flash }}</p>{% endif %}
+<div class="toolbar">
+  <a class="btn" href="/ops/comms/campaigns/new">Nova campanha</a>
+  <a class="btn secondary" href="/ops/comms/export.zip">Exportar ZIP</a>
+</div>
+{% if not operator %}
+<p class="err">Defina <code>ACL_COMM_OPERATOR_JID</code> para «Enviar Teste».</p>
+{% endif %}
+<div class="panel">
+  {% if not items %}
+  <p>Nenhuma campanha ainda. Crie a primeira para avisos, links de aula ou materiais.</p>
+  {% else %}
+  <table>
+    <thead>
+      <tr><th>Título</th><th>Canal</th><th>Destino</th><th>Status</th><th>Actualizado</th></tr>
+    </thead>
+    <tbody>
+      {% for c in items %}
+      <tr>
+        <td><a href="/ops/comms/campaigns/{{ c.id }}">{{ c.title }}</a>{% if c.is_test %} <span class="badge INFO">teste</span>{% endif %}</td>
+        <td>{{ c.channel }}</td>
+        <td class="mono">{{ c.dest_type }}:{{ c.dest_ref }}</td>
+        <td><span class="badge {% if c.status == 'failed' %}error{% elif c.status == 'sent' %}ok{% else %}INFO{% endif %}">{{ c.status }}</span></td>
+        <td class="mono">{{ c.updated_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

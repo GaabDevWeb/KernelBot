@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Replay — Lab{% endblock %}
+{% block crumb %}Replay{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Replay</h1>
+  <p class="sub">Seleccione um trace e reexecute via <code>POST /traces/{id}/replay</code> (pipeline existente).</p>
+</div>
+
+{% if flash %}<p class="sub">{{ flash }}</p>{% endif %}
+
+<form class="filters" method="get" action="/ops/lab/replay" id="lab-replay-pick">
+  <label style="grid-column:1/-1">Trace ID
+    <input name="trace_id" value="{{ trace_id }}" placeholder="cole o trace_id…" required />
+  </label>
+  <label>&nbsp;<button class="btn secondary" type="submit">Carregar</button></label>
+</form>
+
+{% if trace_id %}
+<form class="panel" method="post" action="/traces/{{ trace_id }}/replay">
+  <h2>Reexecutar <code class="mono">{{ trace_id }}</code></h2>
+  <p class="sub">Usa a mensagem + transcript do snapshot/eventos originais. O resultado abre na UI de traces (side-by-side + diff).</p>
+  <p>
+    <button class="btn" type="submit">Correr replay</button>
+    · <a href="/traces/{{ trace_id }}">Abrir detalhe do trace</a>
+  </p>
+</form>
+{% endif %}
+
+<div class="panel">
+  <h2>Traces recentes</h2>
+  {% if not recent %}
+  <p class="sub">Nenhum trace disponível.</p>
+  {% else %}
+  <table>
+    <thead><tr><th>Trace</th><th>Criado</th><th>Origem</th><th></th></tr></thead>
+    <tbody>
+    {% for t in recent %}
+      <tr>
+        <td class="mono"><a href="/traces/{{ t.trace_id }}">{{ t.trace_id[:16] }}…</a></td>
+        <td class="mono">{{ t.created_at }}</td>
+        <td>{{ t.origin or t.user_label or '—' }}</td>
+        <td>
+          <a href="/ops/lab/replay?trace_id={{ t.trace_id }}">Usar</a>
+          ·
+          <form method="post" action="/traces/{{ t.trace_id }}/replay" style="display:inline">
+            <button class="btn secondary" type="submit" style="min-height:2rem;padding:0.2rem 0.5rem">Replay</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

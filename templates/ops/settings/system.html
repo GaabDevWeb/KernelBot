@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Sistema — Configurações{% endblock %}
+{% block crumb %}Config Sistema{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Configuração do sistema</h1>
+  <p class="sub">Versão, flags e secrets <em>redigidos</em> (configured / missing).</p>
+</div>
+
+<div class="cards">
+  <div class="card">
+    <div class="label">Versão</div>
+    <div class="value" style="font-size:1.1rem">{{ cfg.version }}</div>
+  </div>
+  <div class="card">
+    <div class="label">KERNELBOT_ENV</div>
+    <div class="value" style="font-size:1.1rem">{{ cfg.env }}</div>
+  </div>
+  <div class="card">
+    <div class="label">Retenção traces</div>
+    <div class="value">{{ cfg.trace_retention_days }}d</div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Tracing / paths</h2>
+  <table>
+    <tbody>
+      <tr><th style="width:16rem">ACL_TRACE_DB_PATH</th><td class="mono">{{ cfg.trace_db_path }}</td></tr>
+      <tr><th>ACL_TRACE_RETENTION_DAYS</th><td class="mono">{{ cfg.trace_retention_days }}</td></tr>
+      <tr><th>ORBIT_INTERNAL_URL</th><td class="mono">{{ cfg.orbit_internal_url }}</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>Flags (não secretas)</h2>
+  <table>
+    <thead><tr><th>Flag</th><th>Valor</th></tr></thead>
+    <tbody>
+      {% for k, v in cfg.flags.items() %}
+      <tr>
+        <td class="mono">{{ k }}</td>
+        <td class="mono">{% if v is none %}— (default runtime){% else %}{{ v }}{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>Secrets (redacted)</h2>
+  <table>
+    <thead><tr><th>Variável</th><th>Estado</th></tr></thead>
+    <tbody>
+      {% for k, v in cfg.secrets.items() %}
+      <tr>
+        <td class="mono">{{ k }}</td>
+        <td>
+          {% if v == 'configured' %}
+            <span class="badge ok">configured</span>
+          {% else %}
+            <span class="badge error">missing</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="sub" style="margin-top:0.75rem">Valores nunca são apresentados neste painel.</p>
+</div>
+{% endblock %}

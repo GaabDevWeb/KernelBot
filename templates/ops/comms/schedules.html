@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Agendamentos{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Agendamentos</h1>
+  <p class="sub">Campanhas com status <code>scheduled</code> — o scheduler interno dispara ~a cada 20s.</p>
+</div>
+<div class="toolbar">
+  <a class="btn" href="/ops/comms/campaigns/new">Nova / agendar</a>
+</div>
+<div class="panel">
+  {% if not items %}
+  <p>Nenhum agendamento pendente.</p>
+  {% else %}
+  <table>
+    <thead><tr><th>Título</th><th>Quando (UTC)</th><th>Destino</th><th></th></tr></thead>
+    <tbody>
+      {% for c in items %}
+      <tr>
+        <td><a href="/ops/comms/campaigns/{{ c.id }}">{{ c.title }}</a></td>
+        <td class="mono">{{ c.scheduled_at }}</td>
+        <td class="mono">{{ c.dest_type }}:{{ c.dest_ref }}</td>
+        <td>
+          <form method="post" action="/ops/comms/campaigns/{{ c.id }}/cancel">
+            <button class="btn secondary" type="submit">Cancelar</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

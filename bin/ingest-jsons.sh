@@ -23,4 +23,4 @@ if [[ "${KERNELBOT_ENV:-}" == "staging" ]]; then
 fi
 
 "$ROOT/.venv/bin/pip" install -q pymysql 2>/dev/null || true
-exec "$ROOT/.venv/bin/python" -m engine.jsons_ingest
+exec "$ROOT/.venv/bin/python" -m kernel.knowledge.jsons_ingest

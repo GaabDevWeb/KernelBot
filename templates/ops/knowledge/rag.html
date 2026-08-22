@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}RAG Explorer — Conhecimento{% endblock %}
+{% block crumb %}RAG Explorer{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>RAG Explorer</h1>
+  <p class="sub">Debug de retrieval como no chat: query processada, top docs, scores, confidence, reason e chunks — sem chamar o LLM.</p>
+</div>
+{% if error %}<div class="panel"><p class="badge error">{{ error }}</p></div>{% endif %}
+
+{% if rag_cfg %}
+<div class="cards">
+  <div class="card"><div class="label">Chunks índice</div><div class="value">{{ rag_cfg.index.chunks }}</div></div>
+  <div class="card"><div class="label">Silos</div><div class="value">{{ rag_cfg.index.silo_count }}</div></div>
+  <div class="card"><div class="label">candidate_k</div><div class="value">{{ rag_cfg.config.candidate_k }}</div></div>
+  <div class="card"><div class="label">top_k</div><div class="value">{{ rag_cfg.config.top_k }}</div></div>
+  <div class="card"><div class="label">min_score</div><div class="value" style="font-size:1.1rem">{{ rag_cfg.config.min_score }}</div></div>
+  <div class="card"><div class="label">policy</div><div class="value" style="font-size:0.95rem">{{ rag_cfg.config.retrieval_mode }}</div></div>
+</div>
+{% endif %}
+
+<form class="filters" method="get" action="/ops/knowledge/rag">
+  <label>Pergunta
+    <input name="q" value="{{ q }}" placeholder="O que acontece no pipeline RAG?" required style="min-width:20rem" />
+  </label>
+  <label>Disciplina (opcional)
+    <select name="discipline">
+      <option value="">Auto / global</option>
+      {% for s in silos %}
+      <option value="{{ s }}" {% if discipline == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>&nbsp;<button class="btn" type="submit">Explorar</button></label>
+</form>
+
+{% if result %}
+<div class="cards">
+  <div class="card"><div class="label">Reason</div><div class="value" style="font-size:0.95rem">{{ result.reason or '—' }}</div></div>
+  <div class="card"><div class="label">Confidence</div><div class="value" style="font-size:1rem">{{ result.confidence or '—' }}{% if result.confidence_float is not none %} <span class="sub">({{ '%.2f'|format(result.confidence_float) }})</span>{% endif %}</div></div>
+  <div class="card"><div class="label">Top score</div><div class="value" style="font-size:1.1rem">{{ '%.3f'|format(result.top_score or 0) }}</div></div>
+  <div class="card"><div class="label">Coverage</div><div class="value" style="font-size:1.1rem">{{ '%.2f'|format(result.coverage or 0) }}</div></div>
+  <div class="card"><div class="label">Seleccionado</div><div class="value">{{ result.top_docs|length }}</div></div>
+  <div class="card"><div class="label">Considerados</div><div class="value">{{ result.candidates_considered|length }}</div></div>
+</div>
+
+<div class="panel">
+  <h2>Query</h2>
+  <p><strong>Original:</strong> <span class="mono">{{ result.question }}</span></p>
+  <p><strong>Processada:</strong> <span class="mono">{{ result.processed_query }}</span></p>
+  {% if result.informative_terms %}
+  <p class="sub">Termos informativos: {% for t in result.informative_terms %}<code>{{ t }}</code> {% endfor %}</p>
+  {% endif %}
+  <p class="sub">
+    Âmbito: {{ result.label or '—' }} ·
+    disciplina efectiva: <code>{{ result.discipline or '—' }}</code> ·
+    retrieval: <code>{{ result.retrieval_mode or '—' }}</code> ·
+    margem: {{ '%.3f'|format(result.score_margin or 0) }}
+  </p>
+</div>
+
+<div class="panel">
+  <h2>Top documentos / chunks seleccionados</h2>
+  {% if not result.top_docs %}
+  <p>Nenhum chunk seleccionado pela decisão.</p>
+  {% else %}
+  <table>
+    <thead>
+      <tr><th>#</th><th>Doc / score</th><th>Chunk</th></tr>
+    </thead>
+    <tbody>
+      {% for c in result.top_docs %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>
+          <span class="mono">{{ c.source }}</span><br />
+          score <code>{{ '%.4f'|format(c.score) }}</code>
+          · norm <code>{{ '%.3f'|format(c.score_normalized) }}</code>
+          {% if c.matched_terms %}<br /><span class="sub">matches: {{ c.matched_terms|join(', ') }}</span>{% endif %}
+        </td>
+        <td><pre class="snippet">{{ c.snippet }}{% if c.chunk_chars > c.snippet|length %}…{% endif %}</pre></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+
+<details class="panel">
+  <summary><strong>Candidatos considerados (pré-decisão)</strong></summary>
+  {% if not result.candidates_considered %}
+  <p>Vazio.</p>
+  {% else %}
+  <table>
+    <thead><tr><th>Source</th><th>Score</th><th>Snippet</th></tr></thead>
+    <tbody>
+      {% for c in result.candidates_considered %}
+      <tr>
+        <td class="mono">{{ c.source }}</td>
+        <td class="mono">{{ '%.4f'|format(c.score) }}</td>
+        <td><pre class="snippet">{{ c.snippet }}</pre></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</details>
+{% elif q %}
+<div class="panel"><p>Sem resultado.</p></div>
+{% else %}
+<div class="panel"><p class="sub">Faça uma pergunta para inspeccionar o retrieval sem gerar resposta.</p></div>
+{% endif %}
+{% endblock %}
+{% block head %}
+<style>
+pre.snippet {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  max-height: 10rem;
+  overflow: auto;
+}
+details.panel summary { cursor: pointer; margin-bottom: 0.5rem; }
+</style>
+{% endblock %}

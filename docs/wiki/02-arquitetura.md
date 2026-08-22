@@ -2,6 +2,8 @@
 
 [← Índice](README.md)
 
+> Atualização True Kernel: a interface web foi removida. O monólito expõe uma API HTTP e concentra o domínio em `kernel/`; referências históricas a `engine/`, `core/`, `frontend/` e `templates/` abaixo estão depreciadas.
+
 ## Stack tecnológica
 
 | Camada | Tecnologia | Ficheiro(s) principal(is) |

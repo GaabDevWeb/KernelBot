@@ -1,0 +1,18 @@
+<div id="sys-inner">
+  <div class="cards">
+    <div class="card"><div class="label">Uptime</div><div class="value">{{ proc.uptime_human }}</div></div>
+    <div class="card"><div class="label">PID</div><div class="value">{{ proc.pid }}</div></div>
+    <div class="card"><div class="label">Threads</div><div class="value">{{ proc.thread_count }}</div></div>
+    <div class="card"><div class="label">Fila de traces</div><div class="value">{% if queue_depth is not none %}{{ queue_depth }}{% else %}—{% endif %}</div></div>
+    <div class="card"><div class="label">RAM (RSS)</div><div class="value">{% if system.rss_mb_approx %}{{ system.rss_mb_approx }} MB{% else %}—{% endif %}</div></div>
+    <div class="card"><div class="label">CPU user</div><div class="value">{{ system.user_cpu_s }}s</div></div>
+    <div class="card"><div class="label">CPU system</div><div class="value">{{ system.system_cpu_s }}s</div></div>
+    <div class="card"><div class="label">Load avg</div><div class="value">{% if system.loadavg %}{{ '%.2f'|format(system.loadavg[0]) }}{% else %}—{% endif %}</div></div>
+    {% if system.disk %}
+    <div class="card"><div class="label">Disco livre</div><div class="value">{{ system.disk.free_gb }} GB</div></div>
+    <div class="card"><div class="label">Disco usado</div><div class="value">{{ system.disk.used_pct }}%</div></div>
+    {% endif %}
+    <div class="card"><div class="label">Versão</div><div class="value" style="font-size:1rem">{{ version }}</div></div>
+  </div>
+  <p class="sub mono">Actualizado: {{ now }}</p>
+</div>

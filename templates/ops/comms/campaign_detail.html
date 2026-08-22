@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ camp.title }} — Campanha{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ camp.title }}</h1>
+  <p class="sub mono">{{ camp.id }} · {{ camp.status }} · {{ camp.channel }}</p>
+</div>
+{% if flash %}<p class="sub">{{ flash }}</p>{% endif %}
+<div class="toolbar">
+  {% if camp.status in ['draft','scheduled','failed'] %}
+  <form method="post" action="/ops/comms/campaigns/{{ camp.id }}/send-test" style="display:inline">
+    <button class="btn secondary" type="submit">Enviar Teste</button>
+  </form>
+  <form method="post" action="/ops/comms/campaigns/{{ camp.id }}/send-now" style="display:inline">
+    <button class="btn" type="submit">Enviar Agora</button>
+  </form>
+  {% endif %}
+  {% if camp.status == 'scheduled' %}
+  <form method="post" action="/ops/comms/campaigns/{{ camp.id }}/cancel" style="display:inline">
+    <button class="btn secondary" type="submit">Cancelar</button>
+  </form>
+  {% endif %}
+  <a class="btn secondary" href="/ops/comms/campaigns">Lista</a>
+</div>
+<div class="panel">
+  <h2>Mensagem</h2>
+  <pre style="white-space:pre-wrap">{{ camp.preview_text }}</pre>
+  <p class="meta">Destino: <code>{{ camp.dest_type }}:{{ camp.dest_ref }}</code>
+  {% if camp.scheduled_at %} · Agendado: <code>{{ camp.scheduled_at }}</code>{% endif %}</p>
+</div>
+{% if attachments %}
+<div class="panel">
+  <h2>Anexos</h2>
+  <ul>
+    {% for a in attachments %}
+    <li class="mono">{{ a.filename }} ({{ a.content_type }}, {{ a.size_bytes }} B)</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+<div class="panel">
+  <h2>Entregas</h2>
+  {% if not deliveries %}
+  <p>Ainda sem entregas.</p>
+  {% else %}
+  <table>
+    <thead><tr><th>Destino</th><th>Status</th><th>Latência</th><th>Erro</th><th>Quando</th></tr></thead>
+    <tbody>
+      {% for d in deliveries %}
+      <tr class="{% if d.status == 'failed' %}err-row{% endif %}">
+        <td class="mono">{{ d.dest_type }}:{{ d.dest_ref }}</td>
+        <td><span class="badge {% if d.status == 'sent' %}ok{% else %}error{% endif %}">{{ d.status }}</span></td>
+        <td class="mono">{% if d.latency_ms %}{{ '%.0f'|format(d.latency_ms) }}ms{% else %}—{% endif %}</td>
+        <td>{{ d.error or '—' }}</td>
+        <td class="mono">{{ d.created_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

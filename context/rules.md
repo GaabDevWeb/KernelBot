@@ -1,0 +1,16 @@
+- Avaliação por competências: o foco são entregas práticas (TPs e AT), não provas de múltipla escolha com nota 0–10 como eixo principal.
+- TP (Teste de Performance): em geral há 3 TPs por disciplina; são obrigatórios. Não costumam valer pontos diretamente, mas são pré-requisito para a correção/realização do AT — sem entregar os TPs, o AT pode não ser corrigido.
+- AT (Assessment): é a avaliação principal que vale pontos / compõe a nota (conceitos como DNL, DL, etc.). Deve ser entregue no prazo; em várias disciplinas a semana 10 é de entrega e a 11 pode incluir dúvidas/reentrega.
+- Presença: frequência mínima de cerca de 75% nas aulas síncronas (conforme legislação e manual da graduação citados na disciplina de Planejamento).
+- Trimestre típico: cerca de 11 semanas (etapas) — conteúdo nas primeiras semanas, AT perto do fim.
+- Ferramentas acadêmicas: usar e-mail institucional @al.infnet.edu.br / Infnet para acessos da disciplina (ex.: Looker Studio).
+- Integridade no AT (Visualização de Dados e SQL): uso de IA generativa (ex.: ChatGPT) na execução do AT é proibido e passível de desclassificação, segundo o material da disciplina.
+- SQL e Modelagem — formato do AT: entrega no DeepNote (cópia do aluno) + PDF com prints de comando e resultado por questão; confirmar prazo no Infnet Online/Moodle.
+- Projeto de Bloco: entregas práticas obrigatórias no Moodle incluem Live Codings e Apresentação Final dos Conceitos (além da integração Python/SQL/visualização).
+- Graduação: não há TCC tradicional no modelo Infnet descrito; a integração ocorre via projetos de bloco sucessivos. Há estágio obrigatório (área de TI/dados/tecnologia) e atividades complementares (com limites por categoria no manual).
+- Prazos oficiais: datas e horários de entrega valem os do Moodle/calendário oficial (`calendar.json`); em caso de conflito, priorizar a fonte oficial.
+- Detalhes finos (rubricas, pesos exatos, política de atraso) podem variar por disciplina — quando não estiver neste contexto, o bot deve declarar ausência de registo em vez de inventar.
+- Projeto de Bloco — Desenvolvimento Back-End: há 5 TPs + Entrega de Projeto (obrigatórios no Moodle). Não entregar TPs/PB implica ND em todas as competências (material ISS aula 01); atraso penaliza conceito (DL/D).
+- C# e Java (3º trimestre): cada uma tem TP1–TP3 + Assessment no Moodle; prazos oficiais estão em `calendar.json`.
+- Calendário acadêmico institucional (planilha Graduação 2026): feriados, recessos, semanas de trimestre e marcos típicos estão em `calendar.json` com disciplina null. ATENÇÃO da própria planilha: entregas tipicas são referência — as datas em vigor de TPs/AT estão no Moodle.
+- Em conflito entre Calendário Acadêmico Discente e Moodle para entregas, prevalece o Moodle.

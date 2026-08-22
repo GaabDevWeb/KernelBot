@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Kernel Ops{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Dashboard</h1>
+  <p class="sub">Visão executiva — o que está a acontecer agora.</p>
+</div>
+{% if error %}<p class="err">{{ error }}</p>{% endif %}
+
+{% if metrics %}
+<div class="cards" aria-label="Indicadores">
+  <div class="card"><div class="label">Mensagens hoje</div><div class="value">{{ metrics.messages_today }}</div></div>
+  <div class="card"><div class="label">Última hora</div><div class="value">{{ metrics.messages_last_hour }}</div></div>
+  <div class="card"><div class="label">Utilizadores activos (24h)</div><div class="value">{{ metrics.active_users_24h }}</div></div>
+  <div class="card"><div class="label">Tempo médio</div><div class="value">{% if metrics.avg_duration_ms is not none %}{{ '%.0f'|format(metrics.avg_duration_ms) }}ms{% else %}—{% endif %}</div></div>
+  <div class="card"><div class="label">P95</div><div class="value">{% if metrics.p95_ms is not none %}{{ '%.0f'|format(metrics.p95_ms) }}ms{% else %}—{% endif %}</div></div>
+  <div class="card"><div class="label">P99</div><div class="value">{% if metrics.p99_ms is not none %}{{ '%.0f'|format(metrics.p99_ms) }}ms{% else %}—{% endif %}</div></div>
+  <div class="card danger"><div class="label">Erros (24h)</div><div class="value">{{ metrics.errors_24h }}</div></div>
+  <div class="card warn"><div class="label">Timeouts (24h)</div><div class="value">{{ metrics.timeouts_24h }}</div></div>
+  <div class="card"><div class="label">Traces totais</div><div class="value">{{ metrics.total_traces }}</div></div>
+  <div class="card"><div class="label">CPU (user+sys)</div><div class="value">{% if system %}{{ '%.1f'|format((system.user_cpu_s or 0) + (system.system_cpu_s or 0)) }}s{% else %}—{% endif %}</div></div>
+  <div class="card"><div class="label">RAM (RSS)</div><div class="value">{% if system and system.rss_mb_approx %}{{ system.rss_mb_approx }} MB{% else %}—{% endif %}</div></div>
+  <div class="card"><div class="label">Uptime</div><div class="value">{% if proc %}{{ proc.uptime_human }}{% else %}—{% endif %}</div></div>
+</div>
+{% endif %}
+
+<div class="charts">
+  <div class="chart-panel">
+    <h2>Mensagens por hora</h2>
+    {{ charts.messages | safe }}
+  </div>
+  <div class="chart-panel">
+    <h2>Tempo de resposta</h2>
+    {{ charts.latency | safe }}
+  </div>
+  <div class="chart-panel">
+    <h2>Erros por hora</h2>
+    {{ charts.errors | safe }}
+  </div>
+</div>
+
+<div class="toolbar">
+  <a class="btn" href="/ops/traces">Ver traces</a>
+  <a class="btn secondary" href="/ops/system">Sistema</a>
+  <a class="btn secondary" href="/ops/metrics">Métricas</a>
+  <a class="btn secondary" href="/traces/export.zip?scope=all">Exportar traces (ZIP)</a>
+</div>
+
+<div class="panel">
+  <h2>Traces recentes</h2>
+  {% if not recent %}
+  <p>Nenhum trace ainda. Quando o Kernel receber tráfego, aparece aqui.</p>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>Horário</th>
+        <th>trace_id</th>
+        <th>Origem</th>
+        <th>Utilizador</th>
+        <th>Duração</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in recent %}
+      <tr class="{% if t.has_error %}err-row{% endif %}">
+        <td class="mono">{{ t.updated_at }}</td>
+        <td><a href="/traces/{{ t.trace_id }}"><code>{{ t.trace_id }}</code></a></td>
+        <td>{{ t.origin or '—' }}</td>
+        <td class="mono">{{ t.user_label or '—' }}</td>
+        <td class="mono">{% if t.duration_ms is not none %}{{ '%.0f'|format(t.duration_ms) }}ms{% else %}—{% endif %}</td>
+        <td><span class="badge {{ t.status }}">{{ t.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

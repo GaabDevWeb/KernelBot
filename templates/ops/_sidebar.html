@@ -1,0 +1,27 @@
+<aside class="sidebar" aria-label="Navegação principal">
+  <a class="brand" href="/ops/dashboard">
+    Kernel Ops
+    <span>Central de Operações</span>
+  </a>
+
+  <a class="nav-link {% if nav == 'dashboard' %}active{% endif %}" href="/ops/dashboard">Dashboard</a>
+
+  {% for group in nav_tree %}
+    {% if group.children %}
+    <div class="nav-group">
+      <div class="nav-group-label">{{ group.label }}</div>
+      {% for item in group.children %}
+      <a class="nav-link {% if nav == item.id %}active{% endif %}" href="{{ item.href }}">
+        <span>{{ item.label }}</span>
+        {% if item.phase %}<span class="phase-pill">{{ item.phase }}</span>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endfor %}
+
+  <div class="foot">
+    <a href="/traces">Traces (legado)</a><br />
+    <a href="/ops/login">Sair / re-login</a>
+  </div>
+</aside>

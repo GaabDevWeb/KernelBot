@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Busca — Conhecimento{% endblock %}
+{% block crumb %}Busca{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Busca</h1>
+  <p class="sub">BM25 bruto · híbrida (decisão ACL) · completa (pipeline de contexto do chat, sem LLM).</p>
+</div>
+{% if error %}<div class="panel"><p class="badge error">{{ error }}</p></div>{% endif %}
+<form class="filters" method="get" action="/ops/knowledge/search">
+  <label>Query
+    <input name="q" value="{{ q }}" placeholder="termos de busca…" required style="min-width:16rem" />
+  </label>
+  <label>Modo
+    <select name="mode">
+      <option value="bm25" {% if mode == 'bm25' %}selected{% endif %}>BM25</option>
+      <option value="hybrid" {% if mode == 'hybrid' %}selected{% endif %}>Híbrida</option>
+      <option value="full" {% if mode == 'full' %}selected{% endif %}>Completa</option>
+    </select>
+  </label>
+  <label>Disciplina
+    <select name="discipline">
+      <option value="">Todas / global</option>
+      {% for s in silos %}
+      <option value="{{ s }}" {% if discipline == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Top-k
+    <input name="top_k" type="number" min="1" max="20" value="{{ top_k }}" style="width:4.5rem" />
+  </label>
+  <label>&nbsp;<button class="btn" type="submit">Buscar</button></label>
+</form>
+
+{% if result %}
+<div class="cards">
+  <div class="card"><div class="label">Modo</div><div class="value" style="font-size:1rem">{{ result.mode }}</div></div>
+  <div class="card"><div class="label">Hits</div><div class="value">{{ result.candidates|length }}</div></div>
+  <div class="card"><div class="label">Top score</div><div class="value" style="font-size:1.1rem">{{ '%.3f'|format(result.top_score or 0) }}</div></div>
+  {% if result.reason %}
+  <div class="card"><div class="label">Reason</div><div class="value" style="font-size:0.95rem">{{ result.reason }}</div></div>
+  {% endif %}
+  {% if result.confidence %}
+  <div class="card"><div class="label">Confidence</div><div class="value" style="font-size:1rem">{{ result.confidence }}</div></div>
+  {% endif %}
+</div>
+<div class="panel">
+  <h2>Query processada</h2>
+  <p class="mono">{{ result.processed_query }}</p>
+  {% if result.label %}<p class="sub">Âmbito: {{ result.label }} · disciplina efectiva: <code>{{ result.discipline or '—' }}</code></p>{% endif %}
+</div>
+<div class="panel">
+  <h2>Resultados</h2>
+  {% if not result.candidates %}
+  <p>Sem candidatos.</p>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>Documento</th>
+        <th>Score</th>
+        <th>Norm</th>
+        <th>Chunk</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in result.candidates %}
+      <tr>
+        <td class="mono">{{ c.source }}<br /><span style="color:var(--muted)">{{ c.discipline }}</span></td>
+        <td class="mono">{{ '%.4f'|format(c.score) }}</td>
+        <td class="mono">{{ '%.3f'|format(c.score_normalized) }}</td>
+        <td><pre class="snippet">{{ c.snippet }}{% if c.chunk_chars > c.snippet|length %}…{% endif %}</pre></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% elif q %}
+<div class="panel"><p>Sem resultado.</p></div>
+{% else %}
+<div class="panel"><p class="sub">Introduza uma query para testar o índice.</p></div>
+{% endif %}
+{% endblock %}
+{% block head %}
+<style>
+pre.snippet {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  max-height: 8rem;
+  overflow: auto;
+  color: var(--ink);
+}
+</style>
+{% endblock %}

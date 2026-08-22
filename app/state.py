@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from engine.chat_provider import ChatProvider
-from engine.context import ContextManager
-from engine.lesson_catalog import LessonCatalog
-from engine.pinned_store import PinnedSessionStore
-from engine.search import SearchEngine
+from kernel.providers.chat_provider import ChatProvider
+from kernel.orchestrator.context import ContextManager
+from kernel.knowledge.lesson_catalog import LessonCatalog
+from kernel.memory.group_memory import GroupMemoryStore
+from kernel.memory.idempotency import IdempotencyStore
+from kernel.memory.pinned_store import PinnedSessionStore
+from kernel.memory.transcript_store import TranscriptStore
+from kernel.rag.search import SearchEngine
 
 
 @dataclass
@@ -20,3 +23,9 @@ class AppServices:
     lesson_catalog: LessonCatalog | None = None
     indexed_lesson_keys: frozenset[str] = field(default_factory=frozenset)
     catalog_drift_report: dict | None = None
+    # Transcript store v1 (Kernel↔Orbit): default_factory preserva a
+    # construção de `AppServices(...)` sem este campo nos testes legados.
+    transcript_store: TranscriptStore = field(default_factory=TranscriptStore)
+    # Memória Histórica de Grupos e Idempotência
+    group_memory_store: GroupMemoryStore | None = None
+    idempotency_store: IdempotencyStore = field(default_factory=IdempotencyStore)

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ aud.name }} — Público{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ aud.name }}</h1>
+  <p class="sub">{{ aud.description or 'Sem descrição' }}</p>
+</div>
+<div class="panel">
+  <h2>Adicionar membro</h2>
+  <form method="post" action="/ops/comms/audiences/{{ aud.id }}/members" class="filters">
+    <label>Tipo
+      <select name="member_type">
+        <option value="user">Utilizador</option>
+        <option value="group">Grupo</option>
+      </select>
+    </label>
+    <label>Ref (JID/número) <input name="member_ref" required /></label>
+    <label>Label <input name="label" placeholder="opcional" /></label>
+    <label>&nbsp;<button class="btn" type="submit">Adicionar</button></label>
+  </form>
+</div>
+<div class="panel">
+  <h2>Membros</h2>
+  <table>
+    <thead><tr><th>Tipo</th><th>Ref</th><th>Label</th></tr></thead>
+    <tbody>
+      {% for m in members %}
+      <tr>
+        <td>{{ m.member_type }}</td>
+        <td class="mono">{{ m.member_ref }}</td>
+        <td>{{ m.label or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3">Vazio.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

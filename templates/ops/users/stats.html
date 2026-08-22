@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Estatísticas — Usuários{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Estatísticas</h1>
+  <p class="sub">Agregação por utilizador (sessões SQLite + erros/latência via traces).</p>
+</div>
+<div class="toolbar">
+  <a class="btn secondary" href="/ops/users/export.zip">Exportar ZIP (JSON+CSV)</a>
+</div>
+<div class="panel">
+  {% if not rows %}
+  <p>Sem dados ainda.</p>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>Utilizador</th>
+        <th>Canal</th>
+        <th>Msgs</th>
+        <th>Sessões</th>
+        <th>Traces</th>
+        <th>Erros</th>
+        <th>Tempo médio</th>
+        <th>Último</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr class="{% if r.blocked %}err-row{% endif %}">
+        <td class="mono">{{ r.user_id }}</td>
+        <td>{{ r.platform }}</td>
+        <td>{{ r.messages }}</td>
+        <td>{{ r.sessions }}</td>
+        <td>{{ r.trace_count }}</td>
+        <td>{{ r.trace_errors }}</td>
+        <td class="mono">{% if r.avg_ms is not none %}{{ '%.0f'|format(r.avg_ms) }}ms{% else %}—{% endif %}</td>
+        <td class="mono">{{ r.last_seen }}</td>
+        <td>{% if r.blocked %}<span class="badge error">bloqueado</span>{% else %}<span class="badge ok">ok</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Reindexação — Conhecimento{% endblock %}
+{% block crumb %}Reindexação{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Reindexação</h1>
+  <p class="sub">Reconstruir índice BM25 a partir do MySQL (equivalente a <code>/reload</code>). Scope disciplina/documento reporta estatísticas filtradas — o rebuild é sempre completo.</p>
+</div>
+{% if flash %}<p class="sub">{{ flash }}</p>{% endif %}
+{% if error %}<div class="panel"><p class="badge error">{{ error }}</p></div>{% endif %}
+
+<div class="cards">
+  <div class="card"><div class="label">Chunks actuais</div><div class="value">{{ index_chunks }}</div></div>
+  <div class="card"><div class="label">Silos</div><div class="value">{{ silos|length }}</div></div>
+</div>
+
+<form class="panel" method="post" action="/ops/knowledge/reindex">
+  <h2>Executar</h2>
+  <div class="filters" style="margin:0">
+    <label>Âmbito
+      <select name="scope" id="reindex-scope">
+        <option value="all" {% if form_scope == 'all' or not form_scope %}selected{% endif %}>Tudo</option>
+        <option value="discipline" {% if form_scope == 'discipline' %}selected{% endif %}>Disciplina</option>
+        <option value="document" {% if form_scope == 'document' %}selected{% endif %}>Documento</option>
+      </select>
+    </label>
+    <label>Disciplina
+      <select name="discipline">
+        <option value="">—</option>
+        {% for s in silos %}
+        <option value="{{ s }}" {% if form_discipline == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Documento (source ou discipline/slug)
+      <input name="document" value="{{ form_document or '' }}" placeholder="db:python/aula-01 ou python/aula-01" style="min-width:16rem" />
+    </label>
+  </div>
+  <p style="margin:0.75rem 0">
+    <label>
+      <input type="checkbox" name="ingest_disk" value="1" {% if form_ingest %}checked{% endif %} />
+      Também reingerir do disco (jsons/ ou wiki se disciplina=doc) antes do rebuild — best-effort staging
+    </label>
+  </p>
+  <button class="btn" type="submit">Reindexar</button>
+</form>
+
+{% if result %}
+<div class="panel">
+  <h2>Progresso</h2>
+  <ol class="progress-list">
+    {% for s in result.steps %}
+    <li class="{% if s.ok %}ok{% else %}err{% endif %}">
+      <strong>{{ s.name }}</strong>
+      — {{ s.detail }}
+      <span class="mono">({{ s.ms }} ms)</span>
+      {% if s.ok %}<span class="badge ok">ok</span>{% else %}<span class="badge error">falhou</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  <p>
+    Índice: <strong>{{ result.chunk_total }}</strong> chunks ·
+    <strong>{{ result.silo_count }}</strong> silos
+    {% if result.ok %}<span class="badge ok">concluído</span>{% else %}<span class="badge error">com avisos</span>{% endif %}
+  </p>
+  {% if result.scope_stats %}
+  <p class="sub">
+    Scope {{ result.scope_stats.scope }}
+    {% if result.scope_stats.discipline %} · disciplina <code>{{ result.scope_stats.discipline }}</code> → {{ result.scope_stats.chunks }} chunks{% endif %}
+    {% if result.scope_stats.document %} · documento <code>{{ result.scope_stats.document }}</code> → {{ result.scope_stats.chunks }} chunks{% endif %}
+    {% if result.scope_stats.note %}<br />{{ result.scope_stats.note }}{% endif %}
+  </p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+{% block head %}
+<style>
+.progress-list { margin: 0; padding-left: 1.25rem; }
+.progress-list li { margin: 0.4rem 0; }
+.progress-list li.err { color: var(--danger); }
+</style>
+{% endblock %}

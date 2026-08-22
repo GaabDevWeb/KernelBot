@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Traces — dashboard</title>
+  <link rel="stylesheet" href="/traces-static/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    {% include "_nav.html" %}
+    <h1>Dashboard</h1>
+    <p class="sub">Métricas operacionais (janela 24h + totais).</p>
+    {% if error %}<p class="err">{{ error }}</p>{% endif %}
+    {% if metrics %}
+    <div class="cards">
+      <div class="card"><div class="label">Traces total</div><div class="value">{{ metrics.total_traces }}</div></div>
+      <div class="card"><div class="label">Erros total</div><div class="value">{{ metrics.total_errors }}</div></div>
+      <div class="card"><div class="label">Traces 24h</div><div class="value">{{ metrics.traces_24h }}</div></div>
+      <div class="card"><div class="label">Erros 24h</div><div class="value">{{ metrics.errors_24h }}</div></div>
+      <div class="card"><div class="label">Média 24h</div><div class="value">{% if metrics.avg_duration_ms is not none %}{{ '%.0f'|format(metrics.avg_duration_ms) }}ms{% else %}—{% endif %}</div></div>
+      <div class="card"><div class="label">P95</div><div class="value">{% if metrics.p95_ms is not none %}{{ '%.0f'|format(metrics.p95_ms) }}ms{% else %}—{% endif %}</div></div>
+      <div class="card"><div class="label">P99</div><div class="value">{% if metrics.p99_ms is not none %}{{ '%.0f'|format(metrics.p99_ms) }}ms{% else %}—{% endif %}</div></div>
+      <div class="card"><div class="label">Hoje</div><div class="value">{{ metrics.messages_today }}</div></div>
+      <div class="card"><div class="label">Última hora</div><div class="value">{{ metrics.messages_last_hour }}</div></div>
+      <div class="card"><div class="label">Erros/hora</div><div class="value">{{ metrics.errors_last_hour }}</div></div>
+    </div>
+    {% endif %}
+    <div class="toolbar">
+      <a class="btn" href="/traces">Ver lista / filtros</a>
+      <a class="btn secondary" href="/traces/export.zip?scope=all">Exportar todos (ZIP)</a>
+      <a class="btn secondary" href="/traces/export.zip?scope=period">Exportar 24h+ (use since/until na lista)</a>
+    </div>
+    <div class="panel">
+      <h2>Recentes</h2>
+      {% if not recent %}
+      <p>Nenhum trace ainda.</p>
+      {% else %}
+      <table>
+        <thead>
+          <tr>
+            <th>Horário</th>
+            <th>trace_id</th>
+            <th>Origem</th>
+            <th>Utilizador</th>
+            <th>Duração</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in recent %}
+          <tr class="{% if t.has_error %}err-row{% endif %}">
+            <td class="mono">{{ t.updated_at }}</td>
+            <td><a href="/traces/{{ t.trace_id }}"><code>{{ t.trace_id }}</code></a></td>
+            <td><span class="badge origin">{{ t.origin or '—' }}</span></td>
+            <td class="mono">{{ t.user_label or '—' }}</td>
+            <td class="mono">{% if t.duration_ms is not none %}{{ '%.0f'|format(t.duration_ms) }}ms{% else %}—{% endif %}</td>
+            <td><span class="badge {{ t.status }}">{{ t.status }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

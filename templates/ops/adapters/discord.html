@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Discord — Adapters{% endblock %}
+{% block crumb %}Discord{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Discord</h1>
+  <p class="sub">Estrutura preparada — adapter outbound ainda <strong>não activo</strong>.</p>
+</div>
+
+<div class="cards">
+  <div class="card warn">
+    <div class="label">Estado</div>
+    <div class="value" style="font-size:1.05rem"><span class="badge WARN">stub</span></div>
+  </div>
+  <div class="card danger">
+    <div class="label">Ready</div>
+    <div class="value" style="font-size:1.05rem"><span class="badge error">não</span></div>
+  </div>
+  <div class="card">
+    <div class="label">Activo</div>
+    <div class="value" style="font-size:1.05rem">não</div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Stub <code class="mono">adapters/discord/outbound.py</code></h2>
+  <table>
+    <tbody>
+      <tr><th style="width:12rem">ok</th><td>{{ ok }}</td></tr>
+      <tr><th>ready</th><td>{{ ready }}</td></tr>
+      <tr><th>error</th><td class="mono err">{{ error or '—' }}</td></tr>
+    </tbody>
+  </table>
+  <p class="sub" style="margin-top:0.75rem">Quando o adapter Discord for implementado, esta página passará a consumir o mesmo contrato <code class="mono">outbound_status()</code> / send.</p>
+</div>
+
+<div class="panel">
+  <h2>Status bruto</h2>
+  <pre class="mono" style="white-space:pre-wrap;margin:0;font-size:0.8rem">{{ status_json }}</pre>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Kernel Ops{% endblock %}</title>
+  <link rel="stylesheet" href="/ops-static/styles.css" />
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="shell">
+    {% include "_sidebar.html" %}
+    <main class="main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -24,4 +24,4 @@ if [[ "${KERNELBOT_ENV:-}" == "staging" ]]; then
 fi
 
 "$ROOT/.venv/bin/pip" install -q pymysql 2>/dev/null || true
-exec "$ROOT/.venv/bin/python" -m engine.wiki_doc
+exec "$ROOT/.venv/bin/python" -m kernel.knowledge.wiki_doc
