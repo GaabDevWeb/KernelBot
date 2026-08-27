@@ -139,12 +139,22 @@ class GroupMemoryStore:
         metadata: dict[str, Any] | None = None,
     ) -> GroupMessage:
         """Grava uma mensagem no histórico persistente do grupo."""
-        if not platform or not channel_id or not message_id or not content.strip():
-            raise ValueError("platform, channel_id, message_id e content são obrigatórios")
+        if not platform or not channel_id or not message_id:
+            raise ValueError("platform, channel_id e message_id são obrigatórios")
+        meta = dict(metadata or {})
+        msg_type = str(meta.get("message_type") or "text")
+        status = str(meta.get("message_status") or "active")
+        body = (content or "").strip()
+        if not body and msg_type not in ("media", "deleted"):
+            raise ValueError("content é obrigatório (exceto mídia/apagada com metadata)")
+        if not body and msg_type == "media":
+            body = "[mídia]"
+        if not body and status == "deleted":
+            body = "[mensagem apagada]"
 
         ts = (timestamp or "").strip() or _utc_now_iso()
         now = _utc_now_iso()
-        meta_json = json.dumps(metadata or {}, ensure_ascii=False, default=str)
+        meta_json = json.dumps(meta, ensure_ascii=False, default=str)
         name = (sender_name or "").strip()
 
         with self._lock:
@@ -167,7 +177,7 @@ class GroupMemoryStore:
                         user_id,
                         name,
                         ts,
-                        content.strip(),
+                        body,
                         reply_to,
                         meta_json,
                         now,
@@ -187,9 +197,9 @@ class GroupMemoryStore:
                 user_id=user_id,
                 sender_name=name,
                 timestamp=ts,
-                content=content.strip(),
+                content=body,
                 reply_to=reply_to,
-                metadata=metadata or {},
+                metadata=meta,
                 created_at=now,
             )
 
@@ -207,14 +217,21 @@ class GroupMemoryStore:
                     plat = str(m.get("platform") or "").strip()
                     chan = str(m.get("channel_id") or "").strip()
                     mid = str(m.get("message_id") or "").strip()
+                    meta = dict(m.get("metadata") or {})
+                    msg_type = str(meta.get("message_type") or "text")
+                    status = str(meta.get("message_status") or "active")
                     content = str(m.get("content") or "").strip()
+                    if not content and msg_type == "media":
+                        content = "[mídia]"
+                    if not content and status == "deleted":
+                        content = "[mensagem apagada]"
                     if not plat or not chan or not mid or not content:
                         continue
                     uid = str(m.get("user_id") or chan).strip()
                     name = str(m.get("sender_name") or "").strip()
                     ts = str(m.get("timestamp") or now).strip()
                     reply = m.get("reply_to")
-                    meta_json = json.dumps(m.get("metadata") or {}, ensure_ascii=False, default=str)
+                    meta_json = json.dumps(meta, ensure_ascii=False, default=str)
 
                     conn.execute(
                         """
@@ -295,7 +312,8 @@ class GroupMemoryStore:
         with self._connect() as conn:
             rows = conn.execute(
                 """
-                SELECT id, message_id, user_id, sender_name, timestamp, content, created_at
+                SELECT id, message_id, user_id, sender_name, timestamp, content,
+                       metadata_json, created_at
                 FROM group_messages
                 WHERE platform = ? AND channel_id = ?
                 ORDER BY id ASC
@@ -303,7 +321,17 @@ class GroupMemoryStore:
                 (platform, channel_id),
             ).fetchall()
 
-        docs = [dict(r) for r in rows]
+        docs: list[dict[str, Any]] = []
+        for r in rows:
+            try:
+                meta = json.loads(r["metadata_json"] or "{}")
+            except Exception:
+                meta = {}
+            if str(meta.get("message_status") or "") == "deleted":
+                continue
+            d = dict(r)
+            d["metadata"] = meta
+            docs.append(d)
         if not docs:
             return None, []
 
@@ -476,6 +504,34 @@ class GroupMemoryStore:
                 )
                 conn.commit()
 
+    def try_claim_introduction(self, platform: str, channel_id: str) -> bool:
+        """Reserva atomicamente o direito de enviar apresentação (introduction_sent 0→1).
+
+        Retorna True apenas para o primeiro caller concorrente. ``/reset`` não repõe
+        este estado — apresentação é por grupo, não por sessão de transcript.
+        """
+        now = _utc_now_iso()
+        with self._lock:
+            with self._connect() as conn:
+                conn.execute(
+                    """
+                    INSERT INTO group_states (platform, channel_id, introduction_sent, introduction_sent_at, updated_at)
+                    VALUES (?, ?, 0, NULL, ?)
+                    ON CONFLICT(platform, channel_id) DO NOTHING
+                    """,
+                    (platform, channel_id, now),
+                )
+                cur = conn.execute(
+                    """
+                    UPDATE group_states
+                    SET introduction_sent = 1, introduction_sent_at = ?, updated_at = ?
+                    WHERE platform = ? AND channel_id = ? AND introduction_sent = 0
+                    """,
+                    (now, now, platform, channel_id),
+                )
+                conn.commit()
+                return int(cur.rowcount or 0) == 1
+
     def delete_group_memory(self, platform: str, channel_id: str) -> dict[str, Any]:
         """Exclusão isolada de dados de um grupo específico (mantém RAG e outros grupos intactos)."""
         with self._lock:
@@ -493,6 +549,53 @@ class GroupMemoryStore:
             self._bm25_cache.pop(self._cache_key(platform, channel_id), None)
             log.info("Group memory deleted: %s:%s (messages=%s, profiles=%s)", platform, channel_id, c1, c2)
             return {"deleted_messages": c1, "deleted_profiles": c2, "platform": platform, "channel_id": channel_id}
+
+    def purge_older_than(
+        self,
+        retention_days: int,
+        *,
+        platform: str | None = None,
+        channel_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Remove mensagens mais antigas que retention_days (manutenção)."""
+        days = max(1, int(retention_days))
+        cutoff = datetime.now(timezone.utc).timestamp() - (days * 86400.0)
+        deleted = 0
+        touched: set[str] = set()
+
+        with self._lock:
+            with self._connect() as conn:
+                if platform and channel_id:
+                    rows = conn.execute(
+                        """
+                        SELECT id, platform, channel_id, timestamp, created_at
+                        FROM group_messages
+                        WHERE platform = ? AND channel_id = ?
+                        """,
+                        (platform, channel_id),
+                    ).fetchall()
+                else:
+                    rows = conn.execute(
+                        "SELECT id, platform, channel_id, timestamp, created_at FROM group_messages"
+                    ).fetchall()
+
+                for r in rows:
+                    ts_str = r["timestamp"] or r["created_at"] or ""
+                    try:
+                        dt = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                        ts_val = dt.timestamp()
+                    except Exception:
+                        continue
+                    if ts_val < cutoff:
+                        conn.execute("DELETE FROM group_messages WHERE id = ?", (r["id"],))
+                        deleted += 1
+                        touched.add(self._cache_key(r["platform"], r["channel_id"]))
+                conn.commit()
+
+            for ck in touched:
+                self._bm25_cache.pop(ck, None)
+
+        return {"deleted_messages": deleted, "retention_days": days, "groups_touched": len(touched)}
 
     def count_messages(self, platform: str, channel_id: str) -> int:
         with self._lock:

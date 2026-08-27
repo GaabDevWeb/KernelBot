@@ -108,6 +108,7 @@ class Settings:
     group_memory_max_results: int = 5
     group_memory_recency_weight: float = 0.3
     group_memory_max_chars: int = 4000
+    group_memory_retention_days: int = 0
     group_profile_enabled: bool = True
     group_profile_update_threshold: int = 50
     idempotency_enabled: bool = True
@@ -434,6 +435,7 @@ class Settings:
         group_memory_max_results = _env_int("KERNEL_GROUP_MEMORY_MAX_RESULTS", 5, 1, 20)
         group_memory_recency_weight = _env_float("KERNEL_GROUP_MEMORY_RECENCY_WEIGHT", 0.3, 0.0, 2.0)
         group_memory_max_chars = _env_int("KERNEL_GROUP_MEMORY_MAX_CHARS", 4000, 500, 20000)
+        group_memory_retention_days = _env_int("KERNEL_GROUP_MEMORY_RETENTION_DAYS", 0, 0, 3650)
 
         group_profile_enabled = (os.getenv("KERNEL_GROUP_PROFILE_ENABLED") or "true").strip().lower() in ("1", "true", "yes", "on")
         group_profile_update_threshold = _env_int("KERNEL_GROUP_PROFILE_UPDATE_THRESHOLD", 50, 5, 500)
@@ -503,6 +505,7 @@ class Settings:
             group_memory_max_results=group_memory_max_results,
             group_memory_recency_weight=group_memory_recency_weight,
             group_memory_max_chars=group_memory_max_chars,
+            group_memory_retention_days=group_memory_retention_days,
             group_profile_enabled=group_profile_enabled,
             group_profile_update_threshold=group_profile_update_threshold,
             idempotency_enabled=idempotency_enabled,

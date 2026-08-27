@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from kernel.schemas.channel import ChannelContext
 from kernel.schemas.validators import strip_and_require, validate_metadata, validate_session_id
@@ -63,17 +63,42 @@ class ChatRequestV1(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     context: ChannelContext
-    message: str = Field(min_length=1, max_length=16000)
+    message: str = Field(default="", max_length=16000)
     discipline: str | None = Field(default=None, max_length=128)
     history: list[HistoryItem] = Field(default_factory=list, max_length=40)
     metadata: dict[str, Any] = Field(default_factory=dict)
     stream: bool = False
     reset_context: bool = False
 
-    @field_validator("message", "discipline", mode="after")
+    @field_validator("message", mode="after")
     @classmethod
-    def strip_strings(cls, value: str | None) -> str | None:
+    def strip_message(cls, value: str | None) -> str:
+        if value is None:
+            return ""
+        return value.replace("\x00", "").strip()
+
+    @field_validator("discipline", mode="after")
+    @classmethod
+    def strip_discipline(cls, value: str | None) -> str | None:
         return strip_and_require(value)
+
+    @model_validator(mode="after")
+    def validate_message_or_contextual(self) -> ChatRequestV1:
+        msg = (self.message or "").strip()
+        inv = self.metadata.get("invocation") if isinstance(self.metadata, dict) else None
+        inv_type = (
+            str(inv.get("type") or "").strip().lower()
+            if isinstance(inv, dict)
+            else ""
+        )
+        is_group = str(self.context.channel_id or "").endswith("@g.us")
+        contextual = inv_type in ("contextual_invocation", "contextual")
+
+        if not msg:
+            if is_group and contextual:
+                return self
+            raise ValueError("message não pode ser vazio")
+        return self
 
     @field_validator("metadata", mode="after")
     @classmethod

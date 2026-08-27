@@ -165,3 +165,10 @@ def test_group_state_persistence(memory_store: GroupMemoryStore) -> None:
     st2 = memory_store.get_group_state("whatsapp", "group-intro@g.us")
     assert st2["introduction_sent"] is True
     assert st2["introduction_sent_at"] is not None
+
+
+def test_try_claim_introduction_atomic(memory_store: GroupMemoryStore) -> None:
+    assert memory_store.try_claim_introduction("whatsapp", "group-claim@g.us") is True
+    assert memory_store.try_claim_introduction("whatsapp", "group-claim@g.us") is False
+    st = memory_store.get_group_state("whatsapp", "group-claim@g.us")
+    assert st["introduction_sent"] is True

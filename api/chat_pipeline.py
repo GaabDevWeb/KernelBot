@@ -118,6 +118,7 @@ async def run_chat_pipeline(
     response_session_id: str | None,
     pipeline_kind: str = "chat",
     trace_id: str | None = None,
+    channel_id: str | None = None,
     top_k: int | None = None,
     model: str | None = None,
     temperature: float | None = None,
@@ -144,6 +145,8 @@ async def run_chat_pipeline(
             session_id=session_key,
             conversation_history=conversation_history,
             top_k=top_k,
+            request_metadata=request_metadata,
+            channel_id=channel_id,
         )
     except Exception as exc:
         recorder.incr("chat_errors")

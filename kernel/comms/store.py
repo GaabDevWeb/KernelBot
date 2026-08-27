@@ -374,6 +374,23 @@ class CommsStore:
                 )
             conn.commit()
 
+    def try_claim_for_send(self, campaign_id: str) -> bool:
+        """Reserva envio de forma atómica (scheduled/draft → sending).
+
+        Retorna False se a campanha foi cancelada, já enviada ou já em envio.
+        """
+        with self._lock, self._connect() as conn:
+            cur = conn.execute(
+                """
+                UPDATE comm_campaigns
+                SET status='sending', updated_at=?
+                WHERE id=? AND status IN ('scheduled', 'draft')
+                """,
+                (_utc_now(), campaign_id),
+            )
+            conn.commit()
+            return cur.rowcount == 1
+
     def get_campaign(self, campaign_id: str) -> Campaign | None:
         with self._lock, self._connect() as conn:
             row = conn.execute(

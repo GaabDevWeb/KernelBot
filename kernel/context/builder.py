@@ -45,6 +45,7 @@ class SystemContextBlocks:
     grounding: str = ""
     chunk_context: str = ""
     group_memory: str = ""
+    recent_context: str = ""
 
 
 @dataclass(frozen=True)
@@ -149,5 +150,6 @@ class ContextBuilder:
         parts.append(blocks.group_profile)
         parts.append(blocks.grounding)
         parts.append(blocks.chunk_context)
+        parts.append(blocks.recent_context)
         parts.append(blocks.group_memory)
         return "\n\n".join(p for p in parts if p)

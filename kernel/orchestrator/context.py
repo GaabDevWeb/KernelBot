@@ -30,6 +30,12 @@ from kernel.context.builder import ContextBuilder, ContextLayers, SystemContextB
 from kernel.context.intent import detect_temporal_intent
 from kernel.context.router import ContextRouter
 from kernel.context.types import ContextRoute, RagSkipReason, RouteSignals
+from kernel.group.invocation import (
+    derive_rag_query_from_recent,
+    format_recent_context_block,
+    parse_invocation_from_metadata,
+    user_turn_content,
+)
 from kernel.disciplines.disciplines import command_prefixes, query_markers_by_discipline, trace_label_by_discipline
 from kernel.knowledge.lesson_catalog import CatalogMatchResult, LessonCatalog, LessonEntry
 from kernel.memory.group_memory import GroupMemoryStore, HistoricalSearchResult
@@ -243,6 +249,10 @@ class ContextTrace:
     group_memory_hits: tuple[dict, ...] = ()
     group_profile_active: bool = False
     group_profile_topics: tuple[str, ...] = ()
+    invocation_type: str | None = None
+    contextual_invocation: bool = False
+    recent_context_count: int = 0
+    no_useful_context: bool = False
 
 
 @dataclass(frozen=True)
@@ -885,6 +895,8 @@ class ContextManager:
         conversation_history: list[dict[str, str]] | None = None,
         *,
         top_k: int | None = None,
+        request_metadata: dict | None = None,
+        channel_id: str | None = None,
     ) -> BuildMessagesResult:
         store = self._pinned_store
         sp = self._settings.system_prompt_geral
@@ -915,6 +927,28 @@ class ContextManager:
             if discipline_from_command is not None:
                 force_rag = True
 
+        parsed_invocation = parse_invocation_from_metadata(
+            request_metadata,
+            channel_id=channel_id or "",
+            message=user_message,
+        )
+        recent_context_block = ""
+        if parsed_invocation.is_contextual:
+            recent_context_block = format_recent_context_block(
+                parsed_invocation.recent_context,
+                max_messages=self._settings.chat_history_max_turns,
+                max_chars=self._settings.chat_history_max_chars,
+            )
+            if parsed_invocation.quoted_context:
+                recent_context_block = (
+                    f"{recent_context_block}\n\nMensagem citada:\n{parsed_invocation.quoted_context}"
+                    if recent_context_block
+                    else f"Mensagem citada:\n{parsed_invocation.quoted_context}"
+                )
+            if not query.strip():
+                query = derive_rag_query_from_recent(parsed_invocation.recent_context)
+
+        llm_user_content = user_turn_content(user_message, parsed_invocation)
         json_discipline = self._sanitize_discipline(discipline_filter)
         request_scope = _request_scope_key(
             force_doc, force_rag, discipline_from_command, json_discipline
@@ -963,7 +997,7 @@ class ContextManager:
         filter_low_confidence_rag = False
 
         if router_enabled and self._context_builder is not None:
-            temporal_intent = detect_temporal_intent(query)
+            temporal_intent = detect_temporal_intent(query or llm_user_content)
             route = self._context_router.route(
                 query,
                 signals=RouteSignals(
@@ -973,6 +1007,9 @@ class ContextManager:
                     history_turns=len(history_in),
                     temporal_intent=temporal_intent,
                     chat_history_max_turns=self._settings.chat_history_max_turns,
+                    contextual_invocation=parsed_invocation.is_contextual
+                    and not user_message.strip(),
+                    no_useful_context=parsed_invocation.no_useful_context,
                 ),
             )
             history_max_turns = min(
@@ -1242,11 +1279,19 @@ class ContextManager:
                 except Exception as exc:
                     log.warning("Falha ao carregar group profile (%s): %s", channel_id, exc)
 
-            # 2. Group Memory (busca histórica BM25 + recência)
-            if getattr(self._settings, "group_memory_enabled", True) and not force_doc:
+            # 2. Group Memory (busca histórica BM25 + recência) — query limpa, não o transcript
+            router_wants_memory = (
+                route is not None and route.use_group_memory
+            ) if router_enabled else True
+            if (
+                getattr(self._settings, "group_memory_enabled", True)
+                and not force_doc
+                and router_wants_memory
+            ):
                 try:
                     max_res = getattr(self._settings, "group_memory_max_results", 5)
                     rec_w = getattr(self._settings, "group_memory_recency_weight", 0.3)
+                    max_chars = getattr(self._settings, "group_memory_max_chars", 4000)
                     hist_matches = self._group_memory_store.search_historical(
                         platform,
                         channel_id,
@@ -1263,16 +1308,22 @@ class ContextManager:
                                 "timestamp": h.timestamp,
                                 "content": h.content,
                                 "score": round(h.final_score, 3),
+                                "source_type": "group_memory",
                             }
                             for h in hist_matches
                         ]
                         lines = [
                             "## Histórico de discussões relevantes do grupo (memória conversacional — NÃO é fonte oficial)",
                         ]
+                        used_chars = 0
                         for h in hist_matches:
                             date_label = h.timestamp[:10] if len(h.timestamp) >= 10 else "data recente"
                             sender = h.sender_name or "membro"
-                            lines.append(f"- [{sender} em {date_label}]: {h.content}")
+                            line = f"- [{sender} em {date_label}]: {h.content}"
+                            if used_chars + len(line) > max_chars:
+                                break
+                            lines.append(line)
+                            used_chars += len(line)
                         lines.append(
                             "Nota: As mensagens históricas acima foram enviadas por participantes no grupo e servem "
                             "como contexto de conversas passadas. Não as trate como material institucional oficial."
@@ -1298,6 +1349,7 @@ class ContextManager:
                 grounding=grounding,
                 chunk_context=ctx,
                 group_memory=group_memory_block,
+                recent_context=recent_context_block,
             )
         )
 
@@ -1391,6 +1443,10 @@ class ContextManager:
             group_memory_hits=tuple(group_memory_hits),
             group_profile_active=group_profile_active,
             group_profile_topics=group_profile_topics,
+            invocation_type=parsed_invocation.type or None,
+            contextual_invocation=parsed_invocation.is_contextual,
+            recent_context_count=len(parsed_invocation.recent_context),
+            no_useful_context=parsed_invocation.no_useful_context,
         )
         log_event(
             log,
@@ -1407,7 +1463,7 @@ class ContextManager:
         )
         return BuildMessagesResult(
             messages=_merge_messages_with_history(
-                system_content, history_truncated, query
+                system_content, history_truncated, llm_user_content
             ),
             trace=trace,
             decision=decision,

@@ -107,7 +107,11 @@ async def execute_campaign(
     )
     store.audit("execute_send", campaign_id=campaign_id, detail={"trace_id": trace_id}, trace_id=trace_id)
     if mark_status:
-        store.update_campaign_status(campaign_id, "sending")
+        if not store.try_claim_for_send(campaign_id):
+            fresh = store.get_campaign(campaign_id)
+            if fresh is not None and fresh.status == "cancelled":
+                return {"ok": False, "error": "cancelled"}
+            return {"ok": False, "error": "not_claimable", "status": fresh.status if fresh else None}
 
     dests = [force_dest] if force_dest else expand_destinations(store, campaign)
     if not dests:
@@ -121,6 +125,16 @@ async def execute_campaign(
     ok_n = 0
     fail_n = 0
     for dest_type, dest_ref in dests:
+        if mark_status:
+            current = store.get_campaign(campaign_id)
+            if current is None or current.status == "cancelled":
+                store.audit(
+                    "send_aborted",
+                    campaign_id=campaign_id,
+                    detail={"reason": "cancelled_mid_send"},
+                    trace_id=trace_id,
+                )
+                return {"ok": False, "error": "cancelled", "sent": ok_n, "failed": fail_n}
         result = await _send_one(
             channel=campaign.channel,
             dest_type=dest_type,

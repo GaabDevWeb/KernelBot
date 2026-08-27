@@ -41,6 +41,8 @@ class RouteSignals:
     history_turns: int = 0
     temporal_intent: TemporalIntent | None = None
     chat_history_max_turns: int = 12
+    contextual_invocation: bool = False
+    no_useful_context: bool = False
 
 
 @dataclass(frozen=True)
@@ -59,4 +61,5 @@ class ContextRoute:
     transcript_max_turns: int = 0
     max_rag_sources: int = 0
     filter_low_confidence_rag: bool = False
+    use_group_memory: bool = False
     reasons: tuple[str, ...] = ()

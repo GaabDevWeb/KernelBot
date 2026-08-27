@@ -41,6 +41,9 @@ class ContextManagerStub:
         conversation_history=None,
         *,
         top_k=None,
+        request_metadata=None,
+        channel_id=None,
+        **kwargs,
     ):
         self.last_kwargs = {
             "message": message,
@@ -48,6 +51,9 @@ class ContextManagerStub:
             "session_id": session_id,
             "conversation_history": conversation_history,
             "top_k": top_k,
+            "request_metadata": request_metadata,
+            "channel_id": channel_id,
+            **kwargs,
         }
         trace = ContextTrace(
             label="Lab",

@@ -9,25 +9,95 @@ import secrets
 from fastapi import HTTPException, Request, status
 
 from api.rate_limit import allow_request
-from kernel.security_flags import is_production
+from kernel.security_flags import is_production, is_staging
 
 log = logging.getLogger("kernelbots.api.security")
 
-_CHAT_RATE_LIMIT = 30
-_SEARCH_RATE_LIMIT = 20
-_AUTH_FAIL_RATE_LIMIT = 10
 _RATE_WINDOW_SEC = 60.0
-_INTERNAL_RATE_LIMIT = 60
+
+
+def _env_int(name: str, default: int) -> int:
+    raw = (os.getenv(name) or "").strip()
+    if not raw:
+        return default
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return default
+
+
+def _chat_rate_limit() -> int:
+    return _env_int("ACL_CHAT_RATE_LIMIT", 30)
+
+
+def _search_rate_limit() -> int:
+    return _env_int("ACL_SEARCH_RATE_LIMIT", 20)
+
+
+def _groups_rate_limit() -> int:
+    return _env_int("ACL_GROUPS_RATE_LIMIT", 60)
+
+
+def _auth_fail_rate_limit() -> int:
+    return _env_int("ACL_AUTH_FAIL_RATE_LIMIT", 10)
+
+
+def _internal_rate_limit() -> int:
+    return _env_int("ACL_INTERNAL_RATE_LIMIT", 60)
 
 
 def require_api_auth() -> bool:
-    """Em produção exige Bearer de canal; fora, só se ACL_REQUIRE_API_AUTH=true."""
+    """Em production/staging exige Bearer de canal; fora, só se ACL_REQUIRE_API_AUTH=true."""
     raw = (os.getenv("ACL_REQUIRE_API_AUTH") or "").strip().lower()
     if raw in {"1", "true", "yes", "on"}:
         return True
     if raw in {"0", "false", "no", "off"}:
         return False
+    if is_staging():
+        return True
     return is_production()
+
+
+def _configured_worker_count() -> int:
+    for name in ("KERNEL_WORKERS", "UVICORN_WORKERS", "WEB_CONCURRENCY"):
+        raw = (os.getenv(name) or "").strip()
+        if raw.isdigit():
+            return max(1, int(raw))
+    return 1
+
+
+def _configured_bind_host() -> str:
+    for name in ("KERNEL_BIND_HOST", "ACL_BIND_HOST", "HOST"):
+        raw = (os.getenv(name) or "").strip()
+        if raw:
+            return raw
+    return "127.0.0.1"
+
+
+def validate_deployment_guardrails() -> None:
+    """Fail-fast / warn para combinações perigosas no deploy V1."""
+    env = (os.getenv("KERNELBOT_ENV") or "development").strip().lower()
+    workers = _configured_worker_count()
+    bind = _configured_bind_host().lower()
+
+    if env in {"production", "staging"} and workers > 1:
+        raise RuntimeError(
+            f"KERNELBOT_ENV={env} com {workers} workers não é suportado na V1 "
+            "(idempotency/transcript/rate-limit in-memory). Use KERNEL_WORKERS=1."
+        )
+
+    public_bind = bind in {"0.0.0.0", "::", "[::]"}
+    if env == "production" and public_bind:
+        log.warning(
+            "Kernel bind público (%s) em production — exige firewall estrito e auth activa.",
+            bind,
+        )
+
+    if env == "development" and public_bind and not require_api_auth():
+        log.warning(
+            "Dev com bind público (%s) e auth desligada — use localhost ou ACL_REQUIRE_API_AUTH=true.",
+            bind,
+        )
 
 def _parse_channel_keys() -> dict[str, str]:
     """ACL_CHANNEL_API_KEYS=discord:tok1,telegram:tok2"""
@@ -54,6 +124,7 @@ def configured_api_tokens() -> tuple[str | None, dict[str, str]]:
 
 def validate_production_security_config() -> None:
     """Fail-fast em production se auth de canal / tokens internos estiverem mal."""
+    validate_deployment_guardrails()
     if not is_production():
         return
     global_token, channel_keys = configured_api_tokens()
@@ -115,7 +186,7 @@ def verify_channel_api_bearer(request: Request, *, channel: str) -> None:
     ip = client_ip(request)
     if not allow_request(
         f"apiauth:{ip}",
-        limit=_AUTH_FAIL_RATE_LIMIT,
+        limit=_auth_fail_rate_limit(),
         window_sec=_RATE_WINDOW_SEC,
     ):
         raise HTTPException(status_code=429, detail="Muitas tentativas de autenticação.")
@@ -148,7 +219,9 @@ def allow_public_operation(
 ) -> None:
     """Rate limit por IP (+ canal/user quando presentes)."""
     ip = client_ip(request)
-    limit = _SEARCH_RATE_LIMIT if operation == "search" else _CHAT_RATE_LIMIT
+    limit = _search_rate_limit() if operation == "search" else _chat_rate_limit()
+    if operation == "groups":
+        limit = _groups_rate_limit()
     keys = [f"{operation}:ip:{ip}"]
     ch = (channel or "").strip().lower()
     if ch:
@@ -168,7 +241,7 @@ def allow_internal_operation(request: Request) -> None:
     ip = client_ip(request)
     if not allow_request(
         f"internal:{ip}",
-        limit=_INTERNAL_RATE_LIMIT,
+        limit=_internal_rate_limit(),
         window_sec=_RATE_WINDOW_SEC,
     ):
         raise HTTPException(status_code=429, detail="Muitas requisições internas.")
@@ -179,7 +252,7 @@ def note_auth_failure(request: Request, *, scope: str) -> None:
     ip = client_ip(request)
     if not allow_request(
         f"{scope}authfail:{ip}",
-        limit=_AUTH_FAIL_RATE_LIMIT,
+        limit=_auth_fail_rate_limit(),
         window_sec=_RATE_WINDOW_SEC,
     ):
         raise HTTPException(status_code=429, detail="Muitas tentativas de autenticação.")
@@ -190,3 +263,11 @@ def search_snippet_chars() -> int:
     if raw.isdigit():
         return max(40, min(int(raw), 500))
     return 200
+
+
+def trace_message_preview_chars() -> int:
+    """Comprimento máximo de message_preview em traces (ops/diagnóstico)."""
+    raw = (os.getenv("ACL_TRACE_MESSAGE_PREVIEW_CHARS") or "").strip()
+    if raw.isdigit():
+        return max(80, min(int(raw), 800))
+    return 400

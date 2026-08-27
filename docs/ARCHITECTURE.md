@@ -3,7 +3,7 @@
 | Campo | Valor |
 |-------|-------|
 | Sistema | Kernel (ex-KernelBot) |
-| Última actualização | 2026-07-28 |
+| Última actualização | 2026-08-27 (V1 hardening) |
 
 ## Visão geral
 
@@ -156,3 +156,15 @@ HTML, CSS, JS de interface, menus, layouts, navegação, frameworks frontend, te
 | `api/routes.py` | `api/routes/*` |
 | `frontend/`, `templates/` | **removido** |
 | — | `adapters/` placeholder |
+
+## V1 — decisões congeladas (2026-08-27)
+
+Ver `docs/V1_SCOPE.md` e `docs/v1-readiness.md`.
+
+- **Kernel** = cérebro (RAG, contexto, LLM, transcript SSOT, idempotência).
+- **Orbit** = adapter WhatsApp (buffer recente, dedupe local, `X-Message-Id`, userLock por grupo).
+- **Knowledge RAG** (MySQL/BM25) separado de **Group Memory** (SQLite por grupo).
+- **Recent context** via `metadata.recent_context` — nunca concatenado como query RAG.
+- **Context Router** + budgets quando `ACL_CONTEXT_ROUTER=1`.
+- **Single worker** — transcript, idempotency e rate limit in-memory.
+- **Deploy:** SQLite/traces/group memory em `data/` — nunca commitados.

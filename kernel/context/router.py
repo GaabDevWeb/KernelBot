@@ -83,6 +83,14 @@ _DISCIPLINE_HINT_RE = re.compile(
     re.IGNORECASE,
 )
 
+_GROUP_MEMORY_RE = re.compile(
+    r"\b(turma|grupo|decidimos|decidiram|combinamos|lembram|discutimos|"
+    r"falamos|conversamos|decidiu|trabalho\s+em\s+grupo|entrega\s+do\s+grupo|"
+    r"o\s+que\s+a\s+turma|percepcao\s+do\s+grupo|acharam\s+que|"
+    r"quando\s+falamos|naquela\s+semana|ontem\s+no\s+grupo)\b",
+    re.IGNORECASE,
+)
+
 
 def _normalize(text: str) -> str:
     lowered = (text or "").strip().lower()
@@ -162,8 +170,50 @@ class ContextRouter:
         intent = signals.temporal_intent
         intent_kind = intent.kind if intent is not None else None
         reasons: list[str] = []
-
         policy_signal = bool(_POLICY_RE.search(normalized))
+
+        if signals.contextual_invocation and not normalized:
+            profile = (
+                ContextProfile.NORMAL
+                if not signals.no_useful_context
+                else ContextProfile.FAST
+            )
+            reasons.append("contextual_invocation")
+            if signals.no_useful_context:
+                reasons.append("no_useful_context")
+            include_inst, inst_files = _select_institutional_files(
+                normalized, profile=profile
+            )
+            include_calendar = profile is not ContextProfile.FAST
+            budgets = _budgets_for(profile)
+            if not include_calendar:
+                budgets = CalendarBudgets(max_events=0, max_past_events=0)
+            turns = min(8, max(2, int(signals.chat_history_max_turns)))
+            rag_skipped = signals.no_useful_context
+            rag_reason = (
+                RagSkipReason.PROFILE_FAST
+                if signals.no_useful_context
+                else RagSkipReason.NONE
+            )
+            max_rag = 0 if rag_skipped else 5
+            filter_low = not rag_skipped
+            use_group_memory = not signals.no_useful_context
+            return ContextRoute(
+                profile=profile,
+                include_identity=True,
+                include_temporal=True,
+                include_institutional=include_inst,
+                institutional_files=inst_files,
+                include_calendar=include_calendar,
+                calendar_budgets=budgets,
+                rag_skipped=rag_skipped,
+                rag_skip_reason=rag_reason,
+                transcript_max_turns=turns,
+                max_rag_sources=max_rag,
+                filter_low_confidence_rag=filter_low,
+                use_group_memory=use_group_memory,
+                reasons=tuple(reasons),
+            )
 
         # --- Prioridade top-down (routing.md) --------------------------------
         # Política institucional nunca fica em FAST puro (SEC-001/002):
@@ -287,6 +337,12 @@ class ContextRouter:
             rag_reason = RagSkipReason.NONE
             max_rag = max(max_rag, 7)
 
+        use_group_memory = bool(_GROUP_MEMORY_RE.search(normalized))
+        if _has_deixis(normalized) and signals.history_turns > 0:
+            use_group_memory = True
+        if intent_kind == "calendar_fact" and _GROUP_MEMORY_RE.search(normalized):
+            use_group_memory = True
+
         return ContextRoute(
             profile=profile,
             include_identity=True,
@@ -300,5 +356,6 @@ class ContextRouter:
             transcript_max_turns=turns,
             max_rag_sources=max_rag,
             filter_low_confidence_rag=filter_low,
+            use_group_memory=use_group_memory,
             reasons=tuple(reasons),
         )

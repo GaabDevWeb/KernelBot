@@ -13,6 +13,10 @@ def is_production() -> bool:
     return kernel_env() == "production"
 
 
+def is_staging() -> bool:
+    return kernel_env() == "staging"
+
+
 def _env_flag(name: str, *, default: bool = False) -> bool:
     raw = (os.getenv(name) or "").strip().lower()
     if not raw:

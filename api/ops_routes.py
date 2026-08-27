@@ -136,10 +136,14 @@ async def ops_login_submit(request: Request, token: str = Form(...)):
             status_code=401,
         )
     resp = RedirectResponse(url="/ops/dashboard", status_code=303)
+    from api.security import is_production
+
     resp.set_cookie(
         key=COOKIE_NAME,
         value=provided,
         httponly=True,
+        secure=is_production()
+        or (os.getenv("KERNELBOT_COOKIE_SECURE") or "").strip().lower() in ("1", "true", "yes"),
         samesite="lax",
         max_age=COOKIE_MAX_AGE,
         path="/",

@@ -15,6 +15,7 @@ Endpoints expostos:
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from typing import Any
 
@@ -23,11 +24,17 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from api.chat_pipeline import run_chat_pipeline
 from api.routes import _request_id, _services
-from api.security import allow_public_operation, verify_channel_api_bearer
+from api.security import allow_public_operation, trace_message_preview_chars, verify_channel_api_bearer
 from kernel.inspect.recorder import get_recorder
 from kernel.memory.group_profile import GroupProfileAnalyzer
 from kernel.memory.session_key import v1_memory_key
-from kernel.schemas.chat import ChatRequestV1, ChatResponse
+from kernel.group.invocation import (
+    GROUP_INTRODUCTION_ANSWER,
+    TRANSCRIPT_USER_MARKER,
+    is_whatsapp_group,
+    parse_invocation_from_metadata,
+)
+from kernel.schemas.chat import ChatRequestV1, ChatResponse, confidence_to_float
 from kernel.schemas.group import GroupMessagesBatchRequest, GroupStateUpdateRequest
 from kernel.trace import emit_kernel, resolve_trace_id
 from kernel.trace.stages import (
@@ -37,10 +44,12 @@ from kernel.trace.stages import (
     KERNEL_REQUEST_RECEIVED,
     KERNEL_RESPONSE_RETURNED,
     KERNEL_TRANSCRIPT_LOADED,
+    KERNEL_CONTEXTUAL_INVOCATION,
 )
 from kernel.users.service import is_user_blocked, touch_user_session
 
 router = APIRouter(prefix="/v1")
+log = logging.getLogger("kernelbots.api.v1")
 
 
 @router.get("/health")
@@ -136,7 +145,7 @@ async def chat_v1(payload: ChatRequestV1, request: Request) -> ChatResponse | St
     )
 
     # Gravar mensagem recebida no histórico persistente do grupo se aplicável
-    if services.group_memory_store and channel_id:
+    if services.group_memory_store and channel_id and (payload.message or "").strip():
         try:
             services.group_memory_store.record_message(
                 platform=channel,
@@ -167,7 +176,7 @@ async def chat_v1(payload: ChatRequestV1, request: Request) -> ChatResponse | St
             "channel_id": payload.context.channel_id,
             "reset_context": bool(payload.reset_context),
             "message_chars": len(payload.message or ""),
-            "message_preview": (payload.message or "")[:400],
+            "message_preview": (payload.message or "")[: trace_message_preview_chars()],
         },
     )
 
@@ -204,6 +213,74 @@ async def chat_v1(payload: ChatRequestV1, request: Request) -> ChatResponse | St
         },
     )
 
+    parsed_invocation = parse_invocation_from_metadata(
+        payload.metadata,
+        channel_id=channel_id or "",
+        message=payload.message,
+    )
+    if parsed_invocation.is_contextual:
+        recent = parsed_invocation.recent_context
+        emit_kernel(
+            KERNEL_CONTEXTUAL_INVOCATION,
+            trace_id=trace_id,
+            data={
+                "request_id": request_id,
+                "platform": channel,
+                "user_id": user_id,
+                "channel_id": channel_id,
+                "invocation_type": parsed_invocation.type,
+                "explicit_text": parsed_invocation.explicit_text,
+                "recent_messages_count": len(recent),
+                "no_useful_context": parsed_invocation.no_useful_context,
+            },
+        )
+
+    # Primeira apresentação em grupo (@orbit sem texto)
+    if (
+        parsed_invocation.type == "contextual_invocation"
+        and is_whatsapp_group(channel_id)
+        and services.group_memory_store
+        and not payload.reset_context
+    ):
+        group_state = services.group_memory_store.get_group_state(channel, channel_id)
+        if not group_state.get("introduction_sent"):
+            if services.group_memory_store.try_claim_introduction(channel, channel_id):
+                intro = ChatResponse(
+                    answer=GROUP_INTRODUCTION_ANSWER,
+                    discipline=None,
+                    sources=[],
+                    confidence=confidence_to_float("high"),
+                    metadata={
+                        "user_id": user_id,
+                        "channel": channel,
+                        "session_id": payload.context.session_id,
+                        "request_metadata": payload.metadata,
+                        "request_id": request_id,
+                        "trace_id": trace_id,
+                        "introduction": True,
+                    },
+                )
+                services.transcript_store.append_pair(
+                    v1_key,
+                    TRANSCRIPT_USER_MARKER,
+                    intro.answer,
+                    services.context_manager.settings.transcript_max_turns,
+                )
+                if idempotency_key and getattr(services, "idempotency_store", None):
+                    services.idempotency_store.complete(
+                        idempotency_key, intro, trace_id=trace_id
+                    )
+                emit_kernel(
+                    KERNEL_RESPONSE_RETURNED,
+                    trace_id=trace_id,
+                    data={
+                        "request_id": request_id,
+                        "answer_chars": len(intro.answer),
+                        "introduction": True,
+                    },
+                )
+                return intro
+
     try:
         outcome = await run_chat_pipeline(
             request,
@@ -211,6 +288,7 @@ async def chat_v1(payload: ChatRequestV1, request: Request) -> ChatResponse | St
             request_id=request_id,
             message=payload.message,
             channel=channel,
+            channel_id=channel_id,
             user_id=user_id,
             discipline=payload.discipline,
             session_key=v1_key,
@@ -231,9 +309,10 @@ async def chat_v1(payload: ChatRequestV1, request: Request) -> ChatResponse | St
         raise
 
     if outcome.chat_response is not None and outcome.answer:
+        transcript_user = (payload.message or "").strip() or TRANSCRIPT_USER_MARKER
         services.transcript_store.append_pair(
             v1_key,
-            payload.message,
+            transcript_user,
             outcome.answer,
             services.context_manager.settings.transcript_max_turns,
         )
@@ -279,7 +358,12 @@ async def _async_update_group_profile(store, platform: str, channel_id: str) -> 
         new_prof = GroupProfileAnalyzer.extract_profile(platform, channel_id, msgs, existing_profile=existing_prof)
         store.update_group_profile(platform, channel_id, new_prof.to_dict(), message_count=len(msgs))
     except Exception as exc:
-        pass
+        log.warning(
+            "Falha ao actualizar Group Profile em background | platform=%s channel_id=%s: %s",
+            platform,
+            channel_id,
+            exc,
+        )
 
 
 # --- Endpoints de Gestão de Memória de Grupo ---
@@ -290,6 +374,7 @@ async def ingest_group_messages(
     request: Request,
 ) -> dict[str, Any]:
     """Ingere lote de mensagens do grupo para indexação histórica."""
+    allow_public_operation(request, "groups", channel=payload.platform)
     verify_channel_api_bearer(request, channel=payload.platform)
     services = _services(request)
     if not services.group_memory_store:
@@ -326,6 +411,7 @@ async def get_group_profile_endpoint(
     request: Request,
 ) -> dict[str, Any]:
     """Retorna o perfil semântico e social do grupo."""
+    allow_public_operation(request, "groups", channel=platform)
     verify_channel_api_bearer(request, channel=platform)
     services = _services(request)
     if not services.group_memory_store:
@@ -350,6 +436,7 @@ async def refresh_group_profile_endpoint(
     request: Request,
 ) -> dict[str, Any]:
     """Recalcula imediatamente o Group Profile a partir do histórico."""
+    allow_public_operation(request, "groups", channel=platform)
     verify_channel_api_bearer(request, channel=platform)
     services = _services(request)
     if not services.group_memory_store:
@@ -376,6 +463,7 @@ async def delete_group_memory_endpoint(
     request: Request,
 ) -> dict[str, Any]:
     """Exclui mensagens e profile de um grupo específico de forma isolada."""
+    allow_public_operation(request, "groups", channel=platform)
     verify_channel_api_bearer(request, channel=platform)
     services = _services(request)
     if not services.group_memory_store:
@@ -392,6 +480,7 @@ async def get_group_state_endpoint(
     request: Request,
 ) -> dict[str, Any]:
     """Retorna estado de apresentação do grupo (introduction_sent)."""
+    allow_public_operation(request, "groups", channel=platform)
     verify_channel_api_bearer(request, channel=platform)
     services = _services(request)
     if not services.group_memory_store:
@@ -409,6 +498,7 @@ async def set_group_state_endpoint(
     request: Request,
 ) -> dict[str, Any]:
     """Atualiza estado de apresentação do grupo."""
+    allow_public_operation(request, "groups", channel=platform)
     verify_channel_api_bearer(request, channel=platform)
     services = _services(request)
     if not services.group_memory_store:
@@ -432,6 +522,7 @@ async def search_group_history_endpoint(
     top_k: int = Query(default=5, ge=1, le=50),
 ) -> dict[str, Any]:
     """Busca mensagens históricas via BM25 + recência."""
+    allow_public_operation(request, "groups", channel=platform)
     verify_channel_api_bearer(request, channel=platform)
     services = _services(request)
     if not services.group_memory_store:

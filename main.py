@@ -38,7 +38,11 @@ def build_services() -> AppServices:
     transcript_store = TranscriptStore()
     group_mem_path = settings.group_memory_db_path or (settings.project_root / "data" / "group_memory.sqlite3")
     group_memory_store = GroupMemoryStore(group_mem_path) if settings.group_memory_enabled else None
-    idempotency_store = IdempotencyStore(settings.idempotency_ttl_seconds)
+    idempotency_store = (
+        IdempotencyStore(settings.idempotency_ttl_seconds)
+        if settings.idempotency_enabled
+        else None
+    )
     lesson_catalog, indexed_lesson_keys, catalog_drift_report = bootstrap_catalog_state(settings)
     context_builder = ContextBuilder(
         identity_prompt=settings.identity_prompt,
