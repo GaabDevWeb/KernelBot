@@ -19,7 +19,6 @@ from kernel.inspect.recorder import (
     maybe_store_prompt,
 )
 from kernel.orchestrator.context import BuildMessagesResult
-from kernel.providers.aggregate import aggregate_sse
 from kernel.schemas.chat import ChatResponse, confidence_to_float
 from kernel.trace import emit_kernel, get_trace_store
 from kernel.trace.forensics import (
@@ -52,7 +51,11 @@ _SSE_HEADERS = {
 
 def _context_snapshot_from_trace(trace_meta, conversation_history) -> dict | None:
     """Resumo das camadas de contexto para o snapshot/painel (sem segredos)."""
-    if trace_meta.temporal_context is None and not trace_meta.identity_active:
+    if (
+        trace_meta.temporal_context is None
+        and not trace_meta.identity_active
+        and not getattr(trace_meta, "domain_router_enabled", False)
+    ):
         return None
     turns_used = (
         trace_meta.transcript_turns_used
@@ -88,6 +91,21 @@ def _context_snapshot_from_trace(trace_meta, conversation_history) -> dict | Non
         snapshot["include_calendar"] = trace_meta.include_calendar
         snapshot["transcript_turns_requested"] = trace_meta.transcript_turns_requested
         snapshot["router_reasons"] = list(trace_meta.router_reasons or ())
+    if getattr(trace_meta, "domain_router_enabled", False):
+        snapshot["domain_router_enabled"] = True
+        snapshot["selected_domain"] = getattr(trace_meta, "selected_domain", None)
+        snapshot["domain_confidence"] = getattr(trace_meta, "domain_confidence", None)
+        snapshot["domain_retrieval_scope"] = list(
+            getattr(trace_meta, "domain_retrieval_scope", ()) or ()
+        )
+        snapshot["domain_fallback"] = getattr(trace_meta, "domain_fallback", False)
+        snapshot["domain_multi"] = getattr(trace_meta, "domain_multi", False)
+        snapshot["domain_candidates"] = [
+            dict(c) for c in (getattr(trace_meta, "domain_candidates", ()) or ())
+        ]
+        snapshot["domain_router_latency_ms"] = getattr(
+            trace_meta, "domain_router_latency_ms", None
+        )
     return snapshot
 
 
@@ -311,15 +329,15 @@ async def run_chat_pipeline(
     if tid:
         emit_kernel(KERNEL_LLM_STARTED, trace_id=tid, data={"stream": stream, "status": "success"})
 
-    stream_gen = services.chat_provider.stream_response(
-        built.messages,
-        trace=built.trace,
-        decision=built.decision,
-        model=model,
-        temperature=temperature,
-        max_tokens=max_tokens,
-    )
     if stream:
+        stream_gen = services.chat_provider.stream_response(
+            built.messages,
+            trace=built.trace,
+            decision=built.decision,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
         recorder.put(record)
         streaming_response = StreamingResponse(
             stream_gen,
@@ -336,7 +354,14 @@ async def run_chat_pipeline(
 
     t_llm0 = time.perf_counter()
     try:
-        answer, metadata = await aggregate_sse(stream_gen)
+        answer, metadata = await services.chat_provider.complete_response(
+            built.messages,
+            trace=built.trace,
+            decision=built.decision,
+            model=model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
     except Exception as exc:
         if tid:
             emit_kernel(
@@ -383,10 +408,18 @@ async def run_chat_pipeline(
     record.provider = {
         "llm_called": metadata.get("llm_called"),
         "tokens_used_fragments": metadata.get("tokens_used"),
+        "prompt_tokens": metadata.get("prompt_tokens"),
+        "completion_tokens": metadata.get("completion_tokens"),
+        "total_tokens": metadata.get("total_tokens"),
+        "model": metadata.get("model"),
+        "provider_stream": metadata.get("provider_stream", True),
         "decision": metadata.get("decision"),
         "reason": metadata.get("reason"),
         "grounding_policy": metadata.get("grounding_policy"),
-        "note": "tokens_used é contagem de fragmentos de stream, não tokens do provider",
+        "note": (
+            "tokens do provider OpenRouter quando provider_stream=false; "
+            "senão tokens_used conta fragmentos SSE"
+        ),
     }
     record.response = {
         "discipline": effective_discipline or built.effective_discipline,

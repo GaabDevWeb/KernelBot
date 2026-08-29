@@ -202,6 +202,16 @@ def build_context_view(trace: Any, messages: list[dict] | None) -> dict[str, Any
         "system_chars": system_chars,
         "history_turns_in_prompt": history_turns,
         "message_count": len(messages or []),
+        "domain_router_enabled": getattr(trace, "domain_router_enabled", False),
+        "domain_candidates": [dict(c) for c in (getattr(trace, "domain_candidates", ()) or ())],
+        "selected_domain": getattr(trace, "selected_domain", None),
+        "selected_domains": list(getattr(trace, "selected_domains", ()) or ()),
+        "domain_confidence": getattr(trace, "domain_confidence", None),
+        "domain_retrieval_scope": list(getattr(trace, "domain_retrieval_scope", ()) or ()),
+        "domain_fallback": getattr(trace, "domain_fallback", False),
+        "domain_multi": getattr(trace, "domain_multi", False),
+        "domain_router_reason": getattr(trace, "domain_router_reason", None),
+        "domain_router_latency_ms": getattr(trace, "domain_router_latency_ms", None),
     }
 
 

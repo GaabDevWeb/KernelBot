@@ -1,134 +1,101 @@
-# Kernel API
+# KernelBot
 
-Kernel HTTP reutilizável para busca BM25 e conversa RAG sobre aulas indexadas. Não inclui interface web: adapters de Discord, Moodle, CLI ou outros consumidores usam exclusivamente JSON/SSE.
+Runtime HTTP do tutor académico: RAG BM25, contexto, memória de grupo, provider LLM e painel operacional.
+
+OrbitBot (WhatsApp) é repositório separado — ver secção [WhatsApp / Orbit](#whatsapp--orbit).
 
 ## Requisitos
 
 - Python 3.11+
-- MySQL (índice `knowledge`)
-- Chave LLM: OpenRouter ou Cursor SDK (`ACL_LLM_PROVIDER`)
+- MySQL com tabela `knowledge` indexada
+- Node 18+ (apenas para Orbit)
+- Chave LLM: OpenRouter ou Cursor (`ACL_LLM_PROVIDER`)
 
-## Setup rápido
+## Configuração
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env          # preencher credenciais
-python3 main.py               # http://127.0.0.1:8001
+cp .env.example .env   # preencher DB_*, tokens, provider
 ```
 
-### Staging local (MySQL Docker)
+Variáveis mínimas: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, provider LLM, e em produção `ACL_API_BEARER_TOKEN` + `ACL_INTERNAL_BEARER_TOKEN`.
+
+Ver `.env.example` e `docs/operations/v1-production-runbook.md`.
+
+### Indexar conhecimento (primeira vez)
 
 ```bash
-./bin/staging-setup.sh   # primeira vez
-./bin/staging-serve.sh
+./bin/ingest-jsons.sh          # jsons/ → MySQL
+# ou staging completo:
+./bin/staging-setup.sh
 ```
 
-O staging define `ACL_CATALOG_ENABLED=false`; neste caso `GET /api/curriculum` responde **503**.
-
-## Arquitetura
-
-| Camada | Tecnologia |
-|--------|------------|
-| Backend | FastAPI, Uvicorn, PyMySQL, rank-bm25 |
-| LLM | OpenRouter ou Cursor (`kernel/providers/chat_provider.py`) |
-| RAG | BM25 + política de grounding (`kernel/rag/retrieval.py`) |
-| Contexto | Camadas + `ContextRouter` (`docs/CONTEXT-ARCHITECTURE.md`, `optimization/`) |
-
-Otimização de tokens/latência (baseline, routing, results): [`optimization/`](optimization/).
-
-```
-main.py → app/factory.py → api/routes.py
-                         → kernel/ (domínio, RAG, providers e contratos)
-```
-
-## API
-
-- `GET /health` — liveness.
-- `POST /chat` — resposta JSON canónica; envie `"stream": true` para SSE legado.
-- `POST /search` — retrieval sem chamada LLM.
-
-Consulte [`docs/API_SPEC.md`](docs/API_SPEC.md) para contratos e exemplos.
-
-## Deploy e produção
-
-### Staging vs produção
-
-| Aspeto | Staging (`./bin/staging-serve.sh`) | Produção |
-|--------|--------------------------------------|----------|
-| `KERNELBOT_ENV` | `staging` | `production` |
-| `ACL_CATALOG_ENABLED` | `false` (fixo no script) | `true` |
-| `GET /api/curriculum` | 503 (aceitável) | **200** com disciplinas |
-| `ACL_RELOAD_BEARER_TOKEN` | opcional | **obrigatório** |
-
-### Variáveis obrigatórias em produção
-
-| Variável | Descrição |
-|----------|-----------|
-| `KERNELBOT_ENV=production` | Ambiente de produção |
-| `ACL_RELOAD_BEARER_TOKEN` | Protege `GET /health/catalog` e `POST /chat` com `message: "/reload"` |
-| `ACL_CATALOG_ENABLED=true` | Habilita catálogo ISS e `GET /api/curriculum` |
-| `ACL_CATALOG_JSON_DIR` | Diretório com `lessons.json` / `search-index.json` do ISS |
-| `DB_*` | MySQL com tabela `knowledge` indexada |
-| `KERNELBOT_FORCE_HSTS=true` | Recomendado atrás de proxy HTTPS |
-
-### Catálogo curricular (pós-deploy)
-
-1. Definir no `.env` de produção:
+## Inicialização
 
 ```bash
-ACL_CATALOG_ENABLED=true
-ACL_CATALOG_JSON_DIR=/caminho/para/ISS/content
+PYTHONPATH=. .venv/bin/python main.py
+# → http://127.0.0.1:8001
 ```
 
-2. Reiniciar o serviço e verificar:
+Docker:
 
 ```bash
-curl -sS http://127.0.0.1:8001/api/public-config
-# → "catalog_enabled": true
-
-curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8001/api/curriculum
-# → 200
-```
-
-3. Confirmar drift catálogo ↔ índice (CI / operadores):
-
-```bash
-curl -sS -H "Authorization: Bearer SEU_TOKEN" \
-  http://127.0.0.1:8001/health/catalog
-# → 200 com catalog_enabled, contagens e amostra catalog_only
-```
-
-Sem token configurado, `/health/catalog` responde **503** (`reload token not configured`).
-
-### Docker
-
-```bash
-cp .env.docker.example .env   # preencher MySQL + LLM + token
-docker build -t kernelbot:latest .
+cp .env.docker.example .env
 docker compose up -d --build
-curl -sS http://127.0.0.1:8001/health
 ```
 
-Runbook completo: [`docs/wiki/20-deploy-railway.md`](docs/wiki/20-deploy-railway.md) (Railway, VPS, Coolify, rollback).
-
-### Rate limit
-
-`POST /chat` está limitado a **30 requisições por IP a cada 60 segundos** (código em `api/routes.py`). Acima disso: HTTP **429**. Não é configurável por `.env`.
-
-## Testes
+## Health
 
 ```bash
-# Backend
-PYTHONPATH=. pytest tests/ -q
-
+curl -s http://127.0.0.1:8001/health
+curl -s http://127.0.0.1:8001/v1/health
 ```
 
-## Status
+Painel ops: `/ops/` · Traces: `/traces/` (requer `ACL_INTERNAL_BEARER_TOKEN`).
 
-Pronto para publicação pública. Documentação em [`documentation.md`](documentation.md) e [`docs/wiki/`](docs/wiki/README.md).
+## Ollama / LLM
 
-## Licença
+Provider configurável via `ACL_LLM_PROVIDER` (`openrouter` | `cursor`). Modelos em `ACL_MODELS`. Timeout e retry em `kernel/providers/chat_provider.py`.
 
-ISC
+Não versionar modelos, weights ou caches Ollama.
+
+## WhatsApp / Orbit
+
+```bash
+cd ../OrbitBot
+npm ci
+cp .env.example .env   # KERNEL_API_URL=http://127.0.0.1:8001
+npm start
+```
+
+Orbit envia `POST /v1/chat` ao Kernel. Sessão Baileys fica em `OrbitBot/auth/` (gitignored).
+
+## Estrutura mínima
+
+```
+main.py          → entrypoint
+app/ api/        → FastAPI
+kernel/          → RAG, contexto, memória, provider
+adapters/        → outbound comms
+templates/       → ops + traces UI
+context/         → calendário + contexto institucional
+jsons/           → fonte ingestão RAG
+bin/             → ingest e staging
+data/            → SQLite runtime (local, gitignored)
+```
+
+Detalhe: `docs/runtime-manifest.md`.
+
+## Troubleshooting
+
+| Problema | Acção |
+|----------|-------|
+| Boot falha “system_prompt.txt” | Verificar `kernel/policies/systemPrompt/` |
+| RAG vazio | Correr ingest; confirmar MySQL `knowledge` |
+| 401 no chat | `ACL_API_BEARER_TOKEN` / header Authorization |
+| Orbit não responde | Kernel up? `KERNEL_API_URL` correcto? |
+| Catálogo 503 | `ACL_CATALOG_ENABLED=true` + `ACL_CATALOG_JSON_DIR` |
+
+API: `docs/API_SPEC.md` · Produção: `docs/operations/v1-production-runbook.md`.

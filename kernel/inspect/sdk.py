@@ -98,7 +98,7 @@ def models(services: Any) -> dict[str, Any]:
         "llm_provider": s.llm_provider,
         "cursor_model": s.cursor_model,
         "openrouter_models": list(s.models),
-        "openrouter_temperature_fixed": 0.7,
+        "openrouter_temperature_fixed": getattr(s, "llm_temperature", 0.3),
         "note": "tokens_used em ACL_META conta fragmentos de stream, não tokens do provider",
     }
 

@@ -1,0 +1,116 @@
+{
+  "threshold_single": 0.35,
+  "threshold_multi": 0.2,
+  "multi_gap": 0.12,
+  "min_raw_hits": 1,
+  "experts": [
+    {
+      "id": "python",
+      "name": "Python",
+      "keywords": [
+        "python",
+        "list comprehension",
+        "dict",
+        "pip",
+        "pandas",
+        "jupyter",
+        "elif",
+        "enumerate",
+        "f-string",
+        "flask",
+        "variável",
+        "variavel"
+      ],
+      "aliases": ["ppd", "py"],
+      "retrieval_scope": ["python", "python-processamento-dados"],
+      "instructions": "Priorize material oficial Python da disciplina; siga convenções do curso."
+    },
+    {
+      "id": "sql",
+      "name": "SQL",
+      "keywords": [
+        "sql",
+        "select",
+        "join",
+        "left join",
+        "inner join",
+        "group by",
+        "having",
+        "banco",
+        "tabela",
+        "der",
+        "mer",
+        "normalização",
+        "normalizacao",
+        "chave estrangeira",
+        "looker",
+        "dashboard"
+      ],
+      "aliases": ["mysql", "postgresql", "banco de dados"],
+      "retrieval_scope": ["sql-modelagem-relacional", "visualizacao-sql"],
+      "instructions": "Preserve sintaxe SQL dos documentos oficiais; priorize material de modelagem e consultas."
+    },
+    {
+      "id": "java",
+      "name": "Java",
+      "keywords": [
+        "java",
+        "javac",
+        "jvm",
+        "jdk",
+        "interface",
+        "abstract",
+        "class",
+        "system.out",
+        "scanner",
+        "else if"
+      ],
+      "aliases": ["backend java"],
+      "retrieval_scope": ["fundamentos-java"],
+      "instructions": "Siga convenções Java do material da disciplina."
+    },
+    {
+      "id": "csharp",
+      "name": "C#",
+      "keywords": [
+        "csharp",
+        "c#",
+        ".net",
+        "dotnet",
+        "console.writeline",
+        "datetime",
+        "visual studio",
+        "clr"
+      ],
+      "aliases": ["dotnet", "c sharp"],
+      "retrieval_scope": ["fundamentos-csharp"],
+      "instructions": "Siga convenções C#/.NET do material da disciplina."
+    },
+    {
+      "id": "backend-requisitos",
+      "name": "Projeto Backend / Requisitos",
+      "keywords": [
+        "engenharia de requisitos",
+        "requisito funcional",
+        "requisito não funcional",
+        "requisito nao funcional",
+        "caso de uso",
+        "elicitação",
+        "elicitacao",
+        "stakeholder",
+        "cascata",
+        "rup",
+        "ciclo de vida",
+        "uml",
+        "rf ",
+        "rnf",
+        "atores",
+        "cenário excepcional",
+        "cenario excepcional"
+      ],
+      "aliases": ["pb backend", "projeto-bloco-backend", "backend requisitos"],
+      "retrieval_scope": ["projeto-bloco-backend"],
+      "instructions": "Priorize material de engenharia de requisitos e casos de uso do bloco backend."
+    }
+  ]
+}

@@ -69,6 +69,23 @@
         <dt>Identidade ativa</dt><dd class="mono">{{ prompt.context.identity_active }}</dd>
         <dt>Transcript (turnos)</dt><dd class="mono">{{ prompt.context.transcript_turns_used }}</dd>
       </dl>
+      {% if prompt.context.domain_router_enabled %}
+      <div style="color:var(--muted);font-size:0.8rem;margin-top:0.75rem;">Domain Router</div>
+      <dl class="kv">
+        <dt>Domínio</dt><dd class="mono">{{ prompt.context.selected_domain or '—' }}{% if prompt.context.domain_multi %} (multi){% endif %}</dd>
+        <dt>Confiança</dt><dd class="mono">{{ prompt.context.domain_confidence if prompt.context.domain_confidence is not none else '—' }}</dd>
+        <dt>Fallback global</dt><dd class="mono">{{ prompt.context.domain_fallback }}</dd>
+        <dt>Latência router</dt><dd class="mono">{% if prompt.context.domain_router_latency_ms is not none %}{{ prompt.context.domain_router_latency_ms }} ms{% else %}—{% endif %}</dd>
+      </dl>
+      {% if prompt.context.domain_retrieval_scope %}
+      <div style="color:var(--muted);font-size:0.8rem;margin-top:0.5rem;">Retrieval scope</div>
+      <ul>{% for s in prompt.context.domain_retrieval_scope %}<li class="mono">{{ s }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if prompt.context.domain_candidates %}
+      <div style="color:var(--muted);font-size:0.8rem;margin-top:0.5rem;">Candidatos</div>
+      <ul>{% for c in prompt.context.domain_candidates %}<li class="mono">{{ c.id }} · {{ c.score }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% endif %}
       {% if prompt.context.institutional_files %}
       <div style="color:var(--muted);font-size:0.8rem;margin-top:0.75rem;">Contexto institucional carregado</div>
       <ul>{% for f in prompt.context.institutional_files %}<li class="mono">{{ f }}</li>{% endfor %}</ul>

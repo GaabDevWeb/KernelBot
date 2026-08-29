@@ -25,10 +25,11 @@ templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _PROMPTS_DIR = _PROJECT_ROOT / "kernel" / "policies" / "systemPrompt"
 
-# Temperature / timeout / max_tokens: hardcoded no provider/config (sem env seguro de escrita).
-_OPENROUTER_TEMPERATURE = 0.7
+# Temperature / max_tokens: defaults em Settings (ACL_LLM_TEMPERATURE / ACL_LLM_MAX_TOKENS).
+_OPENROUTER_TEMPERATURE = 0.3
 _HTTP_TIMEOUT_S = 60.0
-_MAX_TOKENS_NOTE = "não definido no Kernel (default do provider)"
+_MAX_TOKENS_DEFAULT = 600
+_MAX_TOKENS_NOTE = f"{_MAX_TOKENS_DEFAULT} (default ACL_LLM_MAX_TOKENS)"
 
 
 def _services(request: Request):
@@ -63,19 +64,20 @@ def _models_view(request: Request) -> dict[str, Any]:
     openrouter_models = list(getattr(s, "models", ()) or ())
     if not openrouter_models:
         openrouter_models = [
-            "openrouter/free",
-            "deepseek/deepseek-v4-flash",
-            "meta-llama/llama-4-maverick",
+            "google/gemini-2.5-flash-lite",
+            "deepseek/deepseek-v4-flash-latest",
         ]
     timeout = float(getattr(s, "http_timeout", _HTTP_TIMEOUT_S) or _HTTP_TIMEOUT_S)
+    temperature = float(getattr(s, "llm_temperature", _OPENROUTER_TEMPERATURE) or _OPENROUTER_TEMPERATURE)
+    max_tokens = int(getattr(s, "llm_max_tokens", _MAX_TOKENS_DEFAULT) or _MAX_TOKENS_DEFAULT)
     active = cursor_model if provider == "cursor" else (openrouter_models[0] if openrouter_models else "—")
     return {
         "llm_provider": provider,
         "active_model": active,
         "cursor_model": cursor_model,
         "openrouter_models": openrouter_models,
-        "temperature": _OPENROUTER_TEMPERATURE,
-        "max_tokens": _MAX_TOKENS_NOTE,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
         "http_timeout_s": timeout,
         "cursor_chat_only": bool(
             getattr(s, "cursor_chat_only", None)
@@ -84,10 +86,9 @@ def _models_view(request: Request) -> dict[str, Any]:
         ),
         "editable": False,
         "edit_note": (
-            "Somente leitura: temperatura (0.7), timeout HTTP (60s) e lista OpenRouter "
-            "estão hardcoded em kernel/config.py / chat_provider. Não há formulário "
-            "env-backed seguro para editar estes parâmetros em runtime. Altere "
-            "ACL_LLM_PROVIDER / ACL_CURSOR_MODEL no .env e reinicie o processo."
+            "Somente leitura: temperatura (ACL_LLM_TEMPERATURE), max_tokens (ACL_LLM_MAX_TOKENS), "
+            "timeout HTTP (60s) e modelos via ACL_MODELS no .env (JSON array ou CSV; ordem = prioridade). "
+            "Altere ACL_LLM_PROVIDER / ACL_CURSOR_MODEL / ACL_MODELS e reinicie."
         ),
     }
 

@@ -26,7 +26,15 @@ from pathlib import Path
 from urllib.parse import unquote
 
 from kernel.config import Settings
+from kernel.context.conversation_context import (
+    MEDIA_ABSTENTION_BLOCK,
+    THREAD_UNCLEAR_BLOCK,
+    detect_social_conflict,
+    needs_media_abstention,
+    resolve_query_from_recent,
+)
 from kernel.context.builder import ContextBuilder, ContextLayers, SystemContextBlocks
+from kernel.context.domain_router import DomainRouteResult, DomainRouter
 from kernel.context.intent import detect_temporal_intent
 from kernel.context.router import ContextRouter
 from kernel.context.types import ContextRoute, RagSkipReason, RouteSignals
@@ -37,7 +45,8 @@ from kernel.group.invocation import (
     user_turn_content,
 )
 from kernel.disciplines.disciplines import command_prefixes, query_markers_by_discipline, trace_label_by_discipline
-from kernel.knowledge.lesson_catalog import CatalogMatchResult, LessonCatalog, LessonEntry
+from kernel.knowledge.iss_links import format_source_header, format_source_label
+from kernel.knowledge.lesson_catalog import CatalogMatchResult, LessonCatalog, LessonEntry, parse_db_source_key
 from kernel.memory.group_memory import GroupMemoryStore, HistoricalSearchResult
 from kernel.memory.group_profile import GroupProfile
 from kernel.memory.pinned_store import PinnedContext, PinnedSessionStore
@@ -62,9 +71,74 @@ _DISCIPLINE_COMMAND_PREFIXES: tuple[tuple[str, str], ...] = command_prefixes()
 
 _TRACE_LABEL_BY_DISCIPLINE: dict[str, str] = trace_label_by_discipline()
 
+_TOPIC_TO_SILO: dict[str, str] = {
+    "java": "fundamentos-java",
+    "csharp": "fundamentos-csharp",
+    "python": "python",
+    "sql": "sql-modelagem-relacional",
+    "backend": "projeto-bloco-backend",
+    "ia": "fluencia-ia",
+}
+
 _SOURCES_CAP = 20
 
 _RESET_PREFIX_RE = re.compile(r"^/(?:reset|limpar)\s*", re.IGNORECASE)
+
+_CATALOG_LESSON_BOOST_FACTOR = 1.35
+
+
+def _expand_query_with_discipline_markers(
+    query: str,
+    retrieval_scopes: tuple[str, ...],
+    *,
+    max_markers: int = 3,
+) -> str:
+    """Enriquece query BM25 com markers do domínio (não altera mensagem ao LLM)."""
+    q_lower = query.lower()
+    if any(h in q_lower for h in ("c#", "java", "python", " sql", "sql ", "mysql")):
+        return query
+    markers_map = query_markers_by_discipline()
+    extra: list[str] = []
+    for scope in retrieval_scopes:
+        for marker in markers_map.get(scope, ()):
+            m = marker.lower()
+            if m not in q_lower and m not in extra:
+                extra.append(marker)
+            if len(extra) >= max_markers:
+                break
+        if len(extra) >= max_markers:
+            break
+    if not extra:
+        return query
+    return f"{query} {' '.join(extra)}"
+
+
+def _boost_candidates_for_catalog_lesson(
+    candidates: list[RetrievalCandidate],
+    lesson_key: str,
+    *,
+    boost_factor: float = _CATALOG_LESSON_BOOST_FACTOR,
+) -> list[RetrievalCandidate]:
+    """Promove chunks da aula identificada pelo catálogo lexical."""
+    boosted: list[RetrievalCandidate] = []
+    for cand in candidates:
+        key = parse_db_source_key(cand.source)
+        if key == lesson_key:
+            boosted.append(
+                RetrievalCandidate(
+                    source=cand.source,
+                    chunk_id=cand.chunk_id,
+                    text=cand.text,
+                    discipline=cand.discipline,
+                    raw_score=cand.raw_score * boost_factor,
+                    normalized_score=min(1.0, cand.normalized_score * boost_factor),
+                    matched_terms=cand.matched_terms,
+                )
+            )
+        else:
+            boosted.append(cand)
+    boosted.sort(key=lambda c: c.raw_score, reverse=True)
+    return boosted
 
 
 # --- Mensagens UX padronizadas (Fase 1/3) -----------------------------------
@@ -253,6 +327,21 @@ class ContextTrace:
     contextual_invocation: bool = False
     recent_context_count: int = 0
     no_useful_context: bool = False
+    # Domain Router (ACL_DOMAIN_ROUTER) — scoped retrieval.
+    domain_router_enabled: bool = False
+    domain_candidates: tuple[dict, ...] = ()
+    selected_domain: str | None = None
+    selected_domains: tuple[str, ...] = ()
+    domain_confidence: float | None = None
+    domain_retrieval_scope: tuple[str, ...] = ()
+    domain_fallback: bool = False
+    domain_multi: bool = False
+    domain_router_reason: str | None = None
+    domain_router_latency_ms: float | None = None
+    behavior_flags: tuple[str, ...] = ()
+    conversation_resolution_k: int = 0
+    dominant_conversation_topic: str | None = None
+    conversation_ambiguous: bool = False
 
 
 @dataclass(frozen=True)
@@ -562,6 +651,7 @@ def _excerpt_for_ui(text: str, *, max_len: int = 220) -> str:
 def _build_source_details_for_ui(
     merged_chunks: list[dict[str, str]],
     lesson_catalog: LessonCatalog | None,
+    iss_public_base: str = "",
 ) -> tuple[dict, ...]:
     """Metadados ricos para cards de fonte na UI (título, trecho, disciplina)."""
     out: list[dict] = []
@@ -593,6 +683,9 @@ def _build_source_details_for_ui(
 
         module = _lesson_sequence_label(slug or (entry.slug if entry else ""))
         disc_label = _discipline_display_name(disc) if disc else "Material"
+        public_url = format_source_label(src, iss_public_base)
+        if not public_url.startswith("http"):
+            public_url = ""
 
         out.append(
             {
@@ -603,6 +696,7 @@ def _build_source_details_for_ui(
                 "lesson_title": lesson_title,
                 "module": module,
                 "excerpt": excerpt,
+                "public_url": public_url,
             }
         )
     return tuple(out)
@@ -631,9 +725,11 @@ def _trim_pin_chunks(
     return out
 
 
-def _join_chunks_for_prompt(selected: list[dict[str, str]]) -> str:
+def _join_chunks_for_prompt(selected: list[dict[str, str]], settings: Settings) -> str:
     return "\n\n---\n\n".join(
-        f"[Fonte: {c['source']}]\n{c['text']}" for c in selected if c.get("text")
+        f"{format_source_header(c['source'], settings.iss_public_lesson_base)}\n{c['text']}"
+        for c in selected
+        if c.get("text")
     )
 
 
@@ -709,15 +805,20 @@ def _format_chunks_for_prompt(
             continue
         src = s.get("source") or ""
         score = s.get("normalized_score")
+        score_f = float(score) if score is not None else None
         if use_numbered:
-            if score is not None:
-                header = f"[Fonte {i}: {src} | Score: {float(score):.2f}]"
-            else:
-                header = f"[Fonte {i}: {src}]"
-        elif score is not None:
-            header = f"[Fonte: {src} | Score: {float(score):.2f}]"
+            header = format_source_header(
+                str(src),
+                settings.iss_public_lesson_base,
+                index=i,
+                score=score_f,
+            )
         else:
-            header = f"[Fonte: {src}]"
+            header = format_source_header(
+                str(src),
+                settings.iss_public_lesson_base,
+                score=score_f,
+            )
         parts.append(f"{header}\n{text}")
     return "\n\n---\n\n".join(parts)
 
@@ -783,6 +884,10 @@ class ContextManager:
         # Camadas novas são opt-in: sem builder, o comportamento é o anterior.
         self._context_builder = context_builder
         self._context_router = ContextRouter()
+        indexed = getattr(search_engine, "discipline_ids", frozenset())
+        self._domain_router = DomainRouter(
+            indexed_disciplines=indexed if isinstance(indexed, frozenset) else frozenset(indexed),
+        )
         self._group_memory_store = group_memory_store
 
     @property
@@ -948,6 +1053,66 @@ class ContextManager:
             if not query.strip():
                 query = derive_rag_query_from_recent(parsed_invocation.recent_context)
 
+        behavior_advisory = ""
+        conversation_resolution_k = 0
+        dominant_conversation_topic: str | None = None
+        conversation_ambiguous = False
+        behavior_flags: list[str] = []
+
+        if parsed_invocation.recent_context:
+            resolution = resolve_query_from_recent(
+                query if query.strip() else user_message,
+                parsed_invocation.recent_context,
+                k=4,
+            )
+            conversation_resolution_k = resolution.resolution_k
+            dominant_conversation_topic = resolution.dominant_topic
+            conversation_ambiguous = resolution.ambiguous_unresolved
+            if resolution.was_resolved:
+                query = resolution.resolved
+                behavior_flags.append("coreference_resolved")
+            elif resolution.ambiguous_unresolved:
+                behavior_advisory = THREAD_UNCLEAR_BLOCK
+                behavior_flags.append("ambiguous_unresolved")
+            elif not query.strip():
+                query = derive_rag_query_from_recent(parsed_invocation.recent_context)
+
+        conflict_hint = detect_social_conflict(parsed_invocation.recent_context)
+        if conflict_hint:
+            behavior_advisory = (
+                f"{behavior_advisory}\n\n{conflict_hint.prompt_note}".strip()
+                if behavior_advisory
+                else conflict_hint.prompt_note
+            )
+            behavior_flags.append("social_conflict_detected")
+
+        if needs_media_abstention(
+            user_message,
+            parsed_invocation.recent_context,
+            quoted_context=parsed_invocation.quoted_context,
+        ):
+            behavior_advisory = (
+                f"{behavior_advisory}\n\n{MEDIA_ABSTENTION_BLOCK}".strip()
+                if behavior_advisory
+                else MEDIA_ABSTENTION_BLOCK
+            )
+            behavior_flags.append("media_abstention")
+
+        if behavior_flags:
+            log_event(
+                log,
+                logging.INFO,
+                ACL_MOD_CONTEXT,
+                "behavior_gate",
+                "sinais P0 conversacionais",
+                metadata={
+                    "flags": list(behavior_flags),
+                    "resolution_k": conversation_resolution_k,
+                    "dominant_topic": dominant_conversation_topic,
+                    "ambiguous": conversation_ambiguous,
+                },
+            )
+
         llm_user_content = user_turn_content(user_message, parsed_invocation)
         json_discipline = self._sanitize_discipline(discipline_filter)
         request_scope = _request_scope_key(
@@ -974,6 +1139,17 @@ class ContextManager:
             )
         else:
             effective_discipline = None
+
+        if (
+            effective_discipline is None
+            and dominant_conversation_topic
+            and dominant_conversation_topic in _TOPIC_TO_SILO
+            and not force_doc
+        ):
+            hinted = self._sanitize_discipline(_TOPIC_TO_SILO[dominant_conversation_topic])
+            if hinted is not None:
+                effective_discipline = hinted
+                behavior_flags.append("topic_silo_hint")
 
         doc_rag_active = False
         if force_doc:
@@ -1142,6 +1318,72 @@ class ContextManager:
                     if narrowed is not None:
                         effective_discipline = narrowed
 
+        domain_route: DomainRouteResult | None = None
+        domain_discipline_filters: tuple[str, ...] | None = None
+        domain_instruction = ""
+
+        if (
+            getattr(self._settings, "domain_router_enabled", False)
+            and effective_discipline is None
+            and not doc_rag_active
+            and not force_doc
+            and not force_rag
+            and discipline_from_command is None
+            and json_discipline is None
+        ):
+            indexed = getattr(self._search_engine, "discipline_ids", frozenset())
+            self._domain_router = DomainRouter(
+                indexed_disciplines=indexed if isinstance(indexed, frozenset) else frozenset(indexed),
+            )
+            domain_route = self._domain_router.route(
+                query or llm_user_content,
+                recent_context=recent_context_block,
+            )
+            if domain_route.fallback_global:
+                log_event(
+                    log,
+                    logging.INFO,
+                    ACL_MOD_CONTEXT,
+                    "domain_router_fallback",
+                    "retrieval global — domínio indeterminado ou baixa confiança",
+                    metadata={
+                        "reason": domain_route.reason,
+                        "confidence": domain_route.confidence,
+                        "candidates": [
+                            {"id": c.expert_id, "score": c.score}
+                            for c in domain_route.candidates
+                        ],
+                        "router_latency_ms": round(domain_route.router_latency_ms, 2),
+                    },
+                )
+            elif domain_route.retrieval_scopes:
+                if domain_route.multi_domain:
+                    domain_discipline_filters = domain_route.retrieval_scopes
+                elif len(domain_route.retrieval_scopes) == 1:
+                    effective_discipline = self._sanitize_discipline(
+                        domain_route.retrieval_scopes[0]
+                    )
+                else:
+                    domain_discipline_filters = domain_route.retrieval_scopes
+                if domain_route.instructions:
+                    domain_instruction = domain_route.instructions
+                log_event(
+                    log,
+                    logging.INFO,
+                    ACL_MOD_CONTEXT,
+                    "domain_router_scoped",
+                    "retrieval restrito por domínio",
+                    metadata={
+                        "selected": domain_route.selected_expert,
+                        "selected_experts": list(domain_route.selected_experts),
+                        "confidence": domain_route.confidence,
+                        "scopes": list(domain_route.retrieval_scopes),
+                        "multi_domain": domain_route.multi_domain,
+                        "reason": domain_route.reason,
+                        "router_latency_ms": round(domain_route.router_latency_ms, 2),
+                    },
+                )
+
         if rag_skipped:
             candidates = []
             log_event(
@@ -1160,11 +1402,94 @@ class ContextManager:
                 },
             )
         else:
+            rag_query = query
+            if (
+                self._settings.query_discipline_boost_enabled
+                and domain_route is not None
+                and not domain_route.fallback_global
+                and domain_route.retrieval_scopes
+            ):
+                rag_query = _expand_query_with_discipline_markers(
+                    query, domain_route.retrieval_scopes
+                )
+                if rag_query != query:
+                    log_event(
+                        log,
+                        logging.DEBUG,
+                        ACL_MOD_CONTEXT,
+                        "query_discipline_boost",
+                        "query BM25 enriquecida com markers de domínio",
+                        metadata={
+                            "scopes": list(domain_route.retrieval_scopes),
+                            "rag_query_len": len(rag_query),
+                        },
+                    )
             candidates = self._search_engine.search_candidates(
-                query,
+                rag_query,
                 candidate_k=self._settings.retrieval_candidate_k,
                 discipline_filter=effective_discipline,
+                discipline_filters=domain_discipline_filters,
             )
+            if (
+                domain_route is not None
+                and not domain_route.fallback_global
+                and not candidates
+            ):
+                log_event(
+                    log,
+                    logging.INFO,
+                    ACL_MOD_CONTEXT,
+                    "domain_scoped_empty_fallback",
+                    "scoped retrieval vazio — fallback global",
+                    metadata={
+                        "scopes": list(domain_route.retrieval_scopes),
+                        "selected": domain_route.selected_expert,
+                    },
+                )
+                candidates = self._search_engine.search_candidates(
+                    rag_query,
+                    candidate_k=self._settings.retrieval_candidate_k,
+                )
+                if domain_route is not None:
+                    domain_route = DomainRouteResult(
+                        selected_expert=domain_route.selected_expert,
+                        selected_experts=domain_route.selected_experts,
+                        confidence=domain_route.confidence,
+                        candidates=domain_route.candidates,
+                        retrieval_scopes=domain_route.retrieval_scopes,
+                        fallback_global=True,
+                        multi_domain=domain_route.multi_domain,
+                        reason="scoped_empty_fallback",
+                        instructions=domain_route.instructions,
+                        router_latency_ms=domain_route.router_latency_ms,
+                    )
+                    effective_discipline = None
+                    domain_discipline_filters = None
+            if (
+                self._settings.catalog_rerank_enabled
+                and catalog_result
+                and self._lesson_catalog
+                and self._lesson_catalog.is_confident(catalog_result)
+                and candidates
+            ):
+                top_lesson = self._lesson_catalog.top_lesson(catalog_result)
+                if top_lesson is not None:
+                    lesson_key = self._lesson_catalog.lesson_key(top_lesson)
+                    if lesson_key in self._indexed_lesson_keys:
+                        candidates = _boost_candidates_for_catalog_lesson(
+                            candidates, lesson_key
+                        )
+                        log_event(
+                            log,
+                            logging.DEBUG,
+                            ACL_MOD_CONTEXT,
+                            "catalog_rerank_boost",
+                            "chunks da aula do catálogo promovidos no ranking",
+                            metadata={
+                                "lesson_key": lesson_key,
+                                "catalog_top_score": catalog_result.top_score,
+                            },
+                        )
         max_per_source = (
             1
             if doc_rag_active
@@ -1346,7 +1671,9 @@ class ContextManager:
                 catalog_section=catalog_section,
                 sticky=sticky_block,
                 group_profile=group_profile_block,
+                behavior_advisory=behavior_advisory,
                 grounding=grounding,
+                domain_instruction=domain_instruction,
                 chunk_context=ctx,
                 group_memory=group_memory_block,
                 recent_context=recent_context_block,
@@ -1355,6 +1682,17 @@ class ContextManager:
 
         if doc_rag_active:
             label = "Documentação (doc)"
+        elif (
+            domain_route is not None
+            and not domain_route.fallback_global
+            and domain_route.selected_expert
+        ):
+            if domain_route.multi_domain:
+                label = f"Domínios: {', '.join(domain_route.selected_experts)}"
+            elif effective_discipline is not None:
+                label = _trace_label_for_discipline(effective_discipline)
+            else:
+                label = domain_route.selected_expert
         elif effective_discipline is not None:
             label = _trace_label_for_discipline(effective_discipline)
         else:
@@ -1393,7 +1731,9 @@ class ContextManager:
             label=label,
             sources=_dedupe_sources(trace_sources),
             source_details=_build_source_details_for_ui(
-                merged_chunks, self._lesson_catalog
+                merged_chunks,
+                self._lesson_catalog,
+                self._settings.iss_public_lesson_base,
             ),
             pinned_active=self._pin_active(session_id),
             pinned_display=self._pin_display(session_id),
@@ -1447,6 +1787,41 @@ class ContextManager:
             contextual_invocation=parsed_invocation.is_contextual,
             recent_context_count=len(parsed_invocation.recent_context),
             no_useful_context=parsed_invocation.no_useful_context,
+            behavior_flags=tuple(behavior_flags),
+            conversation_resolution_k=conversation_resolution_k,
+            dominant_conversation_topic=dominant_conversation_topic,
+            conversation_ambiguous=conversation_ambiguous,
+            domain_router_enabled=getattr(self._settings, "domain_router_enabled", False),
+            domain_candidates=tuple(
+                {"id": c.expert_id, "score": c.score, "raw_hits": c.raw_hits}
+                for c in (domain_route.candidates if domain_route else ())
+            ),
+            selected_domain=(
+                domain_route.selected_expert if domain_route else None
+            ),
+            selected_domains=(
+                domain_route.selected_experts if domain_route else ()
+            ),
+            domain_confidence=(
+                domain_route.confidence if domain_route else None
+            ),
+            domain_retrieval_scope=(
+                domain_route.retrieval_scopes if domain_route else ()
+            ),
+            domain_fallback=(
+                domain_route.fallback_global if domain_route else False
+            ),
+            domain_multi=(
+                domain_route.multi_domain if domain_route else False
+            ),
+            domain_router_reason=(
+                domain_route.reason if domain_route else None
+            ),
+            domain_router_latency_ms=(
+                round(domain_route.router_latency_ms, 2)
+                if domain_route
+                else None
+            ),
         )
         log_event(
             log,

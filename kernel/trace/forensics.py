@@ -116,14 +116,21 @@ def build_tokens_forensics(
         prompt_tokens = int(pt)
     if isinstance(ct, (int, float)):
         completion_tokens = int(ct)
+    total = meta.get("total_tokens")
+    total_tokens = int(total) if isinstance(total, (int, float)) else prompt_tokens + completion_tokens
     return {
         "prompt_tokens": prompt_tokens,
         "completion_tokens": completion_tokens,
-        "total_tokens": prompt_tokens + completion_tokens,
+        "total_tokens": total_tokens,
         "input_chars": prompt_chars,
         "output_chars": len(answer or ""),
         "estimated": pt is None and ct is None,
-        "provider_fragments": meta.get("tokens_used"),
+        "note": (
+            "tokens do provider OpenRouter quando provider_stream=false; "
+            "senão estimativa ou fragmentos SSE"
+        ),
+        "provider_stream": (metadata or {}).get("provider_stream"),
+        "model": (metadata or {}).get("model"),
     }
 
 

@@ -42,10 +42,9 @@ storage/
 
 .agent_history.md
 agent.md
-logs.txt
-results.md
-results/
-Features.canvas
-docs/PROMPT-AGENTE-*.md
-# Suíte pytest versionada (CI corre `pytest tests/ -q`).
-# Não ignorar o directório `tests/` — SEC-002 / kernel-orbit-integration.
+notbook/
+memory/
+scripts/
+optimization/
+tests/
+.cursor/

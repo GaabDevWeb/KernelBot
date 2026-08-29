@@ -20,7 +20,9 @@ RUN pip install --no-cache-dir -r requirements-prod.txt
 
 COPY api/ ./api/
 COPY app/ ./app/
+COPY adapters/ ./adapters/
 COPY kernel/ ./kernel/
+COPY context/ ./context/
 COPY templates/ ./templates/
 COPY main.py .
 

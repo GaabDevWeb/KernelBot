@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from dataclasses import dataclass
@@ -29,6 +30,40 @@ def _normalize_db_host(raw: str) -> str:
     return h
 
 
+_DEFAULT_OPENROUTER_MODELS: tuple[str, ...] = (
+    "google/gemini-2.5-flash-lite",
+    "deepseek/deepseek-v4-flash-latest",
+)
+
+_DEFAULT_LLM_TEMPERATURE = 0.3
+_DEFAULT_LLM_MAX_TOKENS = 600
+
+
+def parse_acl_models(raw: str | None) -> tuple[str, ...]:
+    """Parse ACL_MODELS: JSON array ``["a","b"]`` ou CSV ``a,b`` (ordem = prioridade)."""
+    text = (raw or "").strip()
+    if not text:
+        return _DEFAULT_OPENROUTER_MODELS
+    if text.startswith("["):
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                "ACL_MODELS deve ser JSON array válido, ex.: "
+                '["deepseek/deepseek-v4-flash-latest","deepseek/deepseek-r1-distill-qwen-32b"]'
+            ) from exc
+        if not isinstance(parsed, list) or not parsed:
+            raise RuntimeError("ACL_MODELS JSON deve ser array não vazio de strings.")
+        out = tuple(str(m).strip() for m in parsed if str(m).strip())
+        if not out:
+            raise RuntimeError("ACL_MODELS JSON não contém model ids válidos.")
+        return out
+    models = tuple(m.strip() for m in text.split(",") if m.strip())
+    if not models:
+        raise RuntimeError("ACL_MODELS CSV não contém model ids válidos.")
+    return models
+
+
 @dataclass(frozen=True)
 class Settings:
     llm_provider: LLMProvider
@@ -42,6 +77,8 @@ class Settings:
     global_context_mode: GlobalContextMode
     openrouter_base: str
     models: tuple[str, ...]
+    llm_temperature: float
+    llm_max_tokens: int
     system_prompt_geral: str
     grounding_policy: GroundingPolicy
     grounding_strict: str
@@ -102,6 +139,12 @@ class Settings:
     identity_prompt: str = ""
     # ContextRouter FAST|NORMAL|DEEP — default off = camadas always-on (legado).
     context_router_enabled: bool = False
+    # Domain Router — scoped retrieval por expert (keywords, sem LLM extra).
+    domain_router_enabled: bool = False
+    # Re-rank BM25 quando catálogo identifica aula com confiança (Fase B RAG).
+    catalog_rerank_enabled: bool = False
+    # Expande query BM25 com queryMarkers do domínio detectado (Fase C RAG).
+    query_discipline_boost_enabled: bool = False
     # Memória Histórica de Grupos (SQLite + BM25 + Recência)
     group_memory_db_path: Path | None = None
     group_memory_enabled: bool = True
@@ -159,11 +202,7 @@ class Settings:
         content_dir = project_root / "content"
         content_dir.mkdir(exist_ok=True)
 
-        models = (
-            "openrouter/free",
-            "deepseek/deepseek-v4-flash",
-            "meta-llama/llama-4-maverick",
-        )
+        models = parse_acl_models(os.getenv("ACL_MODELS"))
 
         prompts_dir = Path(__file__).resolve().parent / "policies" / "systemPrompt"
         system_prompt_file = prompts_dir / "system_prompt.txt"
@@ -289,6 +328,8 @@ class Settings:
         transcript_max_turns = _env_int("ACL_TRANSCRIPT_MAX_TURNS", 16, 1, 100)
         raw_context_router = (os.getenv("ACL_CONTEXT_ROUTER") or "").strip().lower()
         context_router_enabled = raw_context_router in {"1", "true", "yes", "on"}
+        raw_domain_router = (os.getenv("ACL_DOMAIN_ROUTER") or "").strip().lower()
+        domain_router_enabled = raw_domain_router in {"1", "true", "yes", "on"}
 
         raw_retrieval_mode = (os.getenv("ACL_RETRIEVAL_MODE") or "strict").strip().lower()
         if raw_retrieval_mode not in ("strict", "fallback"):
@@ -330,6 +371,12 @@ class Settings:
             "ACL_CATALOG_STRICT_THRESHOLD", 4.0, 0.0, 100.0
         )
         catalog_prompt_top_k = _env_int("ACL_CATALOG_PROMPT_TOP_K", 5, 1, 20)
+
+        raw_catalog_rerank = (os.getenv("ACL_CATALOG_RERANK") or "false").strip().lower()
+        catalog_rerank_enabled = raw_catalog_rerank in ("1", "true", "yes", "on")
+
+        raw_query_boost = (os.getenv("ACL_QUERY_DISCIPLINE_BOOST") or "false").strip().lower()
+        query_discipline_boost_enabled = raw_query_boost in ("1", "true", "yes", "on")
 
         reload_bearer_token = (
             (os.getenv("ACL_RELOAD_BEARER_TOKEN") or os.getenv("KERNELBOT_RELOAD_TOKEN") or "")
@@ -443,6 +490,9 @@ class Settings:
         idempotency_enabled = (os.getenv("KERNEL_IDEMPOTENCY_ENABLED") or "true").strip().lower() in ("1", "true", "yes", "on")
         idempotency_ttl_seconds = _env_int("KERNEL_IDEMPOTENCY_TTL_SECONDS", 300, 10, 86400)
 
+        llm_temperature = _env_float("ACL_LLM_TEMPERATURE", _DEFAULT_LLM_TEMPERATURE, 0.0, 2.0)
+        llm_max_tokens = _env_int("ACL_LLM_MAX_TOKENS", _DEFAULT_LLM_MAX_TOKENS, 1, 8192)
+
         return cls(
             llm_provider=llm_provider,
             openrouter_api_key=openrouter_key,
@@ -455,6 +505,8 @@ class Settings:
             global_context_mode=global_context_mode,
             openrouter_base="https://openrouter.ai/api/v1/chat/completions",
             models=models,
+            llm_temperature=llm_temperature,
+            llm_max_tokens=llm_max_tokens,
             system_prompt_geral=system_prompt,
             grounding_policy=grounding_policy,
             grounding_strict=grounding_strict,
@@ -491,6 +543,8 @@ class Settings:
             catalog_strict_threshold=catalog_strict_threshold,
             catalog_prompt_top_k=catalog_prompt_top_k,
             catalog_router_prompt=catalog_router_prompt,
+            catalog_rerank_enabled=catalog_rerank_enabled,
+            query_discipline_boost_enabled=query_discipline_boost_enabled,
             reload_bearer_token=reload_bearer_token,
             iss_public_lesson_base=iss_public_lesson_base,
             trace_db_path=trace_db_path,
@@ -500,6 +554,7 @@ class Settings:
             calendar_path=calendar_path,
             identity_prompt=identity_prompt,
             context_router_enabled=context_router_enabled,
+            domain_router_enabled=domain_router_enabled,
             group_memory_db_path=group_memory_db_path,
             group_memory_enabled=group_memory_enabled,
             group_memory_max_results=group_memory_max_results,

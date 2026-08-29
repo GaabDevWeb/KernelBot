@@ -65,3 +65,13 @@ def discipline_by_id(discipline_id: str) -> DisciplineConfig | None:
         if d.id == key:
             return d
     return None
+
+
+@lru_cache(maxsize=1)
+def indexed_silo_ids() -> frozenset[str]:
+    """Silos BM25 conhecidos (discipline id + siloClass + doc)."""
+    ids: set[str] = {"doc"}
+    for d in load_disciplines():
+        ids.add(d.id)
+        ids.add(d.silo_class)
+    return frozenset(ids)

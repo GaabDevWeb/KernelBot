@@ -13,6 +13,7 @@ from kernel.context.builder import ContextBuilder
 from kernel.context.calendar_provider import CalendarProvider
 from kernel.context.institutional import InstitutionalContextProvider
 from kernel.context.temporal import TemporalContextProvider
+from kernel.knowledge.catalog_sync import bootstrap_catalog_state
 from kernel.logging_config import configure_logging
 from kernel.memory.group_memory import GroupMemoryStore
 from kernel.memory.idempotency import IdempotencyStore

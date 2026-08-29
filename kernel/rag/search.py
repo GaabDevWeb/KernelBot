@@ -268,15 +268,40 @@ class SearchEngine:
         query: str,
         candidate_k: int = CANDIDATE_K,
         discipline_filter: str | None = None,
+        discipline_filters: tuple[str, ...] | None = None,
     ) -> list[RetrievalCandidate]:
         """Retorna candidatos brutos ordenados por `raw_score` desc.
 
         Sem threshold, sem truncamento por top_k. A decisão fica com
         `kernel.rag.retrieval.build_decision`.
+
+        ``discipline_filters`` restringe a busca a múltiplos silos (multi-domain)
+        sem varrer o índice global inteiro.
         """
         from kernel.security_flags import discipline_fail_closed
 
         with self._lock:
+            if discipline_filters:
+                merged: list[RetrievalCandidate] = []
+                valid = [
+                    nd
+                    for raw in discipline_filters
+                    if (nd := self.normalize_discipline(raw)) is not None
+                ]
+                if not valid:
+                    if discipline_fail_closed():
+                        _log_search_candidates(query, None, [], candidate_k)
+                        return []
+                else:
+                    per_k = max(2, candidate_k // len(valid) + 1)
+                    for silo in valid:
+                        merged.extend(self._candidates_in_silo(silo, query, per_k))
+                    merged.sort(key=lambda c: c.raw_score, reverse=True)
+                    merged = merged[:candidate_k]
+                    scope_label = ",".join(valid)
+                    _log_search_candidates(query, scope_label, merged, candidate_k)
+                    return merged
+
             raw_filter = (discipline_filter or "").strip() or None
             nd = self.normalize_discipline(discipline_filter)
 

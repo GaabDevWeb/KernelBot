@@ -24,6 +24,11 @@ from pathlib import Path
 import httpx
 
 from kernel.config import Settings
+from kernel.knowledge.iss_links import (
+    build_source_citations,
+    replace_db_source_citations,
+    sources_to_public_urls,
+)
 from kernel.structured_log import ACL_MOD_PROVIDER, log_event
 from kernel.orchestrator.context import ContextTrace, hard_stop_message
 from kernel.providers.disambiguation_parse import (
@@ -67,6 +72,7 @@ def _build_meta(
     tokens_used: int,
     *,
     grounding_policy: str | None = None,
+    iss_public_lesson_base: str = "",
 ) -> dict:
     meta: dict = {"v": 3}
     if trace is None:
@@ -86,10 +92,17 @@ def _build_meta(
         )
         return meta
     allow_generation = trace.decision == "answer"
+    source_citations = build_source_citations(
+        trace.sources,
+        iss_public_lesson_base,
+        trace.source_details,
+    )
     meta.update(
         {
             "label": trace.label,
             "sources": list(trace.sources),
+            "source_links": sources_to_public_urls(trace.sources, iss_public_lesson_base),
+            "source_citations": source_citations,
             "pinned_active": trace.pinned_active,
             "pinned_display": trace.pinned_display,
             "pin_chunks_used": trace.pin_chunks_used,
@@ -159,6 +172,24 @@ class ChatProvider:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
 
+    def _openrouter_payload_base(
+        self,
+        *,
+        stream: bool,
+        temperature: float | None,
+        max_tokens: int | None,
+    ) -> dict:
+        """Parâmetros OpenRouter partilhados (defaults em Settings / .env)."""
+        temp = self._settings.llm_temperature if temperature is None else float(temperature)
+        temp = max(0.0, min(temp, 2.0))
+        mt = self._settings.llm_max_tokens if max_tokens is None else int(max_tokens)
+        mt = max(1, min(mt, 8192))
+        return {
+            "stream": stream,
+            "temperature": temp,
+            "max_tokens": mt,
+        }
+
     def _stream_meta(
         self,
         trace: ContextTrace | None,
@@ -171,6 +202,7 @@ class ChatProvider:
             llm_called,
             tokens_used,
             grounding_policy=self._settings.grounding_policy,
+            iss_public_lesson_base=self._settings.iss_public_lesson_base,
         )
 
     async def stream_response(
@@ -223,15 +255,14 @@ class ChatProvider:
             yield "data: [DONE]\n\n"
             return
 
-        temp = 0.7 if temperature is None else float(temperature)
-        temp = max(0.0, min(temp, 2.0))
         payload_base: dict = {
             "messages": messages,
-            "stream": True,
-            "temperature": temp,
+            **self._openrouter_payload_base(
+                stream=True,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            ),
         }
-        if max_tokens is not None:
-            payload_base["max_tokens"] = max(1, min(int(max_tokens), 8192))
         override_model = (model or "").strip() or None
         models = [override_model] if override_model else list(self._settings.models)
         timeout = self._settings.http_timeout
@@ -403,6 +434,310 @@ class ChatProvider:
         for piece in _sse_text_chunk(friendly):
             yield piece
         yield "data: [DONE]\n\n"
+
+    async def complete_response(
+        self,
+        messages: list[dict],
+        trace: ContextTrace | None = None,
+        decision: RetrievalDecision | None = None,
+        *,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ) -> tuple[str, dict]:
+        """Resposta completa num único JSON (Orbit / ``stream=false``).
+
+        OpenRouter: ``stream=false`` directo (usage real). Cursor: agrega stream interno.
+        """
+        if self._settings.llm_provider == "cursor":
+            from kernel.providers.aggregate import aggregate_sse
+
+            return await aggregate_sse(
+                self.stream_response(
+                    messages,
+                    trace=trace,
+                    decision=decision,
+                    model=model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+            )
+
+        if trace is not None and trace.decision == "hard_stop":
+            hard_text = ""
+            if messages and messages[-1].get("role") == "assistant":
+                hard_text = str(messages[-1].get("content") or "")
+            if not hard_text:
+                hard_text = hard_stop_message(trace.reason)
+            meta = self._stream_meta(trace, llm_called=False, tokens_used=0)
+            log_event(
+                log,
+                logging.INFO,
+                ACL_MOD_PROVIDER,
+                "llm_skipped_hard_stop",
+                "complete sem LLM (hard stop retrieval)",
+                metadata={
+                    "reason": trace.reason,
+                    "confidence": trace.confidence,
+                    "mode": trace.mode,
+                    "llm_called": False,
+                    "tokens_used": 0,
+                },
+            )
+            return hard_text, meta
+
+        payload_base: dict = {
+            "messages": messages,
+            **self._openrouter_payload_base(
+                stream=False,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            ),
+        }
+        override_model = (model or "").strip() or None
+        models = [override_model] if override_model else list(self._settings.models)
+        timeout = self._settings.http_timeout
+
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            for attempt, model_name in enumerate(models, start=1):
+                try:
+                    log_event(
+                        log,
+                        logging.INFO,
+                        ACL_MOD_PROVIDER,
+                        "llm_attempt",
+                        "tentativa OpenRouter (stream=false)",
+                        metadata={
+                            "attempt": attempt,
+                            "attempts_total": len(models),
+                            "model": model_name,
+                        },
+                    )
+                    t_start = time.perf_counter()
+                    response = await client.post(
+                        self._settings.openrouter_base,
+                        headers=self._settings.openrouter_headers,
+                        json={**payload_base, "model": model_name},
+                    )
+                    if response.status_code == 429:
+                        log_event(
+                            log,
+                            logging.WARNING,
+                            ACL_MOD_PROVIDER,
+                            "llm_rate_limited",
+                            "HTTP 429 — fallback para proximo modelo",
+                            metadata={"model": model_name, "status_code": 429},
+                        )
+                        continue
+                    if response.status_code >= 400:
+                        log_event(
+                            log,
+                            logging.ERROR,
+                            ACL_MOD_PROVIDER,
+                            "llm_http_error",
+                            "resposta HTTP de erro do OpenRouter",
+                            metadata={
+                                "model": model_name,
+                                "status_code": response.status_code,
+                                "body_preview": response.text[:300],
+                            },
+                        )
+                        continue
+
+                    body = response.json()
+                    answer_text = str(
+                        body.get("choices", [{}])[0]
+                        .get("message", {})
+                        .get("content")
+                        or ""
+                    )
+                    usage = body.get("usage") or {}
+                    prompt_tok = int(usage.get("prompt_tokens") or 0)
+                    completion_tok = int(usage.get("completion_tokens") or 0)
+                    total_tok = int(usage.get("total_tokens") or prompt_tok + completion_tok)
+                    tokens_used = completion_tok or max(1, len(answer_text) // 4)
+                    elapsed = (time.perf_counter() - t_start) * 1000
+
+                    log_event(
+                        log,
+                        logging.INFO,
+                        ACL_MOD_PROVIDER,
+                        "llm_complete",
+                        "OpenRouter stream=false concluído",
+                        metadata={
+                            "model": model_name,
+                            "prompt_tokens": prompt_tok,
+                            "completion_tokens": completion_tok,
+                            "total_tokens": total_tok,
+                            "elapsed_ms": round(elapsed, 1),
+                        },
+                    )
+
+                    final_answer, extra_meta = self._finalize_answer_and_meta(
+                        answer_text, trace, decision, tokens_used,
+                    )
+                    meta = self._stream_meta(trace, llm_called=True, tokens_used=tokens_used)
+                    meta.update(extra_meta)
+                    if prompt_tok:
+                        meta["prompt_tokens"] = prompt_tok
+                    if completion_tok:
+                        meta["completion_tokens"] = completion_tok
+                    if total_tok:
+                        meta["total_tokens"] = total_tok
+                    meta["model"] = model_name
+                    meta["provider_stream"] = False
+                    return final_answer, meta
+                except httpx.TimeoutException:
+                    log_event(
+                        log,
+                        logging.WARNING,
+                        ACL_MOD_PROVIDER,
+                        "llm_timeout",
+                        "timeout httpx — fallback",
+                        metadata={"model": model_name, "timeout_s": timeout},
+                    )
+                    continue
+                except Exception as e:
+                    log_event(
+                        log,
+                        logging.ERROR,
+                        ACL_MOD_PROVIDER,
+                        "llm_exception",
+                        f"excecao no complete: {type(e).__name__}",
+                        metadata={"model": model_name, "error": str(e)},
+                    )
+                    log.exception("llm_exception detail")
+                    continue
+
+        friendly = hard_stop_message("provider_error")
+        failure_meta = self._stream_meta(trace, llm_called=False, tokens_used=0)
+        failure_meta.update(
+            {"decision": "hard_stop", "reason": "provider_error", "confidence": "low"}
+        )
+        log_event(
+            log,
+            logging.ERROR,
+            ACL_MOD_PROVIDER,
+            "llm_all_models_failed",
+            "todos os modelos falharam — provider_error ao cliente",
+            metadata={"models_tried": list(models)},
+        )
+        return friendly, failure_meta
+
+    def _finalize_answer_and_meta(
+        self,
+        answer_text: str,
+        trace: ContextTrace | None,
+        decision: RetrievalDecision | None,
+        tokens_used: int,
+    ) -> tuple[str, dict]:
+        """Pós-geração síncrona (equivalente a ``_finalize_generation_meta``)."""
+        extra: dict = {}
+        citations: list[dict[str, str]] = []
+        if trace is not None:
+            citations = build_source_citations(
+                trace.sources,
+                self._settings.iss_public_lesson_base,
+                trace.source_details,
+            )
+        answer_text = replace_db_source_citations(
+            answer_text,
+            self._settings.iss_public_lesson_base,
+            citations,
+        )
+        if trace is None or decision is None:
+            return answer_text, extra
+        if not decision.allow_generation or not decision.selected_candidates:
+            pass
+        else:
+            policy = self._settings.grounding_policy
+            flags = post_generation_flags(
+                answer_text,
+                trace.retrieval_trace.informative_terms if trace.retrieval_trace else (),
+                decision.selected_candidates,
+                grounding_policy=policy,
+                decision_reason=decision.reason,
+            )
+            if flags:
+                if policy in ("anchored", "hybrid"):
+                    advisory = anchored_post_generation_advisory_flags(flags, answer_text)
+                    if advisory:
+                        log_event(
+                            log,
+                            logging.INFO,
+                            ACL_MOD_PROVIDER,
+                            "post_generation_advisory",
+                            "sanity pos-geracao — aviso sem override (anchored/hybrid)",
+                            metadata={"flags": advisory, "tokens_used": tokens_used},
+                        )
+                        extra.update(
+                            {
+                                "post_generation_advisory": True,
+                                "post_generation_flags": advisory,
+                            }
+                        )
+                        return answer_text, extra
+                else:
+                    log_event(
+                        log,
+                        logging.WARNING,
+                        ACL_MOD_PROVIDER,
+                        "post_generation_override",
+                        "sanity pos-geracao — resposta substituida",
+                        metadata={
+                            "flags": list(flags),
+                            "reason": "post_generation_misalignment",
+                            "tokens_used": tokens_used,
+                        },
+                    )
+                    extra.update(
+                        {
+                            "decision": "hard_stop",
+                            "reason": "post_generation_misalignment",
+                            "confidence": "low",
+                            "allow_generation": False,
+                            "post_generation_override": True,
+                            "misalignment": True,
+                            "post_generation_flags": flags,
+                        }
+                    )
+                    override = (
+                        answer_text
+                        + "\n\n---\n\n"
+                        + hard_stop_message("post_generation_misalignment")
+                    )
+                    return override, extra
+
+        if trace.reason != "ambiguous_retrieval" or not decision.allow_generation:
+            return answer_text, extra
+
+        _, parsed = strip_ambiguity_markup(answer_text)
+        options = parsed or parse_ambiguity_options(answer_text)
+        if not options:
+            from kernel.providers.disambiguation_parse import parse_incomplete_ambiguity_options
+
+            options = parse_incomplete_ambiguity_options(answer_text)
+        if (
+            not options
+            and decision.selected_candidates
+            and self._settings.disambiguation_enabled
+        ):
+            options = candidates_from_retrieval(decision.selected_candidates)
+        if not options:
+            return answer_text, extra
+
+        payload = {"expected_lesson": None, "suggested_candidates": options}
+        extra["disambiguation_options"] = options
+        extra["payload"] = _normalize_hard_stop_payload("ambiguous_retrieval", payload)
+        log_event(
+            log,
+            logging.INFO,
+            ACL_MOD_PROVIDER,
+            "disambiguation_options_meta",
+            "opções estruturadas detectadas na resposta",
+            metadata={"count": len(options)},
+        )
+        return answer_text, extra
 
     async def _stream_cursor(
         self,

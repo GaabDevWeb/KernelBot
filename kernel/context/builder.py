@@ -43,9 +43,11 @@ class SystemContextBlocks:
     sticky: str = ""
     group_profile: str = ""
     grounding: str = ""
+    domain_instruction: str = ""
     chunk_context: str = ""
     group_memory: str = ""
     recent_context: str = ""
+    behavior_advisory: str = ""
 
 
 @dataclass(frozen=True)
@@ -148,7 +150,9 @@ class ContextBuilder:
             parts.append(blocks.catalog_section)
         parts.append(blocks.sticky)
         parts.append(blocks.group_profile)
+        parts.append(blocks.behavior_advisory)
         parts.append(blocks.grounding)
+        parts.append(blocks.domain_instruction)
         parts.append(blocks.chunk_context)
         parts.append(blocks.recent_context)
         parts.append(blocks.group_memory)

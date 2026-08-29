@@ -125,6 +125,11 @@ def _lesson_document_text(entry: LessonEntry) -> str:
     return " ".join(p for p in parts if p)
 
 
+def parse_db_source_key(source: str) -> str | None:
+    """Chave canônica `discipline:slug` a partir de source `db:disc/slug/...`."""
+    return _parse_db_source_key(source)
+
+
 def _parse_db_source_key(source: str) -> str | None:
     if not source.startswith("db:"):
         return None
