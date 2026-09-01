@@ -35,7 +35,7 @@ from kernel.context.conversation_context import (
 )
 from kernel.context.builder import ContextBuilder, ContextLayers, SystemContextBlocks
 from kernel.context.domain_router import DomainRouteResult, DomainRouter
-from kernel.context.intent import detect_temporal_intent
+from kernel.context.intent import detect_temporal_intent, is_calendar_priority_query
 from kernel.context.router import ContextRouter
 from kernel.context.types import ContextRoute, RagSkipReason, RouteSignals
 from kernel.group.invocation import (
@@ -145,50 +145,44 @@ def _boost_candidates_for_catalog_lesson(
 
 _HARD_STOP_MESSAGES: dict[str, str] = {
     "insufficient_context": (
-        "Não encontrei informação suficiente na base para responder com segurança.\n\n"
-        "Tente especificar melhor, por exemplo incluindo tecnologia, contexto ou objetivo."
+        "Não achei informação suficiente no material para responder com segurança.\n\n"
+        "Tenta ser mais específico: tecnologia, contexto ou o que você quer fazer."
     ),
     "context_misaligned": (
-        "Encontrei trechos na base, mas eles não cobrem bem a sua pergunta.\n\n"
-        "Reformule incluindo termos mais específicos sobre o que quer saber."
+        "Achei trechos na base, mas nada que cubra bem a pergunta.\n\n"
+        "Reformula com termos mais específicos."
     ),
     "underspecified_query": (
-        "Sua pergunta está vaga para responder com segurança usando a base.\n\n"
-        "Use o formato: [tecnologia] + [problema] + [contexto].\n\n"
+        "A pergunta está vaga demais para eu responder com segurança.\n\n"
+        "Formato útil: [tecnologia] + [problema] + [contexto].\n\n"
         "Exemplos:\n"
         "- SQL + performance + query lenta\n"
         "- Docker + erro + build falhando\n"
         "- API + timeout + chamada de autenticação"
     ),
     "vague_but_high_risk": (
-        "Sua pergunta pode ter várias interpretações e eu não tenho contexto suficiente "
-        "para escolher uma com segurança.\n\n"
-        "Reformule usando: [tecnologia] + [problema] + [contexto]."
+        "Isso pode significar coisas diferentes e eu não tenho contexto para escolher uma.\n\n"
+        "Reformula com: [tecnologia] + [problema] + [contexto]."
     ),
     "ambiguous_retrieval": (
-        "Encontrei conteúdos parecidos na base e não consegui distinguir qual deles "
-        "realmente responde à sua pergunta.\n\n"
-        "Adicione detalhes que ajudem a desempatar, como nome do módulo, comando ou tecnologia."
+        "Achei conteúdos parecidos e não consegui distinguir qual responde à pergunta.\n\n"
+        "Adiciona detalhe: módulo, comando ou tecnologia."
     ),
     "low_confidence": (
-        "Encontrei conteúdo que lembra a sua pergunta, mas a confiança do retrieval ficou baixa "
-        "e no modo estrito prefiro não arriscar uma resposta incorreta.\n\n"
-        "Reformule com mais detalhes técnicos ou use um comando de escopo (`/doc`, `/python`, etc.)."
+        "Tem material parecido, mas a confiança ficou baixa — no modo estrito prefiro não chutar.\n\n"
+        "Reformula com mais detalhe ou usa um comando de escopo (`/doc`, `/python`, etc.)."
     ),
     "post_generation_misalignment": (
-        "Preparei uma resposta com base nos trechos encontrados, mas a checagem final "
-        "indicou que ela pode ter saído do escopo das fontes.\n\n"
-        "Reformule a pergunta com termos mais próximos do material ou tente novamente."
+        "Montei uma resposta, mas a checagem final indicou que saiu do escopo das fontes.\n\n"
+        "Reformula com termos mais próximos do material ou tenta de novo."
     ),
     "index_gap": (
-        "Identifiquei no catálogo uma aula que corresponde à sua pergunta, mas o conteúdo "
-        "ainda não está disponível no índice de busca local.\n\n"
-        "O tópico consta no currículo e a indexação deve ser atualizada em breve. "
-        "Tente novamente após `/reload` ou avise o responsável."
+        "O tópico está no catálogo, mas o conteúdo ainda não está no índice de busca.\n\n"
+        "Tenta de novo depois do `/reload` ou avisa o responsável."
     ),
     "provider_error": (
-        "Tive um problema técnico ao contatar o modelo de linguagem.\n\n"
-        "Tente novamente em alguns instantes. Se persistir, avise o responsável."
+        "Deu problema ao contatar o modelo.\n\n"
+        "Tenta de novo em alguns instantes. Se persistir, avisa o responsável."
     ),
 }
 
@@ -196,7 +190,7 @@ _HARD_STOP_MESSAGES: dict[str, str] = {
 def hard_stop_message(reason: str) -> str:
     return _HARD_STOP_MESSAGES.get(
         reason,
-        "Não consegui responder com segurança agora. Reformule a pergunta e tente novamente.",
+        "Não consegui responder com segurança agora. Reformula e tenta de novo.",
     )
 
 
@@ -1207,17 +1201,31 @@ class ContextManager:
                 if layers.temporal is not None
                 else None
             )
+            calendar_priority = is_calendar_priority_query(query)
             history_max_turns = self._settings.chat_history_max_turns
-            # Legado: RAG dispensável apenas em time_fact puro.
+            # Legado: RAG dispensável em time_fact puro ou pergunta de agenda.
             rag_skipped = bool(
-                temporal_intent is not None
-                and temporal_intent.kind == "time_fact"
-                and not force_doc
-                and not force_rag
-                and discipline_from_command is None
+                (
+                    temporal_intent is not None
+                    and temporal_intent.kind == "time_fact"
+                    and not force_doc
+                    and not force_rag
+                    and discipline_from_command is None
+                )
+                or (
+                    calendar_priority
+                    and not force_doc
+                    and not force_rag
+                    and discipline_from_command is None
+                )
             )
             if rag_skipped:
-                rag_skip_reason = RagSkipReason.TEMPORAL_FACT.value
+                rag_skip_reason = (
+                    RagSkipReason.TEMPORAL_FACT.value
+                    if temporal_intent is not None and temporal_intent.kind == "time_fact"
+                    else RagSkipReason.CALENDAR_ONLY.value
+                )
+                filter_low_confidence_rag = calendar_priority
 
         history_truncated = _truncate_conversation_history(
             history_in,

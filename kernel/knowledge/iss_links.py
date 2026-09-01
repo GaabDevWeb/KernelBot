@@ -29,6 +29,35 @@ _BRACKET_FONTE_ISS_URL_RE = re.compile(
     r"\[Fonte(?:\s+\d+)?:\s*https://gaabdevweb\.github\.io/ISS/public/aula\.html\?[^\]\|\n]+\]",
     re.IGNORECASE,
 )
+_BRACKET_FONTE_ANY_RE = re.compile(
+    r"\[Fonte(?:\s+\d+)?:[^\]]*\]",
+    re.IGNORECASE | re.DOTALL,
+)
+_BRACKET_BOOK_ANY_RE = re.compile(
+    r"\[📖[^\]]*\]",
+    re.DOTALL,
+)
+_INLINE_BOOK_BLOCK_RE = re.compile(
+    r"(?:^|\n)\s*📖[^\n]*(?:\n(?!\s*\d+\.)[^\n]*)*?(?:\nhttps://gaabdevweb\.github\.io/ISS[^\s\n]*)?",
+    re.MULTILINE | re.IGNORECASE,
+)
+_MATERIAL_REF_BLOCK_RE = re.compile(
+    r"(?:^|\n)\s*📚\s*\*Material de referência\*[\s\S]*",
+    re.IGNORECASE,
+)
+_STANDALONE_ISS_URL_LINE_RE = re.compile(
+    r"^\s*https://gaabdevweb\.github\.io/ISS/public/aula\.html\?[^\s\n]+(?:\s*\|\s*Score:\s*[\d.]+)?\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+_TITULO_METADATA_LINE_RE = re.compile(
+    r"^\s*Título:\s*.+\s*$",
+    re.MULTILINE,
+)
+_SCORE_FRAGMENT_RE = re.compile(
+    r"\s*\|\s*Score:\s*[\d.]+",
+    re.IGNORECASE,
+)
+_COLLAPSE_BLANK_LINES_RE = re.compile(r"\n{3,}")
 
 
 def parse_db_source(source: str) -> tuple[str, str] | None:
@@ -252,3 +281,22 @@ def replace_db_source_citations(
     out = _CITATION_DB_RE.sub(_bracket_repl, text or "")
     out = _PLAIN_FONTE_DB_RE.sub(_plain_repl, out)
     return beautify_iss_citations_in_answer(out, base_url, citations)
+
+
+def strip_user_facing_citations(text: str) -> str:
+    """Remove citações, links ISS e blocos de referência da resposta ao utilizador."""
+    out = str(text or "")
+    out = _MATERIAL_REF_BLOCK_RE.sub("", out)
+    out = _BRACKET_BOOK_ANY_RE.sub("", out)
+    out = _BRACKET_FONTE_ANY_RE.sub("", out)
+    out = _BRACKET_FONTE_ISS_URL_RE.sub("", out)
+    out = _INLINE_BOOK_BLOCK_RE.sub("", out)
+    out = _PLAIN_FONTE_ISS_URL_RE.sub("", out)
+    out = _PLAIN_FONTE_DB_RE.sub("", out)
+    out = _CITATION_DB_RE.sub("", out)
+    out = _STANDALONE_ISS_URL_LINE_RE.sub("", out)
+    out = _ISS_PUBLIC_URL_RE.sub("", out)
+    out = _TITULO_METADATA_LINE_RE.sub("", out)
+    out = _SCORE_FRAGMENT_RE.sub("", out)
+    out = _COLLAPSE_BLANK_LINES_RE.sub("\n\n", out)
+    return out.strip()

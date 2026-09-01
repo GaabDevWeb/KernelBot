@@ -332,11 +332,13 @@ MEDIA_ABSTENTION_BLOCK = (
     "## Restrição — conteúdo visual não interpretado\n"
     "A mensagem referencia imagem/mídia sem transcrição disponível. "
     "NÃO descreva nem invente o que aparece na mídia. "
-    "Peça ao utilizador que descreva por texto ou envie o conteúdo relevante."
+    "Peça ao utilizador que descreva por texto ou envie o conteúdo relevante. "
+    "Tom: directo e curto, sem emojis."
 )
 
 THREAD_UNCLEAR_BLOCK = (
     "## Ambiguidade de thread\n"
     "A pergunta é ambígua e o contexto recente não permite identificar "
-    "a qual discussão se refere. Peça esclarecimento em vez de assumir um tópico."
+    "a qual discussão se refere. Peça esclarecimento em vez de assumir um tópico. "
+    "Tom: directo e curto, sem emojis nem formalidade corporativa."
 )

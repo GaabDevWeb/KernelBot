@@ -22,9 +22,17 @@ CONTEXTUAL_USER_TURN = (
 TRANSCRIPT_USER_MARKER = "[@orbit]"
 
 GROUP_INTRODUCTION_ANSWER = (
-    "Olá! Sou o **Orbit**, assistente acadêmico da turma. "
-    "Mencionem @orbit quando quiserem ajuda com disciplinas, prazos ou dúvidas de estudo — "
-    "posso usar o contexto recente da conversa para responder."
+    "Sou o Kernel. Conheço o material da turma, as disciplinas e o que está "
+    "na agenda académica registada. Se estiver na base, eu procuro; se não "
+    "estiver, não invento resposta só para parecer inteligente.\n\n"
+    "Pergunta normalmente ou marca @orbit. Atalhos de disciplina:\n"
+    "/python — Python\n"
+    "/java — Java\n"
+    "/csharp — C#\n"
+    "/sql — Visualização SQL\n"
+    "/pb-backend — Projeto de Bloco Backend\n"
+    "/doc — material geral do curso\n\n"
+    "Quer saber alguma coisa? Manda."
 )
 
 

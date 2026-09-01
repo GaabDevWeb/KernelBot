@@ -263,6 +263,11 @@ class CalendarProvider:
             "Regras de uso da agenda:\n"
             "- As datas e contagens de dias acima foram calculadas pelo servidor "
             "com base na data de hoje — use-as como estão, sem recalcular.\n"
+            "- Para perguntas sobre **hoje** (\"hoje tem aula?\", \"o que temos hoje?\"), "
+            "responda primeiro com a secção **Hoje** abaixo; não despeje a semana inteira.\n"
+            "- Textos com \"Atividades típicas\" são **referência semanal do calendário FIAP** — "
+            "cite como orientação do calendário, não como horário de sala confirmado.\n"
+            "- Diferencie entrega/prazo (TP, AT) de conteúdo de aula — responda ao que foi perguntado.\n"
             "- Se perguntarem por um evento, prova, avaliação ou entrega que NÃO "
             "está listado aqui nem nos trechos [Fonte: …], declare que não há "
             "registo oficial — NÃO invente datas, professores, avaliações, "
@@ -282,9 +287,19 @@ class CalendarProvider:
             return f"{header}\n\n{body}", ()
 
         lines: list[str] = []
+        today_events = self.events_on(today)
+        if today_events:
+            lines.append("### Hoje (prioridade para perguntas sobre o dia actual)")
+            lines.extend(self._event_line(e, today) for e in today_events)
+            lines.append("")
         if future:
-            lines.append("Próximos eventos registados:")
-            lines.extend(self._event_line(e, today) for e in future)
+            future_only = [e for e in future if e.date != today]
+            if future_only:
+                lines.append("Próximos eventos registados:")
+                lines.extend(self._event_line(e, today) for e in future_only)
+            elif not today_events:
+                lines.append("Próximos eventos registados:")
+                lines.extend(self._event_line(e, today) for e in future)
         else:
             lines.append(
                 "Não há eventos FUTUROS registados no momento. Se perguntarem "

@@ -26,7 +26,7 @@ import httpx
 from kernel.config import Settings
 from kernel.knowledge.iss_links import (
     build_source_citations,
-    replace_db_source_citations,
+    strip_user_facing_citations,
     sources_to_public_urls,
 )
 from kernel.structured_log import ACL_MOD_PROVIDER, log_event
@@ -633,18 +633,7 @@ class ChatProvider:
     ) -> tuple[str, dict]:
         """Pós-geração síncrona (equivalente a ``_finalize_generation_meta``)."""
         extra: dict = {}
-        citations: list[dict[str, str]] = []
-        if trace is not None:
-            citations = build_source_citations(
-                trace.sources,
-                self._settings.iss_public_lesson_base,
-                trace.source_details,
-            )
-        answer_text = replace_db_source_citations(
-            answer_text,
-            self._settings.iss_public_lesson_base,
-            citations,
-        )
+        answer_text = strip_user_facing_citations(answer_text)
         if trace is None or decision is None:
             return answer_text, extra
         if not decision.allow_generation or not decision.selected_candidates:
