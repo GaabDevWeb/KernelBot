@@ -21,7 +21,9 @@ _DEICTIC_OR_AMBIGUOUS_RE = re.compile(
     r"como\s+faz\??|"
     r"manda|funcionou\??|deu\s+certo\??|"
     r"esse\??|essa\??|"
-    r"e\s+(?:como|o\s+que|qual|isso|esse|essa)\??"
+    r"e\s+(?:como|o\s+que|qual|isso|esse|essa)\??|"
+    r"e\s+a\s+quest(?:ao|ão)\s*\d*\??|"
+    r"quest(?:ao|ão)\s*\d+\??"
     r")[\s!.?]*$",
     re.IGNORECASE,
 )
@@ -294,7 +296,7 @@ def needs_media_abstention(
     quoted_context: str | None = None,
 ) -> bool:
     """True quando pergunta sobre conteúdo visual não disponível como texto."""
-    msg = re.sub(r"@orbit\s*", "", (user_message or ""), flags=re.IGNORECASE).strip().lower()
+    msg = re.sub(r"@kernel\s*", "", (user_message or ""), flags=re.IGNORECASE).strip().lower()
     visual_ask = any(
         p in msg
         for p in (

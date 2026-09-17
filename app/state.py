@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from kernel.providers.chat_provider import ChatProvider
 from kernel.orchestrator.context import ContextManager
+from kernel.academic.bootstrap import AcademicState
 from kernel.knowledge.lesson_catalog import LessonCatalog
 from kernel.memory.group_memory import GroupMemoryStore
 from kernel.memory.idempotency import IdempotencyStore
@@ -23,6 +24,7 @@ class AppServices:
     lesson_catalog: LessonCatalog | None = None
     indexed_lesson_keys: frozenset[str] = field(default_factory=frozenset)
     catalog_drift_report: dict | None = None
+    academic_state: AcademicState | None = None
     # Transcript store v1 (Kernel↔Orbit): default_factory preserva a
     # construção de `AppServices(...)` sem este campo nos testes legados.
     transcript_store: TranscriptStore = field(default_factory=TranscriptStore)

@@ -1,0 +1,142 @@
+# Segurança da Informação e Defesa Cibernética
+
+
+# Segurança da Informação e Defesa Cibernética
+
+## Organização curricular
+
+O aluno inicia seus estudos pelo bloco Arquitetura de Computadores, Redes e Cibersegurança para dominar os fundamentos de hardware, infraestrutura de comunicação e proteção de dados corporativos.
+
+Este primeiro semestre é chamado de Bloco de Entrada, e a classe pode ser compartilhada com graduações correlatas. Neste ponto, é apresentada a metodologia de ensino da instituição, chamada de CBL+PBL, que desenvolve as competências necessárias através de projetos práticos. O aluno também estuda em duas importantes disciplinas de apoio à carreira: Planejamento de Curso e Carreira e Fluência em IA.
+
+Em seguida, o aluno ingressa na Roda Única de Segurança da Informação e Defesa Cibernética, que possui quatro blocos: Segurança Defensiva com SOC e Blue Team, Segurança Ofensiva com Red Team, Purple Team: Segurança de Aplicações e Computação Forense e Normas e Controles para Segurança dos Dados. Esses blocos não têm pré-requisitos entre si, podendo ser feitos em qualquer ordem, permitindo ao aluno ampliar seu networking com os novos colegas que passam a estudar juntos. Os blocos são ofertados de acordo com o cronograma previsto pela faculdade.
+
+Para entender melhor, veja a ilustração:
+
+## Horário das aulas
+
+Bloco de Entrada
+
+Seis meses
+
+Opção N1: 19:00 às 20:30 em aulas Live | Calendário 2[51]
+
+Opção N2: 20:30 às 22:00 em aulas Live | Calendário 1[52]
+
++cerca de 12 horas de estudos por semana
+
++aulas semanais de apoio à carreira
+
+Roda Única
+
+Dois anos
+
+Opção N1: 19:00 às 20:30 em aulas Live | Calendário 2
+
+Opção N2: 20:30 às 22:00 em aulas Live | Calendário 1
+
++cerca de 12 horas de estudos por semana
+
+## Informações adicionais
+
+### Nome do programa[53]
+
+Segurança da Informação e Defesa Cibernética
+
+### Código do programa
+
+SDC
+
+### Coordenador Pedagógico
+
+Prof. Dr. Paulo Tostes | paulo.tostes@infnet.edu.br
+
+### Coordenador Pedagógico do Bloco de Entrada
+
+Prof. Me. Alan Alonso | alan.alonso@infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Ana Cristina Curi de Figueiredo
+
+### Coaching e Psicopedagogia
+
+### Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Mínimo de 60 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+30
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+20
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+20
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+30
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+60
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+10
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+10
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+30
+
+### Atividades de Extensão
+
+Mínimo de 280 horas
+
+### Estágio
+
+Mínimo de 400 horas

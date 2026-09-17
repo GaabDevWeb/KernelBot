@@ -8,9 +8,10 @@ Ordem canônica das camadas (ver docs/CONTEXT-ARCHITECTURE.md):
     4. temporal         (data/hora do servidor)
     5. calendar         (agenda acadêmica com deltas calculados)
     6. catalog_router + catalog_section  (catálogo de aulas — existente)
-    7. sticky           (contexto fixado — existente)
-    8. grounding        (contrato anti-alucinação — existente)
-    9. chunk_context    (trechos RAG [Fonte: …] — existente)
+    7. academic_section  (mapa académico / referência resolvida)
+    8. sticky           (contexto fixado — existente)
+    9. grounding        (contrato anti-alucinação — existente)
+   10. chunk_context    (trechos RAG [Fonte: …] — existente)
 
 Blocos vazios são omitidos. Nenhuma outra parte do código deve concatenar
 system prompt por conta própria.
@@ -40,6 +41,7 @@ class SystemContextBlocks:
     calendar: str = ""
     catalog_router: str = ""
     catalog_section: str = ""
+    academic_section: str = ""
     sticky: str = ""
     group_profile: str = ""
     grounding: str = ""
@@ -148,6 +150,8 @@ class ContextBuilder:
         if blocks.catalog_section:
             parts.append(blocks.catalog_router)
             parts.append(blocks.catalog_section)
+        if blocks.academic_section:
+            parts.append(blocks.academic_section)
         parts.append(blocks.sticky)
         parts.append(blocks.group_profile)
         parts.append(blocks.behavior_advisory)

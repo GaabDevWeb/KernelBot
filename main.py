@@ -13,6 +13,7 @@ from kernel.context.builder import ContextBuilder
 from kernel.context.calendar_provider import CalendarProvider
 from kernel.context.institutional import InstitutionalContextProvider
 from kernel.context.temporal import TemporalContextProvider
+from kernel.academic.bootstrap import bootstrap_academic_state
 from kernel.knowledge.catalog_sync import bootstrap_catalog_state
 from kernel.logging_config import configure_logging
 from kernel.memory.group_memory import GroupMemoryStore
@@ -45,6 +46,7 @@ def build_services() -> AppServices:
         else None
     )
     lesson_catalog, indexed_lesson_keys, catalog_drift_report = bootstrap_catalog_state(settings)
+    academic_state = bootstrap_academic_state(settings)
     context_builder = ContextBuilder(
         identity_prompt=settings.identity_prompt,
         institutional=InstitutionalContextProvider(settings.context_dir),
@@ -59,6 +61,7 @@ def build_services() -> AppServices:
         indexed_lesson_keys=indexed_lesson_keys,
         context_builder=context_builder,
         group_memory_store=group_memory_store,
+        academic_state=academic_state,
     )
     return AppServices(
         search_engine=search_engine,
@@ -68,6 +71,7 @@ def build_services() -> AppServices:
         lesson_catalog=lesson_catalog,
         indexed_lesson_keys=indexed_lesson_keys,
         catalog_drift_report=catalog_drift_report,
+        academic_state=academic_state,
         transcript_store=transcript_store,
         group_memory_store=group_memory_store,
         idempotency_store=idempotency_store,

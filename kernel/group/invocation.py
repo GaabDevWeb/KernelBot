@@ -1,4 +1,4 @@
-"""Semântica de invocação @orbit em grupos (CONTEXTUAL_INVOCATION)."""
+"""Semântica de invocação @kernel em grupos (CONTEXTUAL_INVOCATION)."""
 
 from __future__ import annotations
 
@@ -16,16 +16,16 @@ _GREETING_OR_NOISE_RE = re.compile(
 _MEDIA_PLACEHOLDER_RE = re.compile(r"^\[[^\]]+\]$")
 
 CONTEXTUAL_USER_TURN = (
-    "[@orbit — invocação contextual: analise a conversa recente do grupo e participe.]"
+    "[@kernel — invocação contextual: analise a conversa recente do grupo e participe.]"
 )
 
-TRANSCRIPT_USER_MARKER = "[@orbit]"
+TRANSCRIPT_USER_MARKER = "[@kernel]"
 
 GROUP_INTRODUCTION_ANSWER = (
     "Sou o Kernel. Conheço o material da turma, as disciplinas e o que está "
     "na agenda académica registada. Se estiver na base, eu procuro; se não "
     "estiver, não invento resposta só para parecer inteligente.\n\n"
-    "Pergunta normalmente ou marca @orbit. Atalhos de disciplina:\n"
+    "Pergunta normalmente ou marca @kernel. Atalhos de disciplina:\n"
     "/python — Python\n"
     "/java — Java\n"
     "/csharp — C#\n"

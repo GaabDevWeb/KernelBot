@@ -7,6 +7,7 @@ import logging
 from app.state import AppServices
 from kernel.config import Settings
 from kernel.structured_log import ACL_MOD_CONTEXT, log_event, redact_secrets
+from kernel.academic.bootstrap import bootstrap_academic_state
 from kernel.knowledge.database import fetch_indexed_lesson_keys
 from kernel.knowledge.lesson_catalog import LessonCatalog
 
@@ -67,6 +68,8 @@ def refresh_indexed_lesson_keys_state(services: AppServices) -> tuple[frozenset[
 
     services.indexed_lesson_keys = new_keys
     services.context_manager.refresh_indexed_lesson_keys(new_keys)
+    services.academic_state = bootstrap_academic_state(settings)
+    services.context_manager.refresh_academic_state(services.academic_state)
     if services.lesson_catalog is not None:
         report = services.lesson_catalog.audit_drift(new_keys)
         services.catalog_drift_report = report

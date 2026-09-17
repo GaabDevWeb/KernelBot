@@ -117,13 +117,36 @@ async def curriculum_discipline(request: Request, discipline_id: str) -> dict:
         raise HTTPException(status_code=503, detail="Catálogo indisponível")
 
     disc_norm = normalize_lesson_key(discipline_id, "x").split(":", 1)[0]
+    labels = trace_label_by_discipline()
+
+    academic = (
+        services.academic_state.catalog
+        if services.academic_state and services.academic_state.catalog
+        else None
+    )
+    if academic is not None:
+        ac_lessons = academic.lessons_for_discipline(disc_norm)
+        if ac_lessons:
+            return {
+                "discipline": disc_norm,
+                "label": labels.get(disc_norm, disc_norm),
+                "lessons": [
+                    {
+                        "slug": lesson.slug,
+                        "title": lesson.title,
+                        "order": lesson.order,
+                        "url": lesson.url,
+                    }
+                    for lesson in ac_lessons
+                ],
+            }
+
     lessons = catalog.lessons_for_discipline(disc_norm)
     if not lessons:
         all_discs = set(catalog.list_disciplines())
         if disc_norm not in all_discs:
             raise HTTPException(status_code=404, detail="Disciplina não encontrada no catálogo")
 
-    labels = trace_label_by_discipline()
     return {
         "discipline": disc_norm,
         "label": labels.get(disc_norm, disc_norm),

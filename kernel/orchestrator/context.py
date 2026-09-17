@@ -46,7 +46,16 @@ from kernel.group.invocation import (
 )
 from kernel.disciplines.disciplines import command_prefixes, query_markers_by_discipline, trace_label_by_discipline
 from kernel.knowledge.iss_links import format_source_header, format_source_label
-from kernel.knowledge.lesson_catalog import CatalogMatchResult, LessonCatalog, LessonEntry, parse_db_source_key
+from kernel.academic.bootstrap import AcademicState
+from kernel.academic.models import AcademicIntent, AcademicResolveResult
+from kernel.academic.resolver import resolve_academic_query
+from kernel.knowledge.lesson_catalog import (
+    CatalogMatchResult,
+    LessonCatalog,
+    LessonEntry,
+    normalize_lesson_key,
+    parse_db_source_key,
+)
 from kernel.memory.group_memory import GroupMemoryStore, HistoricalSearchResult
 from kernel.memory.group_profile import GroupProfile
 from kernel.memory.pinned_store import PinnedContext, PinnedSessionStore
@@ -141,7 +150,25 @@ def _boost_candidates_for_catalog_lesson(
     return boosted
 
 
-# --- Mensagens UX padronizadas (Fase 1/3) -----------------------------------
+def _filter_candidates_to_academic_lesson(
+    candidates: list[RetrievalCandidate],
+    *,
+    discipline: str,
+    slug: str,
+) -> list[RetrievalCandidate]:
+    """Restringe candidatos RAG à aula resolvida pelo catálogo académico."""
+    prefix = f"db:{discipline.strip().lower()}/{slug.strip().lower()}"
+    filtered = [c for c in candidates if str(c.source or "").startswith(prefix)]
+    return filtered if filtered else candidates
+
+
+def _pinned_lesson_key(pin: PinnedContext | None) -> str | None:
+    if pin is None or not pin.chunks:
+        return None
+    src = str(pin.chunks[0].get("source") or "")
+    return parse_db_source_key(src)
+
+
 
 _HARD_STOP_MESSAGES: dict[str, str] = {
     "insufficient_context": (
@@ -336,6 +363,15 @@ class ContextTrace:
     conversation_resolution_k: int = 0
     dominant_conversation_topic: str | None = None
     conversation_ambiguous: bool = False
+    academic_resolved: bool = False
+    academic_router: str | None = None
+    academic_intent: str | None = None
+    academic_discipline: str | None = None
+    academic_lesson_order: int | None = None
+    academic_lesson_slug: str | None = None
+    academic_lesson_url: str | None = None
+    academic_reference_kind: str | None = None
+    academic_missing_data: bool = False
 
 
 @dataclass(frozen=True)
@@ -869,12 +905,14 @@ class ContextManager:
         indexed_lesson_keys: frozenset[str] | None = None,
         context_builder: ContextBuilder | None = None,
         group_memory_store: GroupMemoryStore | None = None,
+        academic_state: AcademicState | None = None,
     ) -> None:
         self._settings = settings
         self._search_engine = search_engine
         self._pinned_store = pinned_store
         self._lesson_catalog = lesson_catalog
         self._indexed_lesson_keys = indexed_lesson_keys or frozenset()
+        self._academic_state = academic_state
         # Camadas novas são opt-in: sem builder, o comportamento é o anterior.
         self._context_builder = context_builder
         self._context_router = ContextRouter()
@@ -890,6 +928,9 @@ class ContextManager:
 
     def refresh_indexed_lesson_keys(self, keys: frozenset[str]) -> None:
         self._indexed_lesson_keys = keys
+
+    def refresh_academic_state(self, state: AcademicState | None) -> None:
+        self._academic_state = state
 
     def _catalog_match(self, query: str) -> CatalogMatchResult | None:
         if not self._lesson_catalog or not query.strip():
@@ -1284,6 +1325,81 @@ class ContextManager:
                 metadata={"query": query},
             )
 
+        # --- Catálogo académico (referências estruturais: ordem, links, TP/AT) ---
+
+        recent_user_queries = tuple(
+            m["content"] for m in history_truncated if m.get("role") == "user"
+        )[-6:]
+
+        academic_result: AcademicResolveResult | None = None
+        academic_section = ""
+        if self._academic_state is not None and self._academic_state.catalog is not None:
+            academic_result = resolve_academic_query(
+                query,
+                catalog=self._academic_state.catalog,
+                assessment_catalog=self._academic_state.assessment_catalog,
+                command_discipline=discipline_from_command,
+                conversation_topic=dominant_conversation_topic,
+                pinned_lesson_key=_pinned_lesson_key(pin),
+                recent_queries=recent_user_queries,
+            )
+            if academic_result.prompt_block:
+                academic_section = academic_result.prompt_block
+            if academic_result.resolved and academic_result.discipline:
+                narrowed = self._sanitize_discipline(academic_result.discipline)
+                if narrowed is not None:
+                    effective_discipline = narrowed
+                log_event(
+                    log,
+                    logging.INFO,
+                    ACL_MOD_CONTEXT,
+                    "academic_reference_resolved",
+                    "referência académica resolvida pelo catálogo",
+                    metadata={
+                        "intent": academic_result.intent.value,
+                        "discipline": academic_result.discipline,
+                        "lesson_order": academic_result.metadata.get("lesson_order"),
+                        "lesson_slug": academic_result.metadata.get("lesson_slug"),
+                        "reference_kind": (
+                            academic_result.reference_kind.value
+                            if academic_result.reference_kind
+                            else None
+                        ),
+                    },
+                )
+            elif academic_result.ambiguous or academic_result.missing_data:
+                log_event(
+                    log,
+                    logging.INFO,
+                    ACL_MOD_CONTEXT,
+                    "academic_reference_partial",
+                    "referência académica não resolvida completamente",
+                    metadata={
+                        "reason": academic_result.reason,
+                        "intent": academic_result.intent.value,
+                        "discipline": academic_result.discipline,
+                    },
+                )
+
+        if self._academic_state is not None and self._academic_state.live_classes is not None:
+            live_discipline = effective_discipline or discipline_from_command
+            live_block = self._academic_state.live_classes.prompt_section(live_discipline)
+            if live_block:
+                academic_section = "\n\n".join(
+                    p for p in (academic_section, live_block) if p
+                )
+
+        if self._academic_state is not None and self._academic_state.student_manual is not None:
+            manual_block = self._academic_state.student_manual.prompt_section(
+                query,
+                discipline_id=effective_discipline or discipline_from_command,
+                recent_queries=recent_user_queries,
+            )
+            if manual_block:
+                academic_section = "\n\n".join(
+                    p for p in (academic_section, manual_block) if p
+                )
+
         # --- Retrieval bruto + política de decisão --------------------------
 
         catalog_result = self._catalog_match(query)
@@ -1527,6 +1643,29 @@ class ContextManager:
         if catalog_result and self._lesson_catalog:
             decision = self._try_catalog_rescue(query, decision, mode, catalog_result)
 
+        if (
+            academic_result
+            and academic_result.resolved
+            and academic_result.lesson
+            and academic_result.intent != AcademicIntent.LINK_ONLY
+            and decision.selected_candidates
+        ):
+            lesson = academic_result.lesson
+            filtered_cands = _filter_candidates_to_academic_lesson(
+                list(decision.selected_candidates),
+                discipline=lesson.discipline,
+                slug=lesson.slug,
+            )
+            lesson_key = normalize_lesson_key(lesson.discipline, lesson.slug)
+            boosted = _boost_candidates_for_catalog_lesson(filtered_cands, lesson_key)
+            decision = RetrievalDecision(
+                allow_generation=decision.allow_generation,
+                reason=decision.reason,
+                confidence=decision.confidence,
+                selected_candidates=tuple(boosted),
+                trace=decision.trace,
+            )
+
         # Pós-RAG: perfil NORMAL/DEEP pode omitir chunks com confidence=low.
         if (
             filter_low_confidence_rag
@@ -1668,15 +1807,31 @@ class ContextManager:
         ctx = _format_chunks_for_prompt(selected_for_format, decision, self._settings)
         sticky_block = _sticky_block_for_pin(self._settings, pin)
         pin_used = bool(pin and pin.chunks)
+        calendar_for_prompt = layers.calendar_block
+        if (
+            self._academic_state is not None
+            and self._academic_state.live_classes is not None
+            and layers.temporal is not None
+        ):
+            today_live = self._academic_state.live_classes.today_prompt_section(
+                layers.temporal
+            )
+            if today_live:
+                calendar_for_prompt = (
+                    f"{calendar_for_prompt}\n\n{today_live}"
+                    if calendar_for_prompt
+                    else f"## Agenda académica\n\n{today_live}"
+                )
         system_content = ContextBuilder.assemble_system_content(
             SystemContextBlocks(
                 base_prompt=sp,
                 identity=layers.identity_block,
                 institutional=layers.institutional_block,
                 temporal=layers.temporal_block,
-                calendar=layers.calendar_block,
+                calendar=calendar_for_prompt,
                 catalog_router=self._settings.catalog_router_prompt,
                 catalog_section=catalog_section,
+                academic_section=academic_section,
                 sticky=sticky_block,
                 group_profile=group_profile_block,
                 behavior_advisory=behavior_advisory,
@@ -1799,6 +1954,38 @@ class ContextManager:
             conversation_resolution_k=conversation_resolution_k,
             dominant_conversation_topic=dominant_conversation_topic,
             conversation_ambiguous=conversation_ambiguous,
+            academic_resolved=bool(academic_result and academic_result.resolved),
+            academic_router=(
+                academic_result.router if academic_result and academic_result.resolved else None
+            ),
+            academic_intent=(
+                academic_result.intent.value
+                if academic_result and academic_result.intent != AcademicIntent.NONE
+                else None
+            ),
+            academic_discipline=academic_result.discipline if academic_result else None,
+            academic_lesson_order=(
+                int(academic_result.metadata["lesson_order"])
+                if academic_result
+                and academic_result.metadata.get("lesson_order") is not None
+                else None
+            ),
+            academic_lesson_slug=(
+                str(academic_result.metadata.get("lesson_slug"))
+                if academic_result and academic_result.metadata.get("lesson_slug")
+                else None
+            ),
+            academic_lesson_url=(
+                str(academic_result.metadata.get("lesson_url"))
+                if academic_result and academic_result.metadata.get("lesson_url")
+                else None
+            ),
+            academic_reference_kind=(
+                academic_result.reference_kind.value
+                if academic_result and academic_result.reference_kind
+                else None
+            ),
+            academic_missing_data=bool(academic_result and academic_result.missing_data),
             domain_router_enabled=getattr(self._settings, "domain_router_enabled", False),
             domain_candidates=tuple(
                 {"id": c.expert_id, "score": c.score, "raw_hits": c.raw_hits}

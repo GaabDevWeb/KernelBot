@@ -1,0 +1,4237 @@
+Ir ao Google Drive
+
+Manual do Aluno | Graduação | Faculdade Infnet | Faculdade ECDD
+
+⭐ O mínimo para saber
+
+# Manual do aluno de graduação
+
+Aqui estão as orientações que todo aluno precisa para completar com sucesso sua graduação. Este manual deve ser lido antes do início das aulas e consultado sempre que necessário. ❤️
+
+## O mínimo que o aluno precisa saber
+
+### Organização em blocos
+
+- A graduação é organizada em blocos, cada um com duração de dois trimestres.
+
+- O primeiro bloco[1] é introdutório, chamado de Bloco de Entrada, em que participam alunos de várias graduações.
+
+- Cada bloco possui quatro Disciplinas Regulares e uma disciplina de Projeto de Bloco.
+
+- O Bloco de Entrada possui disciplinas adicionais de apoio à carreira.
+
+### Testes de Performance (TPs)
+
+- Os Testes de Performance (TPs) são trabalhos de entrega obrigatória.
+
+- São exigidos três TPs em cada Disciplina Regular e cinco TPs no Projeto de Bloco.
+
+- Entregar TPs fora do prazo limita o conceito de todas as competências da disciplina e pode reprovar o aluno.
+
+### Aprovação nas disciplinas
+
+- A aprovação é por disciplina.
+
+- Para ser aprovado, o aluno precisa demonstrar todas as competências, entregar todos os trabalhos e ter presenças suficientes nas aulas ao vivo.
+
+- As competências são avaliadas no final de cada disciplina, no Assessment (AT) e no Projeto de Bloco (PB).
+
+- Cada competência é avaliada em uma escala de quatro níveis.
+
+- Quando o aluno não demonstra todas as competências, o professor pode agendar uma reentrega para a última semana do trimestre, como uma segunda oportunidade para o aluno.
+
+- O aluno que não consegue comprovar a autoria do trabalho na arguição oral fica sem direito de realizar a reentrega.
+
+- O aluno deve acompanhar o histórico no Moodle e tratar eventuais inconsistências imediatamente, com o professor.
+
+### Frequência
+
+- A reprovação por faltas ocorre quando o aluno se ausenta em mais de 25% das aulas[2].
+
+- Esse limite de 25% já inclui as ausências justificadas por atestados médicos ou de trabalho.
+
+### Sistemas
+
+- No dia a dia, o aluno usa os seguintes sistemas: Infnet.Online para se comunicar, Moodle para entregar trabalhos, Zoom para assistir às aulas e O’Reilly para acessar a biblioteca online.
+
+- Todos esses sistemas são acessados pelo login da conta de aluno do Google (nome.do.aluno@al.infnet.edu.br).
+
+### Dedicação
+
+- Adicionalmente às aulas, as graduações preveem uma dedicação adicional de estudos e desenvolvimento de trabalhos, usualmente de 5 a 12 horas semanais, que varia conforme o bloco e o aluno.
+
+- O estudo das Trilhas de Aprendizagem é essencial para o aluno dominar as competências.
+
+### Integridade acadêmica
+
+- Somente as entregas feitas pelo Moodle são válidas.
+
+- Projetos de Bloco (PB) são sempre apresentados ao vivo.
+
+- O professor de qualquer disciplina pode determinar que o Assessment (AT) seja apresentado ao vivo.
+
+- Entregas em branco, corrompidas, trocadas ou fraudadas levam à reprovação e abertura de processo disciplinar.
+
+- O plágio leva a penalidades que vão da reprovação na disciplina ao desligamento da instituição.
+
+- O aluno deve conhecer a Política de uso de Inteligência Artificial para compreender os usos permitidos em cada trabalho.
+
+### Formatura
+
+- A conclusão da graduação exige que o aluno complete, além das disciplinas, requisitos como horas em Atividades Complementares, Projetos Supervisionados de Extensão e estágio, dentro do prazo limite.
+
+### Comunicação
+
+- Pelo Infnet.Online, o aluno tem acesso à Secretaria, à Central de Carreiras e à área de Coaching e Psicopedagogia, além de seus monitores, professores e coordenadores.
+
+- É esperado que o aluno acesse o Infnet.Online diariamente.
+
+- Muitas comunicações importantes são feitas pelo e-mail de aluno, que também deve ser lido diariamente.
+
+☎️ Atendimento
+
+# Canais de atendimento
+
+## Secretaria
+
+Orientações em geral pelo chat do Infnet.Online.
+
+- Atendimento | Secretaria Faculdade Infnet, para alunos de engenharias e outras graduações em tecnologia, incluindo dúvidas sobre o uso do Zoom, Moodle e Infnet.Online.
+
+- Atendimento | Secretaria ECDD, para alunos de graduações em design, animação, cinema, games ou marketing, incluindo dúvidas sobre o uso do Zoom, Moodle e Infnet.Online.
+
+## Estágios
+
+Orientação sobre estágios pelo chat do Infnet.Online.
+
+- Atendimento | Carreiras
+
+## Biblioteca
+
+Ajuda para acessar os livros online na O’Reilly, os acervos físicos e a reserva de salas, pelo chat do Infnet.Online.
+
+- Atendimento | Biblioteca e Certificações
+
+## Psicopedagogia
+
+Atendimento para dificuldade de aprendizagem, de gestão do tempo e para orientação sobre técnicas de estudo. Apoio em caso denecessidades especiais, situações de bullying, abuso ou discriminação e solicitação de uso de nome social,
+
+- Atendimento | Coaching e Psicopedagogia
+
+## Financeiro
+
+Para tratar sobre questões financeiras, boletos, Prouni e FIES.
+
+- E-mail: atendimento.controladoria@infnet.edu.br.
+
+## Suporte de TI
+
+Dificuldade de login nas plataformas de estudos como Google e Infnet.Online ou no uso dos equipamentos da sala de aula presencial, pelo chat do Infnet.Online.
+
+- Atendimento | Suporte de TI
+
+## Infraestrutura física
+
+Para relatar anomalias de infraestrutura, como problemas em banheiros, condicionadores de ar, mesas, cadeiras ou iluminação.
+
+- E-mail: atendimento.prefeitura@infnet.edu.br.
+
+## Requerimentos
+
+Abertura de requerimentos variados, como declarações e histórico, retorno após período afastado, matrícula em disciplina ou bloco pendente, reavaliação, planejamento de estudos, transferência, cancelamento de matrícula, matrícula em extensão, inclusão na colação de grau, segunda via de diploma, entrega de documentação de estágio, notificação de erro em lançamentos acadêmicos e atualização de dados cadastrais.
+
+- Site: requerimentos.infnet.edu.br
+
+- Os requerimentos são suspensos uma semana antes das férias coletivas e permanecem fechados até a volta das férias da equipe.
+
+## Achados e perdidos
+
+Se o aluno precisa recuperar algo que esqueceu na sala de aula, pode passar na recepção ou escrever para:
+
+- E-mail: recepcao@infnet.edu.br
+
+## Feedbacks
+
+O melhor canal para o aluno dar sugestões sobre o bloco em andamento é a Pesquisa de Satisfação Discente, feita no final de cada trimestre. As respostas são convertidas em um dos mais importantes indicadores, integrando as metas de todas as equipes. O link de acesso à pesquisa é enviado pelo grupo de chat do bloco, no Infnet.Online.
+
+Em caso de urgência, é possível também escrever para o Coordenador Pedagógico da graduação, pelo chat do Infnet.Online.
+
+Sugestões, reclamações e elogios que não estão relacionados ao bloco corrente podem ser enviados para a Secretaria, que repassa para a área responsável.
+
+## Ouvidoria
+
+Para fazer uma reclamação sobre o atendimento da faculdade:
+
+- E-mail: ouvidoria@infnet.edu.br
+
+- A ouvidoria deve ser envolvida apenas se a área responsável já tiver sido acionada, sem sucesso. A Ouvidoria não trabalha diretamente na solução de problemas, mas apoia a comunicação entre o aluno e a área responsável.
+
+📘 Modelo de ensino
+
+# Modelo de ensino
+
+O modelo de ensino adotado é o CBL+PBL, que combina:
+
+- CBL (Competency Based Learning): aprendizagem baseada em competências.
+
+- PBL (Project Based Learning ou Portfolio Based Learning): aprendizagem baseada em projetos ou em portfólio.
+
+A essência deste modelo é promover um aprendizado prático e alinhado às demandas do mercado de trabalho. Ele estimula o aluno a aplicar o conhecimento ("colocar a mão na massa"), desenvolvendo projetos e superando desafios que simulam o ambiente da futura carreira profissional.
+
+O modelo pressupõe que o aluno adotará uma postura proativa durante sua graduação, com iniciativa, responsabilidade e foco para aproveitar ao máximo as oportunidades de aprendizagem oferecidas.
+
+## Organização de cada bloco
+
+A graduação é organizada em blocos com um tema central e duração de dois trimestres. As competências de cada bloco são desenvolvidas em todas as cinco disciplinas e aplicadas em um projeto.
+
+Bloco
+
+“2ª feira”
+
+“3ª/5ª feira”
+
+“4ª/6ª feira”
+
+1º ciclo trimestral
+
+Disciplina de Projeto de Bloco
+
+Disciplina Regular 1
+
+Disciplina Regular 2
+
+2º ciclo trimestral
+
+Disciplina Regular 3
+
+Disciplina Regular 4
+
+A disciplina de Projeto de Bloco (PB) é ministrada com encontros uma vez por semana, durante os seis meses do bloco. Cada Disciplina Regular (DR) acontece ao longo de um trimestre, com aulas duas vezes por semana. O dia da semana mostrado na tabela acima é um exemplo, podendo variar.
+
+# Competências
+
+O aluno é avaliado nas competências previstas para cada disciplina, sendo aprovado quando demonstra todas as competências da disciplina.
+
+Para aprovação na disciplina, o aluno precisa obter em todas as competências:
+
+- D: Demonstrou
+
+Há dois níveis de destaque na demonstração das competências:
+
+- DL: Demonstrou com Louvor
+
+- DML: Demonstrou com Máximo Louvor
+
+As competências são desenvolvidas pelos alunos por meio das seguintes atividades:
+
+- Testes de Performance (TPs)
+
+- Assessments (ATs)
+
+- Projetos de Bloco (PBs)
+
+# Avaliação das disciplinas
+
+## Testes de Performance (TPs)
+
+Os Testes de Performance (TPs) são atividades obrigatórias em formatos variados, definidos conforme as competências a serem desenvolvidas.
+
+- Disciplinas Regulares: possuem três TPs.
+
+- Disciplinas de Projeto de Bloco: possuem cinco TPs.
+
+O prazo de entrega dos TPs impacta nos resultados. Atrasos na entrega limitam o conceito de todas as competências da disciplina, da seguinte forma:
+
+- Um TP entregue atrasado: as competências da disciplina ficam limitadas a DL.
+
+- Dois ou mais TPs entregues atrasados: as competências da disciplina ficam limitadas a D.
+
+Além do prazo regular de entrega, os TPs possuem também um prazo limite[3], próximo do final da disciplina. O aluno fica reprovado se não entregar um ou mais TPs até o prazo limite.
+
+Nas disciplinas de Projeto de Bloco, o aluno que não cumpre o prazo regular de entrega de TPs pode ficar reprovado, pois as entregas são instrumentos de acompanhamento da evolução do aluno durante do bloco.
+
+O Moodle considera a data da última submissão como a data de entrega. Portanto, se o aluno substituir o arquivo de um TP após o prazo regular, a nova submissão será considerada uma entrega em atraso.
+
+O prazo estimado para a correção de TPs é de 10 dias corridos. TPs entregues atrasados perdem o direito a feedbacks na correção.
+
+## Assessments (ATs)
+
+O Assessment (AT) é a avaliação de uma Disciplina Regular. Ele é sempre individual e cobre todas as competências previstas para a disciplina. Geralmente, os alunos têm o prazo de uma semana para desenvolver e entregar o AT.
+
+Usualmente, o enunciado do AT é publicado e explicado pelo professor até a 9ª semana do trimestre e a entrega é exigida na 10ª semana. O aluno deve planejar suas atividades reservando o tempo necessário para desenvolver os trabalhos neste período.
+
+A entrega é feita pelo Moodle em dia e horário estabelecidos pelo professor, que pode exigir a apresentação e arguição ao vivo, durante a aula, para comprovar o domínio do aluno sobre o tema e autoria do trabalho.
+
+## Projetos de Bloco (PBs)
+
+A disciplina de Projeto de Bloco possui algumas características próprias.
+
+- A avaliação dela é chamada de Projeto de Bloco (PB).
+
+- A aprovação é requisito necessário para a aprovação nas demais disciplinas do bloco.
+
+- A duração é de dois trimestres, com uma aula por semana.
+
+Na modalidade Live, a apresentação do Projeto de Bloco é sempre ao vivo pelo Zoom, com a identidade do aluno verificada pelo professor, câmera ligada e a gravação guardada para registro e comprovação da atividade. Na modalidade Presencial, a apresentação é feita em sala de aula.
+
+O Projeto de Bloco não pode ser apresentado fora do período previsto, ficando reprovado o aluno que não entrega o trabalho no prazo, independentemente da apresentação de atestado.
+
+O aluno pode ser reprovado no Projeto de Bloco por atraso na entrega de qualquer TP, por qualidade insuficiente nas entregas ou por não conseguir demonstrar satisfatoriamente a autoria. Adicionalmente, na falta de entrega de um ou mais TPs até a segunda-feira da semana 8 do segundo ciclo, o Moodle reprova automaticamente o aluno.
+
+O projeto é usualmente individual. Nas situações em que for em grupo, a atribuição de conceitos pode ser diferente para cada membro, conforme sua atuação no projeto e domínio demonstrado das competências. O grupo precisa sempre estar preparado para apresentar o projeto por inteiro na ausência de colegas.
+
+Em algumas disciplinas de Projeto de Bloco a avaliação se dá por meio de Live Codings, que são sessões de programação ao vivo.
+
+## Entrega dos trabalhos
+
+Somente as entregas pelo Moodle são válidas e o prazo é definido pelo horário de Brasília.
+
+A entrega de qualquer trabalho majoritariamente em branco, sem relação com o tema, com o conteúdo trocado, compactado com erro, com a informação de que não fez no lugar das respostas ou qualquer outra tentativa de fraude, além de reprovar o aluno, implica em advertência, suspensão ou desligamento, conforme o regime disciplinar da instituição.
+
+Deve-se sempre seguir a orientação do professor, que é a autoridade final para definir prazos, critérios, forma de apresentação e exigência de arguição oral, sendo o único autorizado a ajustar prazos no Moodle.
+
+O aluno é o responsável por entregar os trabalhos no prazo e garantir que estão acessíveis para avaliação. Isso inclui verificar no Moodle se o envio foi concluído e processado com sucesso, bem como assegurar que eventuais links disponibilizados estejam com as permissões de acesso liberadas.
+
+Caso ocorra qualquer dificuldade técnica, cabe ao aluno acionar o suporte antes do encerramento do prazo. Recomenda-se que a entrega seja realizada com antecedência, a fim de evitar imprevistos de última hora, especialmente considerando a ausência de atendimento de suporte técnico após determinado horário.
+
+## Revisão
+
+Dúvidas sobre a correção do AT podem ser tratadas com professor nas aulas de vista de AT, previstas na semana seguinte à entrega. O professor da disciplina é o único responsável pela correção, sendo sua a decisão final.
+
+Alunos podem apelar da correção do professor para a coordenação da graduação apenas nos casos em que entendem estar sendo prejudicados por preconceito, assédio, erro na aplicação da metodologia, ausência de correção ou outras situações que extrapolam o conteúdo da disciplina. Nestes casos, devem entrar em contato com o coordenador pedagógico da graduação, relatando detalhadamente o que aconteceu e com as evidências anexadas.
+
+Para relatar eventuais erros de registro no Moodle, o aluno deve abrir um requerimento "E02 - Notificação de erro nas notas/competências ou presenças do Moodle".
+
+# Reentrega
+
+O professor pode solicitar uma reentrega do Assessment (AT) ou Projeto de Bloco (PB), dando uma nova oportunidade ao aluno para demonstrar as competências que não conseguiu da primeira vez.
+
+A Reentrega não é permitida para trabalhos que que estão distantes de uma solução válida para o problema proposto no enunciado ou quando estão excessivamente incompletos, à critério do professor.
+
+Na reentrega, todas as competências da disciplina ficam limitadas ao conceito "Demonstrou" (D).
+
+A reentrega deve ser feita pelo Moodle alguns dias após a correção, em data e horário estipulados pelo professor. Dúvidas sobre a correção da reentrega devem ser direcionadas ao professor, por e-mail ou pelo Infnet.Online.
+
+O aluno que entrega ou substitui o arquivo já enviado após o prazo original tem a correção tratada como uma reentrega, com as competências limitadas a "D" e sem direito de uma segunda tentativa.
+
+# Aprovação
+
+Para ser aprovado em uma Disciplina Regular, o aluno precisa cumprir os seguintes requisitos:
+
+- Demonstrar todas as competências previstas para a disciplina.
+
+- Ter 75% de presença nas aulas[4].
+
+- Entregar os Testes de Performance (TPs) até o prazo limite.
+
+- Ser aprovado na disciplina de Projeto de Bloco correspondente[5].
+
+Para ser aprovado em uma Disciplina de Projeto de Bloco, o aluno precisa cumprir os seguintes requisitos:
+
+- Demonstrar todas as competências previstas para a disciplina.
+
+- Ter 75% de presença nas aulas[6].
+
+- Entregar os Testes de Performance (TPs) no prazo[7], demonstrando a evolução de suas competências ao longo do bloco.
+
+- Apresentar o trabalho ao vivo, demonstrando inequivocamente a autoria e plena compreensão do mesmo.
+
+O resultado da disciplina é considerado definitivo após 30 dias contados a partir da última aula.
+
+# Reavaliação de disciplina
+
+## Em caso de reprovação, o que o aluno deverá fazer?
+
+### Reprovação em uma ou duas Disciplinas Regulares de um bloco:
+
+O aluno deve refazer as disciplinas em que ficou reprovado através do processo de Reavaliação de Disciplina.
+
+As Reavaliações são oferecidas duas vezes ao ano, com matrículas abertas somente na primeira semana de aulas do primeiro trimestre e do terceiro trimestre de cada ano, conforme o calendário acadêmico. As matrículas são feitas pelo requerimento "B02 - Reavaliação de Disciplinas". Só é possível solicitar a reavaliação da disciplina após o término de seu respectivo bloco.
+
+### Reprovação em três ou mais disciplinas de um bloco ou na disciplina de Projeto de Bloco:
+
+O aluno precisa matricular-se novamente no bloco inteiro, pois não está apto a fazer o processo de Reavaliação de Disciplina. Nesses casos, o aluno deve solicitar à Secretaria Acadêmica um Planejamento de Estudos.
+
+Mesmo quando precisa refazer o bloco, é comum o aluno poder seguir normalmente estudando no próximo bloco previsto[8]. Em caso de dúvida, consulte a Secretaria.
+
+## Processo de Reavaliação de Disciplina
+
+A Reavaliação de Disciplina é conduzida em formato de orientação e estudo, não sendo baseada em aulas ao vivo. Assim, o aluno deve se organizar para estudar a Trilha de Aprendizagem e outros materiais indicados, e tomar a iniciativa de solucionar suas dúvidas com o professor.
+
+Durante a Reavaliação, o professor determina as entregas e seus prazos, os conteúdos que devem ser estudados e as atividades adicionais exigidas, assim como os horários para orientação. O aluno deve planejar-se para dedicar seis a nove horas semanais de estudo e desenvolvimento de trabalhos durante as dez semanas da Reavaliação.
+
+A Reavaliação é executada na versão mais recente da disciplina; isto é, os conteúdos e as competências exigidas podem ser diferentes de quando o aluno ficou reprovado na disciplina.
+
+### Entregas
+
+As entregas precisam ser originais e diferentes das realizadas anteriormente. A entrega final é apresentada ao vivo e com arguição oral, pelo Zoom.
+
+Para ser aprovado na Reavaliação, o aluno deve demonstrar todas as competências previstas para a disciplina, independente do motivo de sua reprovação.
+
+O resultado da Reavaliação fica registrado no histórico, que pode ser consultado no Moodle. Os conceitos obtidos na Reavaliação não substituem os conceitos originais do histórico do aluno.
+
+Valor
+
+O valor cobrado pela Reavaliação de Disciplina é o mesmo de outras disciplinas que o aluno esteja cursando. Caso o aluno não esteja matriculado em outras disciplinas, a cobrança será definida pela tabela vigente.
+
+🙋 Presenças
+
+# Presenças
+
+A contagem de presenças é sempre feita por disciplina.
+
+## Modalidade Presencial:
+
+O aluno recebe presença quando assiste toda a aula presencialmente, na instituição. Caso chegue atrasado, se ausente durante a aula ou saia mais cedo, o professor pode atribuir atrasado ou ausente, a seu critério. Assistir a aula ao vivo, pelo Zoom, só garante a presença quando a aula não ocorrer nas instalações da instituição, como nas últimas rodas de Engenharia de Software e de Análise e Desenvolvimento de Sistemas, que possuem blocos ministrados exclusivamente pelo Zoom.
+
+A exigência de participação nas aulas ao vivo, seja presencialmente, seja pelo Zoom, é exigida do aluno da modalidade presencial durante todo o seu curso, independente do ano em que iniciou seus estudos.
+
+## Modalidade Live:
+
+- PRESENTE: O aluno é considerado presente na aula quando assiste 75% ou mais do tempo de aula, ao vivo.
+
+- ATRASADO: O aluno é considerado atrasado na aula quando assiste entre 50% e 74,9% do tempo de aula, ao vivo.
+
+- AUSENTE: O aluno é considerado ausente da aula quando assiste menos de 50% do tempo de aula, ao vivo.
+
+O controle é feito de forma automática. Adicionalmente, se o aluno não responder ao professor no Zoom, durante a aula ao vivo, pode ser considerado ausente.
+
+O acompanhamento das presenças passa a ser feito pelo Moodle a partir de julho de 2026. Durante os trimestres 2026.1T e 2026.2T o registro automático de presenças foi considerado experimental, não sendo aplicado na efetiva reprovação nas disciplinas.
+
+Para o aluno que iniciou sua graduação na modalidade Live em 2025 ou antes, e está estudando sem interrupção, reinício ou troca de curso, a presença ao vivo não é um requisito para aprovação. Nestes casos, o Moodle registra, a partir de julho de 2026, a situação de dispensado para aulas com ausência ou atraso.
+
+## Ausências por doença
+
+O limite de ausências para aprovação é de 25% das aulas da disciplina. Este limite deve ser reservado para situações de grande necessidade, como doenças ou compromissos inadiáveis.
+
+Na legislação brasileira do ensino superior, não há abono de faltas em razão de atestado médico ou compromisso profissional. A apresentação de atestado para o professor é útil apenas como demonstração de interesse e justificativa da ausência, mas não garante o abono das faltas. Portanto, utilize o limite de 25% com muita cautela.
+
+O professor da disciplina é a instância final para decisões a respeito das presenças. A Secretaria só pode efetuar alterações na pauta em caso de erro comprovado do sistema.
+
+O aluno é responsável por acompanhar suas presenças nos sistemas e deve comunicar ao professor, imediatamente, caso encontre inconsistências.
+
+## Ausências por motivo religioso
+
+Nas situações em que o aluno não possa comparecer às aulas por motivos religiosos, ele deve tratar do abono de suas faltas diretamente com o professor da disciplina, na primeira semana da disciplina. Nestas ocasiões, é indispensável que o aluno assista à aula gravada antes do encontro seguinte da disciplina.
+
+Nas situações que envolvem a apresentação de trabalhos, o aluno deve combinar uma data alternativa diretamente com o professor da disciplina e seguir rigorosamente as suas orientações.
+
+A instituição reserva-se ao direito de solicitar documentação comprobatória ao aluno em situações que julgar pertinentes.
+
+Caso precise de ajuda, o aluno pode buscar o apoio da Central de Coaching e Psicopedagogia.
+
+☀️ Dedicação
+
+# Dedicação do aluno
+
+Para concluir sua graduação, o aluno deve estudar todos os conteúdos da Trilha de Aprendizagem no Infnet.Online e fazer todos os trabalhos previstos, além de ler os conteúdos adicionais indicados pelo professor e participar das demais atividades previstas para seu curso.
+
+O tempo total de dedicação ao curso é similar nas modalidades Presencial e Live, mas a forma de dedicação é diferente:
+
+- Presencial: 10 a 17 horas de aula e 5 a 8 horas de estudos e desenvolvimento de trabalhos por semana.
+
+- Live: 7,5 horas de aulas ao vivo e cerca de 12 horas de estudos e desenvolvimento de trabalhos por semana.
+
+Na modalidade Live, o aluno economiza o tempo de deslocamento e tem mais flexibilidade, mas precisa manter a disciplina no ritmo de estudos.
+
+O aluno deve chegar nas aulas ao vivo já preparado, tendo estudado os conteúdos previstos. Além disso, é importante lembrar que a graduação é muito mais do que as aulas ao vivo, e o aluno deve:
+
+- Estudar os conteúdos das Trilhas de Aprendizagem.
+
+- Aplicar as competências nos Testes de Performance, Assessments e Projetos de Bloco.
+
+- Praticar em Projetos de Bloco, que são experiências parecidas com exigências do mercado de trabalho.
+
+- Interagir com os seus colegas para trocar ideias e desenvolver habilidades interpessoais.
+
+- Fazer disciplinas eletivas para desenvolver competências adicionais em áreas de interesse.
+
+- Tirar dúvidas com seus monitores e professores.
+
+- Atender clientes reais em Projetos Supervisionados de Extensão.
+
+- Estudar conteúdos extras e livros indicados pelos professores.
+
+- Assistir aos Vídeos de Aprendizagem, disponíveis em algumas disciplinas-chave.
+
+- Estudar para certificações com materiais da biblioteca virtual.
+
+- Participar de Atividades Complementares, como hackathons, congressos e cursos.
+
+- Participar de webinars, palestras e eventos oferecidos pela instituição, sempre acompanhando suas mídias sociais.
+
+Além da dedicação aos estudos, o aluno coloca em prática o aprendizado em um estágio alinhado às competências trabalhadas na graduação.
+
+💻 Atividades Complementares
+
+# Atividades Complementares
+
+São atividades variadas realizadas pelo aluno, na instituição de ensino ou fora dela, que cobrem assuntos correlatos à graduação e que ajudam na formação. Podem ser cursos, palestras, hackathons, certificações e outras.
+
+As atividades complementares são obrigatórias. Confira no Anexo 1 a quantidade de horas exigidas para a sua graduação.
+
+## É sempre bom lembrar que:
+
+- Cabe ao aluno tomar a iniciativa de buscar as Atividades Complementares para seu desenvolvimento.
+
+- As atividades podem ser realizadas durante o período letivo ou nas férias.
+
+- Para ser validada, o aluno deve solicitar as horas por meio deste formulário até 30 dias após sua conclusão da atividade.
+
+- A solicitação pode ser feita em qualquer época do ano, inclusive durante as férias.
+
+- A Atividade Complementar precisa tratar de temas pertinentes à graduação.
+
+- Estágio ou trabalho na área não são considerados atividades complementares.
+
+## Quais são aceitas?
+
+Muitos tipos de Atividades Complementares são aceitos. Por exemplo, a participação em eventos na área da graduação como palestras, webinars, encontros, debates, visitas técnicas, etc. Também são válidas certificações, cursos, disciplinas eletivas, artigos em publicações reconhecidas, monitoria e muitas outras.
+
+Atividades Complementares podem ser realizadas em qualquer lugar do Brasil ou do mundo, presencialmente ou online. Elas podem ser realizadas durante ou após a conclusão das disciplinas da graduação, desde que o aluno não exceda o prazo limite para integralização de seus estudos.
+
+Não são consideradas Atividades Complementares:
+
+- Publicações no próprio site ou em sites que permitem a publicação sem a aprovação de um editor, como o Medium.
+
+- Atividades que fazem parte de uma disciplina, como um Projeto de Bloco.
+
+- Atividades realizadas durante o horário da aula.
+
+- Certificados que não citam a carga horária, exceto se o aluno indicar o link exato onde a informação está disponível.
+
+Existe um limite de horas de atividades complementares conforme o tipo de atividade e a graduação. Esse limite existe para incentivar o aluno a fazer uma variedade de atividades ao longo de seus estudos.
+
+Aulas particulares somente são aceitas quando comprovadas pela apresentação de notas fiscais do pagamento e currículo Lattes do professor comprovando sua especialização.
+
+A categoria "l - Extraordinária, não prevista nos itens acima" é destinada a tratar atividades altamente aderentes ao curso mas que não tenham sido previstas em outras categorias, devendo ser utilizada somente sob orientação específica da coordenação.
+
+Recomenda-se que o aluno realize as Atividades Complementares o mais cedo possível, idealmente durante o primeiro ano da graduação.
+
+## Passo a passo
+
+- Preencher este formulário para cada comprovante de Atividade Complementar.
+
+- Só devem ser juntados comprovantes em um mesmo PDF se forem todos da mesma atividade.
+
+- O formulário deve ser preenchido até 30 dias após a realização da atividade.
+
+- Consultar esta planilha para acompanhar a análise da coordenação.
+
+- O tempo para análise pode variar conforme o montante de solicitações, sendo usualmente inferior a 30 dias.
+
+- O aluno pode tirar dúvidas com a Secretaria, pelo Infnet.Online.
+
+- Caso o aluno discorde da análise, pode solicitar uma revisão neste formulário.
+
+## Comprovantes válidos
+
+São contabilizadas como Atividades Complementares somente aquelas que possuam comprovação de participação, cabendo ao aluno enviar essa documentação, que deve certificar-se de ter anexado evidências que atestem inequivocamente a sua presença.
+
+Uma forma válida de comprovação em evento que não emite certificado é uma selfie, com um fundo que permita fácil identificação. Mesmo nos eventos organizados pela própria instituição, não há registro automático das horas de atividades complementares, cabendo ao aluno solicitá-las.
+
+Folhetos ou e-mails de divulgação ou inscrição não comprovam a participação do aluno na atividade.
+
+## Aluno-monitor
+
+Para fins de atividades complementares, apenas o aluno monitor voluntário pode contabilizar as horas de monitoria. No caso de estagiários monitores, isto é, monitores que estão sendo remunerados através de uma bolsa estágio, as horas são contabilizadas como estágio.
+
+Ao final do período, o aluno monitor voluntário deve solicitar ao professor um e-mail indicando quantas horas atuou. Esse e-mail, baixado em PDF, é o comprovante para solicitar atividades complementares na categoria (h), respeitado o prazo de 30 dias.
+
+🏬 Extensão
+
+# Projetos Supervisionados de Extensão
+
+## O que é Extensão?
+
+Atividades de Extensão[9] são projetos nos quais os alunos prestam serviços presenciais, gratuitos ou não, para a comunidade local, sob orientação de um professor. O serviço pode ser prestado para uma pessoa física, empresa ou organização, preferencialmente na cidade onde o aluno reside, para que possa ser feito presencialmente.
+
+Para uma atividade ser considerada de extensão, é preciso que exista envolvimento com a comunidade e que ela seja relacionada às competências já desenvolvidas pelo aluno na graduação. O objetivo da atividade é aproximar os alunos de graduação da atuação prática, permitindo que experimentem junto à comunidade externa o que aprendem.
+
+Durante as atividades de extensão, os estudantes precisam contar com a mediação pedagógica e orientação dos professores, mas sempre sendo eles próprios os protagonistas da ação. O aluno é o responsável por todas as etapas do projeto, incluindo a sua prospecção, sempre sob supervisão do professor.
+
+As atividades de extensão não são aulas, e exigem que os estudantes executem uma intervenção. Além disso, é necessário que ocorra avaliação crítica contínua da pertinência da atividade para a formação do aluno e de seus benefícios para a sociedade. Neste documento, o aluno pode conhecer exemplos de projetos já desenvolvidos por outros alunos.
+
+Atividades de Extensão e Atividades Complementares são requisitos totalmente distintos. O aluno precisa comprovar horas em ambas para completar sua graduação.
+
+## Quais alunos devem fazer?
+
+As atividades de Extensão são obrigatórias para os alunos que iniciaram seus estudos a partir de 2023. O aluno pode se matricular nas disciplinas de orientação quando já tiver concluído dois blocos de sua graduação.
+
+## Como são concedidas as horas de Extensão?
+
+Ao final da disciplina de orientação, o aluno submete uma planilha com o registro detalhado das horas investidas no projeto. O professor-orientador avalia a solicitação e define a quantidade de horas a serem concedidas, considerando o escopo e a qualidade do projeto, e se ele atendeu às diretrizes para atividades de Extensão.
+
+O aluno é responsável por registrar as evidências do tempo investido em cada etapa do projeto, com fotos, prints e outros documentos que permitam estimar o número de horas trabalhadas.
+
+O resultado da disciplina é a atribuição de horas em atividades de Extensão, que passam a constar no histórico do aluno, no Moodle.
+
+A estimativa das horas investidas é de competência exclusiva do professor-orientador, não cabendo recurso à coordenação. No caso de projetos em grupo, a atribuição de horas pode variar conforme a contribuição de cada aluno.
+
+## Disciplinas de orientação dos projetos
+
+Os encontros de Projeto Supervisionado de Extensão têm como foco a orientação dos projetos. O desenvolvimento dos projetos exige competências técnicas já adquiridas durante a graduação. Não é o objetivo desses encontros ensinar essas competências.
+
+Assim, essa disciplina é um conjunto de encontros de orientação, e não de aulas. O professor pode definir a exigência de presença de cada aluno de acordo com a necessidade de orientação de seus projetos.
+
+O aluno pode escolher qualquer uma das disciplinas de orientação, desde que o seu projeto coloque em prática competências que tenha desenvolvido em sua graduação e possa ser orientado dentro do escopo da disciplina escolhida.
+
+A definição do cliente local a ser atendido e do escopo do projeto são tratados durante a disciplina de orientação, com apoio do professor-orientador.
+
+### Matrícula
+
+As matrículas ficam abertas durante os meses de maio e de novembro, sempre para o semestre seguinte. O aluno deve fazer sua matrícula na disciplina desejada preenchendo um requerimento “B13 - Matrícula em Projeto Supervisionado de Extensão”.
+
+A descrição da oferta de disciplinas, incluindo seus horários e professores, é feita através de postagem no Infnet.Online.
+
+### Mensalidade
+
+A participação na disciplina de Projeto Supervisionado de Extensão não é cobrada quando feita concomitantemente com as disciplinas da graduação. Se o aluno não estiver cursando outras disciplinas, a mensalidade é equivalente a um quinto (⅕) da última mensalidade paga pelo aluno para cursar um bloco da graduação, corrigida pela inflação.
+
+### Áreas de orientação
+
+- Empreendedorismo, marketing, eventos ou ensino tecnológico
+
+- Desenvolvimento de software, apps, sites ou hardware
+
+- Ciência de dados ou bancos de dados
+
+- Game design
+
+- Design gráfico e digital
+
+- Design de animação
+
+- Redes e segurança da informação
+
+- Software com acessibilidade, UX e tecnologias assistivas
+
+## Passo a passo
+
+- Matricular-se em uma disciplina de orientação de Projeto Supervisionado de Extensão, abrindo um requerimento “B13 - Matrícula em Projeto Supervisionado de Extensão” em maio ou novembro.
+
+- Frequentar os encontros com o professor-orientador e, sob sua supervisão, definir o escopo da intervenção e o cliente local atendido.
+
+- Desenvolver todas as etapas do projeto até sua efetiva implementação, sempre documentando seu trabalho, encontros com o cliente e resultados obtidos.
+
+- Submeter a comprovação do desenvolvimento do projeto e a planilha de registro das horas investidas, pelo Moodle e dentro do prazo.
+
+- Verificar no histórico escolar no Moodle o número de horas de extensão atribuídas pelo professor-orientador ao projeto.
+
+Caso o aluno não alcance a quantidade de horas necessárias na primeira vez, deve matricular-se novamente, até completar as horas exigidas. O aluno pode desenvolver novos projetos ou novas etapas do mesmo projeto.
+
+📒 Eletivas
+
+# Disciplinas eletivas
+
+O Programa de Aperfeiçoamento e Inovação oferece aos alunos a chance de expandir os horizontes de aprendizado por meio de disciplinas eletivas.
+
+Essas disciplinas, que complementam a formação regular, focam no desenvolvimento de competências técnicas e comportamentais de ponta, que atendem demandas emergentes de mercado e tendências tecnológicas.
+
+Dessa forma, o programa permite que os alunos explorem áreas de interesse que vão além do currículo obrigatório. É uma oportunidade, mas não há exigência[10] mínima de eletivas para a conclusão da graduação.
+
+## Como funcionam?
+
+As disciplinas eletivas ocorrem no segundo e no quarto trimestre de cada ano, usualmente com 8 a 10 temas por trimestre. As aulas são remotas e podem incluir atividades práticas, discussões ou trabalhos, a critério do professor.
+
+Alunos com frequência mínima de 75% e que tenham demonstrado as competências nas entregas exigidas são considerados aprovados e recebem um certificado por e-mail, que pode ser usado para a solicitação de horas de Atividades Complementares de graduação na categoria “e - Cursos de extensão (...)”.
+
+O resultado das disciplinas eletivas fica incorporado ao histórico escolar.
+
+## Quem pode participar?
+
+As disciplinas eletivas são abertas a inscrições de alunos correntes de todas as graduações, respeitados os pré-requisitos, lotação das classes e conflitos de horário com atividades obrigatórias.
+
+A forma de inscrição é divulgada em post no Infnet.Online, duas vezes ao ano.
+
+Não há custos adicionais para participação nas disciplinas eletivas.
+
+## Exemplos de eletivas
+
+Para ilustrar a diversidade de temas abordados, confira alguns exemplos de disciplinas realizadas anteriormente:
+
+- Soft skills na prática: desenvolvendo habilidades comportamentais e atitudinais
+
+- Ambientes tecnológicos e ferramentas de gestão e decisão
+
+- Imagens e estereótipos de gênero
+
+- Análise de dados para comunicação
+
+- Design thinking e fundamentos do design para Web
+
+- Comunicação de interfaces de aplicativos mobile
+
+- Realidades Virtual e Aumentada: aplicação para profissionais da comunicação
+
+- Diversidade e Inclusão no mercado de trabalho
+
+- Sustentabilidade e ESG
+
+- Smart Cities e Comunicação
+
+- Mindfulness para Profissionais Criativos
+
+- Estratégia e design de serviços
+
+- Otimização e Metaheurísticas
+
+- Front-end com HTML5, CSS3 e JavaScript
+
+- Princípios de programação em alto desempenho em C
+
+- Neo4j e C# para desenvolvimento de sistemas de recomendação
+
+- Tópicos em Ciência de Dados para o Esporte
+
+- Introdução à Inteligência Artificial Generativa
+
+- Aplicações de Cloud Computing
+
+- Desenvolvimento das Habilidades Comportamentais
+
+- Tecnologias Assistivas: Conceitos, Aplicações e Inovações
+
+- Introdução à Libras
+
+- Marketing de Nostalgia na Indústria Criativa
+
+- Avaliação e testes de usabilidade em mobile sob a ótica da Neurociência
+
+- Intertextualidade e contemporaneidade
+
+- Princípios de Inteligência Artificial: Generativa, LLM, Deep Learning
+
+- GitOps: GitHub e VsCode
+
+- Excel e Google Planilhas: funções, validação e tabelas dinâmicas
+
+- Estratégia e design de serviços
+
+- Diversidade, direitos humanos e identidades nas pautas do mercado do audiovisual
+
+- Elaboração de projetos audiovisuais para o mercado e editais públicos
+
+- Ciência de Dados aplicada a análises esportivas usando Python avançado
+
+- Blockchain
+
+- Visualização e análise de dados com Power BI
+
+- Cibersegurança com Blue Team
+
+- Desenvolvimento das Habilidades Comportamentais
+
+- Realidades estendidas e conteúdos imersivos
+
+- Uso de ferramentas de Inteligência Artificial no Photoshop
+
+🌇 Estágio
+
+# O estágio é obrigatório
+
+Todo aluno de graduação precisa estagiar por pelo menos 400 horas para concluir seu curso, exceto se já trabalhar na mesma área de seus estudos.
+
+O aluno deve se organizar para cumprir este requisito enquanto está cursando as disciplinas de sua graduação. A equipe de carreiras do Instituto é parceira nesta empreitada, sempre divulgando oportunidades de estágio, tirando dúvidas sobre o processo e agilizando a emissão dos documentos. No entanto, é responsabilidade do aluno buscar uma oportunidade de estágio compatível com a sua graduação.
+
+Toda semana são selecionadas oportunidades de estágio e emprego e publicadas na seção Vagas do Infnet.Online, onde o aluno pode filtrar as vagas por categoria e visualizar as oportunidades que fazem sentido para seu perfil. É uma ferramenta prática e útil, porque a equipe faz uma pré-seleção das vagas.
+
+# Passo a passo
+
+- Firmar um convênio entre a empresa contratante e a faculdade, caso ainda não exista. A entrega do contrato é feita por requerimento “D01 - Documentos de Estágio”.
+
+- Preencher um Termo de Compromisso de Estágio (TCE), recolher as assinaturas e entregar à faculdade por um requerimento “D01 - Documentos de Estágio”.
+
+- Dedicar-se às atividades do estágio, sob orientação direta da contratante, durante seis meses.
+
+- Desejando continuar no estágio por mais um semestre, entregar à faculdade o Termo Aditivo de Estágio (TAE), assinado pela contratante, até uma semana antes do término do termo vigente, pelo requerimento “D01 - Documentos de Estágio”.
+
+- Entregar o Relatório Semestral de Estágio e Autoavaliação de Estágio, no máximo 30 dias após encerramento de cada TCE ou TAE, para que as horas sejam computadas, sempre por este formulário.
+
+- Acompanhar o registro das horas de estágio, após a entrega do relatório semestral, para garantir que estão sendo contabilizadas. O acompanhamento é feito nesta planilha.
+
+Durante o recesso de férias e também nos sete dias anteriores, a faculdade não recebe requerimentos. O aluno deve ficar atento ao Calendário Acadêmico para não prejudicar seu estágio. No resto do ano, o prazo para a faculdade assinar documentos de estágio preenchidos corretamente é de até cinco dias úteis.
+
+## Firmando o convênio entre a contratante e a faculdade
+
+Esse passo só é necessário se a contratante não possuir um convênio já firmado com a faculdade. O aluno pode consultar esta planilha para verificar se o convênio já existe.
+
+Há duas formas possíveis para a contratante firmar o convênio: diretamente com o Instituto Infnet ou através de um agente de integração, como o CIEE ou a Fundação Mudes.
+
+### Convênio direto da empresa com a faculdade
+
+Se a empresa não possuir convênio já firmado com a faculdade, o aluno deve providenciar que a empresa preencha e assine o contrato usando o Modelo de Contrato[11]. Caso a contratante prefira recolher diretamente a assinatura digital do Prof. Andre Kischinevsky, citado no modelo, ela deve utilizar o e-mail atendimento.carreiras@infnet.edu.br.
+
+Em seguida, o aluno deve enviar o contrato assinado, em um único PDF, por um requerimento “D01 - Documentos de Estágio”. É necessário enviar o contrato pelo requerimento mesmo nos casos em que a assinatura da faculdade já tenha sido recolhida digitalmente.
+
+### Convênio através de agentes de integração como CIEE, Fundação Mudes, Nube, etc
+
+Se a contratante pretende formalizar o estágio através de um agente de integração, o próprio agente deve entrar em contato com a área de Carreiras para formalizar a parceria via e-mail, escrevendo para atendimento.carreiras@infnet.edu.br.
+
+## Firmando o Termo de Compromisso de Estágio (TCE)
+
+O Termo de Compromisso de Estágio (TCE)[12] é o documento que formaliza o estágio, celebrado entre a contratante, a faculdade e o aluno, de acordo com a lei do estágio. A contratante deve preencher e assinar, e o aluno deve conferir e assinar. A instituição de ensino é sempre a última parte a assinar o termo.
+
+As assinaturas podem ser no formato digital ou impresso. Caso a contratante use uma plataforma de assinaturas digitais, a assinatura do Instituto Infnet a ser recolhida é da Jéssica Delarue, da área de carreiras, pelo e-mail atendimento.carreiras@infnet.edu.br.
+
+As atividades do estágio precisam ser descritas detalhadamente no TCE, incluindo softwares e ferramentas que serão utilizados, de forma a comprovar a relação direta entre o estágio e as competências cobertas na graduação. O supervisor do estágio precisa ter formação ou experiência profissional na área de conhecimento da graduação do estagiário para poder orientá-lo.
+
+De posse do documento PDF[13] preenchido e assinado, o aluno envia para a faculdade através de um requerimento "D01 - Documentos de Estágio". Mesmo nos casos em que a assinatura da faculdade é recolhida digitalmente, é necessário que o aluno envie o documento em PDF pelo sistema de requerimentos e aguarde o deferimento para iniciar o estágio.
+
+## Renovando o estágio (TAE)
+
+Para que o estágio seja renovado após o término do período definido no TCE, o aluno deve entregar um Termo Aditivo de Estágio (TAE) para o novo período. Cada termo aditivo pode ter o prazo máximo de seis meses.
+
+A entrega do TAE é sempre por meio do requerimento "D01 - Assinatura de Termo de Estágio" no site de requerimentos, pelo menos sete dias corridos antes do novo período de estágio.
+
+O estágio pode ser renovado até o limite de dois anos.
+
+## Enviando o Relatório Semestral (RSE)
+
+O aluno precisa apresentar o Relatório Semestral de Estágio e Autoavaliação de Estágio (RSE)[14]. O RSE é uma exigência legal, conforme o artigo sétimo da lei do estágio: "exigir do educando a apresentação periódica, em prazo não superior a seis meses, de relatório das atividades".
+
+O relatório precisa ser enviado até 30 dias contados a partir do final de cada termo de estágio, ou seja, usualmente a cada seis meses[15], podendo ser enviado mesmo durante as férias.
+
+Perdido o prazo, as horas de estágio não são contabilizadas. Por isso, é muito importante que o aluno se organize para não esquecer.
+
+No relatório, o próprio aluno relaciona as atividades desempenhadas no estágio com as disciplinas de sua graduação, além de fazer uma autoavaliação. O tempo de processamento é de trinta dias, ao final dos quais as horas de estágio são registradas, caso o estágio seja aceito.
+
+A entrega do Relatório Semestral de Estágio e Autoavaliação de Estágio é pelo formulário de Comprovação de Estágio. Para preencher o formulário, o aluno deve estar conectado em sua conta de aluno no Google e também precisa estar dentro da cota de armazenamento do Google Drive[16].
+
+## Consultando as horas atribuídas
+
+Há um sistema simples de autoatendimento, por meio da planilha Consulta ao Registro de Horas de Estágio.
+
+## Rescindindo o contrato
+
+Para encerrar o contrato antes do período planejado, é preciso entregar uma Carta de Desligamento de Estágio, assinada pelo aluno e pela empresa, em formato PDF, através de um requerimento "D01 - Assinatura de Termo de Estágio".
+
+## Perguntas frequentes sobre estágios
+
+### É permitido fazer estágio no exterior ou à distância?
+
+Desde que esteja regularmente matriculado, o aluno pode fazer estágio em qualquer empresa que tenha convênio com a faculdade ou que seja conveniada a um agente integrador, como CIEE, MUDES, etc. Estágios em empresas sediadas no exterior, assim como estágios remotos, podem ser aceitos mediante avaliação do Coordenador Pedagógico, desde que cumpridos os demais requisitos.
+
+### É permitido estagiar em uma organização sem fins lucrativos?
+
+Sim. As OSCs, ONGs, associações, fundações, organizações religiosas, entidades de assistência social, saúde, esporte, meio ambiente, cultura, ciência e tecnologia, entre outras, podem ofertar estágio.
+
+### Em quais horários é permitido estagiar?
+
+Em qualquer horário que não interfira com aulas ao vivo, presenciais ou Live, incluindo os tempos necessários para deslocamento. É preciso respeitar também a carga horária máxima de 30 horas semanais.
+
+### A faculdade aceita qualquer estágio?
+
+Não. O estágio precisa colocar em prática as competências desenvolvidas pelo aluno na graduação. Por exemplo, um aluno de Engenharia de Software não pode estagiar em redes ou manutenção de computadores, se o estágio não incluir aspectos significativos de desenvolvimento de software.
+
+### O estágio pode ser feito depois de terminadas as disciplinas?
+
+Não, o estágio precisa ser feito durante o período em que o aluno está regularmente matriculado na faculdade. Consulte a Secretaria da Faculdade para saber como proceder nesse caso.
+
+### É possível assinar um TCE com mais de seis meses de duração?
+
+Não. Cada Termo de Compromisso de Estágio está limitado ao período máximo de seis meses, sem exceções.
+
+### É possível assinar um TCE com data retroativa?
+
+Não. A faculdade não assina documentos com datas retroativas.
+
+### É permitido fazer dois estágios simultaneamente?
+
+Não é permitido manter dois contratos de estágio simultâneos, sendo necessário o envio de Carta de Desligamento do estágio em curso para se assinar um novo TCE.
+
+# Quem já trabalha na área precisa estagiar?
+
+Se o aluno já trabalha na área em que está estudando, pode solicitar uma substituição das horas previstas para o estágio, desde que:
+
+- As horas de trabalho tenham comprovação inequívoca.
+
+- O trabalho tenha ocorrido durante o período da graduação ou em até dois anos após a última disciplina cursada.
+
+- Tenha relação direta com as competências ensinadas na graduação.
+
+## Termo Substitutivo de Estágio
+
+Para solicitar a substituição do estágio obrigatório pela experiência de trabalho, o aluno deve preencher um Termo Substitutivo de Estágio[17], explicando como aplicou as competências desenvolvidas nas disciplinas da graduação.
+
+Após preencher, é preciso juntar em um único PDF o termo e todos os demais documentos comprobatórios, como o registro na carteira de trabalho. Quando o cargo registrado na carteira de trabalho não é inequivocamente relacionado à graduação, cabe ao aluno anexar uma declaração da empresa atestando as funções exercidas.
+
+Em seguida, o aluno deve enviar o PDF pelo formulário de Comprovação de Estágio.
+
+Termos Substitutivos de Estágio podem ser enviados a qualquer momento, inclusive durante as férias, desde que o trabalho tenha sido realizado após o início da graduação.
+
+## Trabalho autônomo ou terceirizado
+
+O aluno pode solicitar a substituição do estágio pela carga horária equivalente em trabalhos autônomos, desde que existam sólidas evidências, como recibos de pagamento, e-mails de acordo comercial ou contratos, além do resultados de cada trabalho.
+
+O trabalho voluntário também pode ser aceito, se existir um termo de celebração, chamado de Contrato de Prestação de Serviços Voluntários. Nesse termo, que é um contrato escrito, devem constar a identificação do prestador e do tomador dos serviços, a natureza do serviço e as condições para o seu exercício, como a carga horária, o local e o formato da prestação.
+
+Cabe ao aluno encontrar os meios de comprovar a carga horária de 400 horas dedicadas à realização dos trabalhos, incluindo as evidências do período em que foram executadas.
+
+A melhor forma de comprovar um serviço prestado como autônomo é preparar um dossiê com o contrato assinado pelo cliente, a comprovação do pagamento do serviço e os entregáveis do projeto, isto é, evidências materiais de sua execução, como arquivos, fotos, códigos-fonte, textos, equipamentos e outros, conforme a natureza do projeto.
+
+## Perguntas frequentes sobre TSE
+
+### O termo substitutivo pode ser enviado depois de terminadas as disciplinas?
+
+Sim, em até dois anos.
+
+### Quanto tempo leva a análise do TSE?
+
+O tempo de processamento é de até vinte dias.
+
+### Como consultar se o TSE foi aceito?
+
+Há um sistema simples de autoatendimento, por meio da planilha Consulta ao Registro de Horas de Estágio, que também informa as horas substituídas por TSEs.
+
+### O que fazer se o prazo para envio do TSE já estiver encerrado?
+
+Passados dois anos do término das disciplinas, o aluno precisará abrir um requerimento “B01 - Matrícula de Aluno após período afastado". Nesse caso, a faculdade analisa o que pode ser aproveitado das disciplinas já realizadas e, se possível, faz um plano de estudos para o aluno terminar sua graduação na matriz curricular mais atual, incluindo um novo prazo de integralização das atividades.
+
+📚 Bibliotecas
+
+# Bibliotecas
+
+A biblioteca virtual da instituição oferece acesso ao maior e mais atualizado acervo de livros de tecnologia disponível no mundo. É um conteúdo único, acessível em português com a tradução automática do Google Chrome, que forma a base das Trilhas de Aprendizagem de cada bloco de graduação.
+
+Na biblioteca virtual O’Reilly, o aluno encontra:
+
+- Capítulos de livros indicados nas Trilhas de Aprendizagem de cada bloco.
+
+- Livros da bibliografia de suas graduações, em um acervo de mais de 35 mil livros sempre atualizados.
+
+- Conteúdos adicionais, incluindo cursos em vídeo, preparatórios para certificações e novas tecnologias.
+
+Para acessar, escolha a opção “Instituto Infnet | Student” e clique em “sign in”. Para o login ser bem sucedido, o aluno deve estar conectado em sua conta de aluno no Google (nome.do.aluno@al.infnet.edu.br).
+
+Em caso de dificuldade de acesso, o aluno pode pedir ajuda pelo chat do Infnet.Online para Atendimento | Biblioteca e Certificações.
+
+As bibliotecas também possuem acervo bibliográfico físico com milhares de livros voltados para as áreas de atuação das faculdades, além de áreas de estudo para os alunos. Na Faculdade Infnet, é possível reservar salas de estudo em grupo na biblioteca ou pelo Atendimento no Infnet.Online, informando nome, data e horário.
+
+A biblioteca da Faculdade Infnet funciona de segunda a sexta-feira, das 9h00 às 18h45, na Rua São José, 90, 4º andar.
+
+A biblioteca da Faculdade ECDD funciona de segunda a sexta-feira, das 9h00 às 18h00, na Rua do Rosário - 129, 3º andar.
+
+💾 Sistemas
+
+# Infraestrutura necessária
+
+Para acompanhar adequadamente a graduação, o aluno deve dispor, em seu ambiente de estudos, de um computador com configuração compatível com as exigências do curso. Isso inclui a capacidade de assistir às aulas ao vivo pela plataforma Zoom e de realizar as atividades e trabalhos propostos — que podem demandar a gravação de tela como evidência de autoria.
+
+Pode ser necessária, ainda, a instalação e utilização de máquinas virtuais, ferramentas de desenvolvimento de software, softwares gráficos ou outros recursos específicos. Os requisitos técnicos variam conforme a natureza das competências desenvolvidas ao longo do curso.
+
+# Sistemas e parcerias educacionais
+
+O acesso aos sistemas da instituição só é garantido aos alunos devidamente matriculados e, em alguns casos, aos que se formaram em suas graduações. O acesso às ferramentas é encerrado em caso de interrupção dos estudos, e pode ser encerrado também devido a mudanças nas políticas da faculdade ou de seus parceiros.
+
+### Infnet.Online
+
+O Infnet.Online é o sistema que o aluno usa diariamente para:
+
+- Encontrar os links para as aulas ao vivo no Zoom e baixar as aulas já ministradas.
+
+- Consultar suas presenças registradas em cada aula automaticamente pelo Zoom.
+
+- Acessar as Trilhas de Aprendizagem, com os conteúdos de estudo obrigatório, e materiais do professor.
+
+- Ficar por dentro das novidades da faculdade.
+
+- Tirar dúvidas com professores e monitores.
+
+- Interagir com colegas pelo grupo de chat do bloco e por mensagens privadas.
+
+- Comunicar-se com a Secretaria, Central de Coaching e Psicopedagogia, área de Carreiras e suporte de TI.
+
+- Encontrar oportunidades de emprego e estágio.
+
+O login é feito com a conta de aluno no Google (nome.do.aluno@al.infnet.edu.br).
+
+### Zoom
+
+O Zoom é a plataforma usada diariamente para:
+
+- Acessar às aulas ao vivo.
+
+Para utilizar, basta clicar no link da aula ao vivo, disponível no Infnet.Online. A ferramenta também está disponível gratuitamente para iOS e Android, com o nome “Zoom Cloud Meetings”.
+
+O login é feito com a conta de aluno no Google (nome.do.aluno@al.infnet.edu.br).
+
+Em caso de dificuldade de acesso, o aluno pode pedir ajuda pelo chat do Infnet.Online para a Secretaria de sua Faculdade.
+
+- Atendimento | Secretaria Faculdade Infnet, para alunos de engenharias e outras graduações em TI.
+
+- Atendimento | Secretaria ECDD, para alunos de graduações em design, animação, cinema, games ou marketing.
+
+### Moodle
+
+O Moodle é usado para:
+
+- Consultar o calendário de entregas de suas disciplinas.
+
+- Entregar trabalhos.
+
+- Acessar as correções e os feedbacks dos trabalhos.
+
+- Consultar seu histórico escolar.
+
+O Moodle é parcialmente acessível pelo app próprio no celular, e para utilizá-lo o aluno deve informar ao app a URL lms.infnet.edu.br/moodle.
+
+O login é feito com a conta de aluno no Google (nome.do.aluno@al.infnet.edu.br).
+
+Em caso de dificuldade de acesso às disciplinas dentro do Moodle, o aluno pode pedir ajuda pelo chat do Infnet.Online para a Secretaria de sua Faculdade.
+
+- Atendimento | Secretaria Faculdade Infnet, para alunos de engenharias e outras graduações em TI.
+
+- Atendimento | Secretaria ECDD, para alunos de graduações em design, animação, cinema, games ou marketing.
+
+### Google Workspace
+
+O Google Workspace é usado para:
+
+- Receber comunicações oficiais da faculdade, pelo e-mail.
+
+- Receber os boletos para pagamento das mensalidades, pelo e-mail.
+
+- Desenvolver trabalhos e gerar PDFs, pelo Google Documentos e Google Planilhas.
+
+- Consultar o Gemini, dentro da política de uso de IA da faculdade.
+
+- Guardar todos os documentos e arquivos relacionados à sua vida acadêmica, no Google Drive.
+
+- Acessar os demais sistemas, usando a conta de aluno no Google (nome.do.aluno@al.infnet.edu.br).
+
+O Google Workspace inclui o e-mail de aluno “seu.nome@al.infnet.edu.br” e demais ferramentas do Google, como o Google Drive, Google Documentos, Google Planilhas e Google Apresentações.
+
+O aluno deve redirecionar os e-mails que chegam em sua conta de aluno para o e-mail que lê diariamente, pois seu e-mail de aluno é usado na comunicação com a instituição, inclusive para o envio de boletos.
+
+Os trabalhos devem ser desenvolvidos com o Google Workspace, exceto quando nos enunciados forem indicadas ferramentas específicas. Todos os arquivos importantes para a vida acadêmica devem ser mantidos no Google Drive, e os trabalhos que solicitam entrega de arquivos em PDF devem, sempre que possível, ser produzidos com ferramentas do Google Workspace.
+
+A conta de aluno no Google Workspace é mantida[18] após a conclusão da graduação. O limite de armazenamento do Google Drive para os alunos é de 30 GB, devendo ser usado para guardar arquivos relacionados à sua vida acadêmica.
+
+Alunos da modalidade presencial nunca devem utilizar os computadores dos laboratórios para guardar arquivos, pois eles podem ser formatados durante o período letivo, devendo utilizar sempre o Google Workspace.
+
+O login é feito com o usuário e senha recebidos por e-mail no momento da matrícula na faculdade. Em caso de dificuldade de acesso, o aluno pode pedir ajuda pelo chat do Infnet.Online para Atendimento | Suporte de TI.
+
+## Parceria Microsoft
+
+O aluno tem acesso a um conjunto de recursos da Microsoft para apoiar seus estudos.
+
+### Azure Dev Tools for Teaching
+
+Esta parceria permite baixar e instalar softwares da Microsoft gratuitamente em seu computador pessoal para fins de estudo. Ela inclui licenças de Windows 11, Windows Server, Microsoft Project, Visio, Visual Studio Enterprise, entre outros softwares.
+
+O aluno que necessita um destes softwares para seus estudos deve solicitar o acesso para Atendimento | Suporte de TI no chat do Infnet.Online.
+
+### Créditos do Azure for students
+
+Algumas disciplinas de Cloud Computing podem exigir o uso de créditos na nuvem Azure para estudos e para o desenvolvimento dos trabalhos. Ao acessar o portal Azure com a conta de aluno, a Microsoft oferece US$ 100 em créditos.
+
+No entanto, o aluno não deve ativar este benefício por curiosidade. É importante que o aluno não ative nenhuma assinatura Azure sem orientação do suporte de TI ou solicitação por parte do professor. Os créditos têm validade de 12 meses, e se o aluno ativa antes do bloco correto, pode ficar sem saldo e precisar comprar créditos para cursar determinados blocos. Aguarde a orientação de seu professor antes de ativar qualquer crédito monetário no Azure.
+
+Em caso de dúvida, o aluno deve entrar em contato com Atendimento | Suporte de TI no chat do Infnet.Online.
+
+📅 Calendário acadêmico
+
+# Calendário acadêmico
+
+O calendário de entregas de trabalhos é integrado ao Moodle. Para visualizar o prazo para suas entregas de TPs e Assessments, o aluno deve acessar a plataforma.
+
+O Calendário Acadêmico é o planejamento oficial dos períodos letivos, férias e feriados, e também é útil como uma visão geral da época prevista para cada trabalho. Contudo, a planilha é uma estimativa , sendo as datas registradas no Moodle os prazos oficiais.
+
+A instituição segue o calendário de feriados do Estado e da cidade do Rio de Janeiro.
+
+## Reposição de aulas
+
+Em caso de ausência do professor, a coordenação analisa se há necessidade de reposição da aula, que pode ser agendada para horários alternativos durante a semana ou aos sábados. Se não houver reposição formal, o conteúdo é redistribuído entre os demais encontros. O aluno deve aproveitar o tempo da aula para estudar o conteúdo das Trilhas de Aprendizagem. É fundamental que o aluno aproveite a variedade de ferramentas disponibilizadas para o domínio das competências da disciplina, sendo as aulas ao vivo apenas um desses recursos à sua disposição.
+
+## Dias úteis entre feriados e fins de semana
+
+Na modalidade Presencial, aulas entre feriados, ou entre feriados e finais de semana, são ministradas extraordinariamente pelo Zoom. Por exemplo, em caso de feriado na terça-feira, a aula de segunda-feira é ministrada pelo Zoom em vez de presencialmente. Nesses casos, o aluno deve assistir à aula ao vivo, pelo Zoom, para ter direito à presença.
+
+## Atividades agendadas
+
+Confira no Anexo 2: Datas e prazos a previsão para Reavaliações de Disciplinas, eventos de apresentação de portfólio de projetos e formaturas.
+
+👷 Portfólio de projetos
+
+# Portfólio de projetos
+
+O aluno da modalidade Live deve fazer uma apresentação presencial para uma banca do seu portfólio de projetos na sede da instituição, em um evento organizado pela faculdade. São convidados para o evento professores, colegas de classe e profissionais de mercado para avaliarem e conhecerem os projetos desenvolvidos pelos alunos ao longo de sua graduação.
+
+## Quando ocorre?
+
+O aluno deve participar presencialmente do evento durante ou após o último bloco de sua graduação, dentro do prazo de integralização de seu curso. O evento é organizado pela faculdade duas vezes ao ano, em maio e em novembro, usualmente em uma sexta-feira à tarde.
+
+## Como fazer a inscrição?
+
+O aluno que está cursando o penúltimo ou último bloco deve se inscrever para a apresentação de seu portfólio de projetos, mesmo que tenha disciplinas pendentes de reavaliação. A inscrição é feita neste formulário.
+
+## O que fazer se não puder apresentar?
+
+Se o aluno não puder se apresentar, precisa solicitar sua dispensa de participação, preenchendo este formulário durante o último bloco de seu curso de graduação. As solicitações de dispensa de participação são analisadas caso a caso.
+
+## Como é a apresentação?
+
+O aluno inscrito para o evento deve enviar para o e-mail portfolio@infnet.edu.br, com antecedência mínima de 15 dias, o link para o material que deseja exibir ao público. O formato da apresentação deve ser obrigatoriamente "Apresentações Google" e ter no máximo 20 slides.
+
+O tempo de apresentação de cada aluno é de 5 a 15 minutos, variando conforme a quantidade de alunos inscritos no evento. A orientação sobre o tempo exato é informada por e-mail alguns dias antes do encontro.
+
+Caso o aluno queira, pode levar outros materiais para sua apresentação, como media kit, robô ou protótipo, bastando comunicar à organização. A exibição em si precisa ser feita no computador da faculdade somente com slides do Google e vídeos, não sendo possível executar softwares que não estejam disponíveis na Web.
+
+O evento ocorre na Faculdade Infnet, na Rua São José, 90, segundo piso, Auditório Vinton Cerf, Centro, Rio de Janeiro.
+
+🧠 Política de IA
+
+# Política de uso de IA generativa em trabalhos
+
+As ferramentas de inteligência artificial (IA) generativa, como o ChatGPT, Claude, Copilot, Gemini, entre outras, se tornaram muito acessíveis e com alto potencial para auxiliar os alunos em várias etapas do processo de aprendizagem. No entanto, o uso dessas ferramentas é regulamentado na instituição para garantir a integridade acadêmica e a originalidade dos trabalhos.
+
+Esta política foi elaborada com base em práticas de universidades renomadas, incluindo Cornell University, UCLA, Harvard University e Princeton University, e em orientações da Unesco.
+
+A política de uso de IA é revisada periodicamente para se adaptar às mudanças tecnológicas e garantir sua relevância e eficácia.
+
+## Diretrizes gerais
+
+Para orientar os alunos em relação ao uso de IA, desenvolvemos um sistema de sinais que deve constar em todos os enunciados de trabalhos. A definição do sinal é feita pelo professor na criação dos Testes de Performance (TPs), Assessments (ATs), Projetos de Bloco (PBs) e Projetos de Disciplina (PDs).
+
+## Política de uso
+
+Para cada trabalho exigido do aluno, indica-se o sinal verde, amarelo ou vermelho.
+
+Sinal verde 🟢
+Ferramentas de IA podem ser utilizadas livremente, pois o domínio delas é parte dos objetivos da atividade. Trabalhos com sinal verde são de maior complexidade, exigindo que o aluno demonstre capacidade de resolução de problemas com o apoio de IA.
+
+Sinal amarelo 🟡
+O uso de IA é permitido para aprimorar o trabalho conforme as circunstâncias previstas no enunciado.
+
+Sinal vermelho 🔴
+É vedado o uso de IA em qualquer parte do trabalho. Esta restrição visa garantir o desenvolvimento de habilidades fundamentais, como a memorização de conceitos, o pensamento crítico e a capacidade de resolução de problemas inerentes ao cotidiano profissional. A escolha do sinal vermelho é sempre motivada por necessidades pedagógicas.
+
+## Responsabilidade e transparência
+
+Sempre que uma ferramenta de IA generativa for utilizada para gerar conteúdos inseridos no trabalho, ainda que revisados, o aluno deve indicar em que trechos e como a ferramenta foi usada, incluindo a natureza do auxílio e o prompt adotado.
+
+Os alunos são responsáveis por todo o conteúdo de seu trabalho, incluindo aqueles gerados por IA, sendo sua responsabilidade compreendê-los e revisá-los criticamente.
+
+### Consequências do uso indevido
+
+O uso indevido de ferramentas de IA, como o envio de trabalhos sem a devida compreensão ou a falha em atribuir corretamente o uso da IA, é tratado como improbidade na execução dos trabalhos escolares, sujeito a sanções conforme o Regime Disciplinar.
+
+A íntegra do Regime Disciplinar pode ser consultada no Título V do Regimento do Instituto Infnet, no qual o artigo 89, parágrafo 5o, cobre situações de improbidade na execução dos trabalhos. As penas disciplinares aplicáveis ao corpo discente estão descritas no artigo 88o do Regimento.
+
+## Implementação e monitoramento
+
+Os enunciados de TPs, ATs e PBs informam a política de uso de IA para o trabalho, indicando o sinal verde, amarelo ou vermelho. Considerando a realidade do mercado de trabalho, os Planos de Ensino buscam reduzir as limitações de uso de IA ao longo do tempo, exceto caso o uso das ferramentas seja deletério ao desenvolvimento do aluno.
+
+São ferramentas possíveis para regular o uso de IA: live codings, arguições orais, plataformas online de avaliação com sistemas de monitoramento, exigência de explicação em vídeo, dentre outras.
+
+### Exemplos
+
+Confira abaixo exemplos de como as diretrizes regulamentadas podem aparecer nos enunciados de trabalhos:
+
+Sinal verde: “Os alunos são incentivados a explorar o uso de ferramentas baseadas em IA para concluir as tarefas. Todas as fontes, incluindo ferramentas de IA, devem ser devidamente citadas. O uso de IA sem a devida citação será considerado má conduta acadêmica e estará sujeito à aplicação do código disciplinar. Observe que os resultados da IA ​​podem ser tendenciosos e imprecisos. É sua responsabilidade garantir que as informações que você usa da IA ​​sejam precisas. Aprender como usar ferramentas baseadas em IA de maneira cuidadosa e estratégica contribui para o desenvolvimento das habilidades, refinamento de seu trabalho e prepara o aluno para sua futura carreira.”
+
+Sinal amarelo: “Neste trabalho, os alunos têm permissão para usar ferramentas baseadas em IA nas seguintes tarefas: XXX, YYY e ZZZ. Todas as fontes, incluindo ferramentas de IA, devem ser devidamente citadas. O uso de IA de forma inconsistente com os parâmetros acima será considerado má conduta acadêmica e estará sujeito à aplicação do código disciplinar. Observe que os resultados da IA ​​podem ser tendenciosos e imprecisos. É responsabilidade do aluno garantir que as informações usadas da IA ​​sejam precisas. Aprender como usar ferramentas baseadas em IA de maneira cuidadosa e estratégica contribui para o desenvolvimento das habilidades, refinamento de seu trabalho e prepara o aluno para sua futura carreira.”
+
+Sinal vermelho: “Todas as partes deste trabalho devem ser de autoria do aluno. Qualquer uso de ferramentas de IA generativa, como ChatGPT, Gemini ou Claude é estritamente proibido. O uso de IA generativa será considerado má conduta acadêmica e estará sujeito à aplicação do código disciplinar, pois as tarefas deste trabalho foram elaboradas para desafiar o aluno a desenvolver conhecimentos de base, pensamento crítico e habilidades de resolução de problemas. O uso da tecnologia de IA limitaria sua capacidade de desenvolver essas competências e de atingir os objetivos de aprendizagem desta disciplina.”
+
+👍 Comportamento
+
+# Comportamento esperado
+
+## Nas ferramentas online:
+
+### Deve:
+
+- Estudar em um local calmo, sem interrupções ou barulho, em um desktop ou notebook.
+
+- Logar no Zoom antes do horário de início da aula ao vivo e manter a câmera ligada durante a aula.
+
+- Estudar os conteúdos indicados nas Trilhas de Aprendizagem.
+
+- Entregar os trabalhos pelo Moodle pontualmente.
+
+- Pedir ajuda para usar softwares e ambientes de estudos.
+
+- Interagir online com professores e colegas, criando laços que continuem depois da faculdade.
+
+- Pedir a palavra durante as aulas ao vivo com parcimônia e educação, para tratar de assuntos pertinentes à aula.
+
+- Tirar dúvidas e pedir ajuda sobre os conteúdos da graduação e atividades da faculdade.
+
+- Levar novidades sobre eventos e outras oportunidades para os colegas.
+
+- Comentar em posts do Infnet.Online para tirar dúvidas sobre o assunto em questão.
+
+### Não deve:
+
+- Se distrair em outras atividades durante as aulas ao vivo.
+
+- Discutir assuntos sem relação com a graduação, como esportes, religião e política.
+
+- Tratar de assuntos que não sejam pertinentes aos posts do Infnet.Online em seus comentários.
+
+- Interromper a aula ao vivo sistematicamente, atrapalhando o aprendizado dos colegas.
+
+- Usar as ferramentas institucionais para impor reiteradamente seu ponto de vista.
+
+- Insistir em assuntos de interesse estritamente individual.
+
+- Fazer qualquer tipo de propaganda de produto ou serviço, ou tratar sobre outras instituições de ensino.
+
+- Fazer comentários preconceituosos, sexistas ou agressivos.
+
+- Ser indelicado ou expor colegas, monitores, professores ou colaboradores da instituição.
+
+## Estando presencialmente na faculdade
+
+### Deve:
+
+- Chegar no horário, descansado, alimentado e, assim, capaz de aproveitar as aulas ao máximo.
+
+- Tirar dúvidas sobre os conteúdos e atividades com colegas, monitores e professores em sala de aula.
+
+- Frequentar a biblioteca para estudar e combinar trabalhos em grupo.
+
+- Interagir durante e após a aula presencial, criando laços que continuem depois da faculdade.
+
+- Usar ou não maquiagem, penteados, acessórios, piercings e tattoos, expressando-se com liberdade.
+
+- Ser educado com os colegas e respeitoso com os professores.
+
+- Lanchar a poucos metros da faculdade, em lugares ótimos como o Gaúcho, a Casa Velha e o Grão Café.
+
+### Não deve:
+
+- Conversar com colegas, acessar mídias sociais ou jogar durante as aulas.
+
+- Vender qualquer coisa nas instalações da faculdade.
+
+- Comer nas salas de aula, pois os farelos e gordura atraem baratas, mesmo com a desinsetização em dia.
+
+- Frequentar a faculdade descalço ou sem camisa.
+
+- Fazer campanha política na faculdade.
+
+- Fazer refeições nos corredores, nem comer hambúrguer ou pizza, por conta do cheiro forte.
+
+- Interromper o professor sistematicamente, atrapalhando a aula.
+
+- Fazer comentários preconceituosos ou agressivos.
+
+- Deitar ou dormir em nenhum ambiente da faculdade.
+
+## Comentários em posts
+
+Comentários sem relação com o assunto tratado no post são apagados. A seção de comentários dos posts públicos do Infnet.Online não é um espaço para dúvidas em geral, mas para esclarecer dúvidas sobre o post. Em alguns casos, se a pergunta feita é pertinente e só está no local errado, a resposta é enviada por mensagem privada.
+
+## Regime Disciplinar
+
+Regime Disciplinar é o capítulo do Regimento da instituição que trata das consequências das ações em desacordo com o clima de respeito e cooperação solidária desejada pela comunidade acadêmica. A parte do Regime Disciplinar aplicável ao Corpo Discente, assim como os possíveis recursos, podem ser consultados neste documento.
+
+✍️ Rematrícula e trancamento
+
+# Rematrícula
+
+Antes do final de cada bloco, o aluno precisa confirmar sua rematrícula para o bloco seguinte, conferindo e respondendo o e-mail recebido. Assim, evita ficar sem vaga, sem acesso às plataformas de ensino ou com as mensalidades sobrepostas.
+
+O aluno deve ficar atento aos e-mails e, caso não receba até 20 dias antes do término de seu bloco, contactar a Controladoria em rematriculas@infnet.edu.br.
+
+# Trancamento
+
+Na instituição, trancar ou deixar de fazer a rematrícula equivale a cancelar a matrícula, pois o retorno aos estudos no modelo de blocos exige um novo planejamento, que considera a matriz curricular atualizada do curso.
+
+Quando um aluno não faz sua rematrícula, a instituição considera que ele evadiu. Se o aluno desejar retomar posteriormente sua graduação, não há garantia que todos os blocos feitos serão aproveitados na nova matriz curricular. Nessa situação, a duração do curso pode ser impactada. A interrupção também afeta bolsas ou descontos comerciais, podendo alterar o valor da mensalidade.
+
+Se, ainda assim, o aluno precisar interromper seus estudos, é melhor fazê-lo entre os blocos, evitando reprovar nas disciplinas em andamento e os custos de interromper o contrato vigente.
+
+Os custos de cancelamento são calculados pela data em que o aluno abre o requerimento. De acordo com seu contrato, o aluno deverá pagar as mensalidades com vencimento até o mês em que o requerimento for aberto e, caso a solicitação seja realizada após o início do período letivo, também uma mensalidade adicional a título de indenização compensatória.
+
+Para cancelar sua matrícula, o aluno deve abrir um requerimento “B09 - Cancelamento de Matrícula”.
+
+👓 Aproveitamento e transferências
+
+# Aproveitamento de estudos
+
+## Aproveitamento externo
+
+Podem solicitar o aproveitamento externo de estudos os alunos que iniciaram sua graduação já tendo cursado recentemente disciplinas que cobrem as mesmas competências de um ou mais blocos de sua graduação.
+
+O aproveitamento só pode ser solicitado nos primeiros 30 dias contados a partir do início da graduação. Não são analisadas solicitações feitas após este período ou antes do início das aulas. Não são aproveitados estudos para o bloco de entrada das graduações, pois eles têm um papel que vai além do ensino das competências: é o momento em que cada aluno tem contato com a metodologia de ensino da instituição.
+
+O processo de aproveitamento é regido por este regulamento. Nenhuma solicitação de aproveitamento tem seu êxito garantido de antemão. Determinado bloco ter o mesmo nome em duas graduações diferentes não implica aproveitamento automático, pois podem haver diferenças nas competências, rubricas ou orientação pedagógica sobre o grau de exigência.
+
+### Passo a passo
+
+- Solicitar para a Secretaria a lista de competências cobertas em cada bloco da graduação.
+
+- Escrever uma defesa indicando para quais blocos deseja dispensa em razão do aproveitamento de estudos anteriores, sempre considerando o regulamento acima indicado.
+
+- É importante destacar neste documento quais foram as disciplinas cursadas em outra instituição de ensino que cobriram 100% ou mais da carga horária e 75% das competências de cada bloco para o qual se solicita o aproveitamento.
+
+- Fazer um requerimento "B05 - Solicitação de aproveitamento de estudos externos", preenchendo sua defesa na fundamentação e anexando o histórico e a ementa das disciplinas cursadas em formato PDF, até 30 dias após o início da graduação. Na ausência da fundamentação, histórico ou da ementa, o requerimento será indeferido.
+
+## Aproveitamento interno
+
+O aluno só pode estar matriculado em uma única graduação de cada vez. Ao final da graduação, o aluno pode matricular-se em outra e solicitar o aproveitamento de estudos, que é analisado. A análise é feita caso a caso, mas o aluno pode considerar em suas decisões que:
+
+- Blocos com o mesmo nome, caso não tenham sofrido alteração significativa nas competências ou versão de software, usualmente são aproveitados entre graduações de Engenharia.
+
+- Existem regras específicas para bidiplomação entre Engenharia de Software e Engenharia de Computação, para alunos que querem fazer as duas graduações sem intervalo entre elas. Os detalhes estão nas sub-guias de organização curricular.
+
+- Blocos de outras graduações não são passíveis de aproveitamento de estudos para as graduações de Engenharia, exceto o bloco de entrada.
+
+O aluno que deseja fazer uma segunda graduação na instituição deve primeiro completar todas as atividades obrigatórias de sua primeira graduação. Em seguida, abrir um requerimento "E99 - Outras solicitações" solicitando a matrícula na segunda graduação e aguardar o planejamento de estudos, que já irá considerar eventuais aproveitamentos. Não é necessário esperar a colação de grau para fazer esse requerimento.
+
+Quanto menos tempo decorrer entre o término de uma graduação e a matrícula na seguinte, mais facilmente são aproveitados blocos similares.
+
+Não é possível estudar em dois ou mais blocos concomitantemente, ainda que façam parte da mesma graduação.
+
+## Transferências entre graduações
+
+Alunos podem solicitar transferência entre diferentes títulos de graduação através do sistema de requerimentos, na opção "B04 - Transferência de Classe ou Programa". Ao fazer o requerimento, o aluno deve informar na fundamentação se o bloco da graduação corrente será finalizado.
+
+Durante os blocos de entrada "Fundamentos do Processamento de Dados", "Arquitetura de Computadores, Redes e Cibersegurança" e “Introdução à Indústria Criativa”, as transferências podem ser solicitadas apenas durante o quinto mês de estudos, quando entendemos que o aluno está mais seguro para tomar a decisão.
+
+Os pedidos de transferência precisam ser feitos com antecedência mínima de 30 dias do início do bloco para o qual o aluno solicita transferência. Essa antecedência é necessária para que a faculdade possa planejar os estudos do aluno no novo curso, incluindo a análise de eventuais aproveitamentos.
+
+Alunos que utilizam o FIES podem ter suas transferências impedidas pelo sistema do FIES. Há regras específicas de transferência conforme a nota do aluno no ENEM. O aluno deve verificar no site do FIES se pode fazer a transferência antes de solicitá-la. Para orientações sobre o FIES, o aluno pode enviar um e-mail para fies.ctr@infnet.edu.br.
+
+🗺️ Avaliação presencial
+
+# Avaliação presencial no ensino à distância
+
+Conforme o Decreto 12.456, de 19 de maio de 2025, e demais portarias do MEC que compõem o marco legal do ensino à distância, as Instituições de Ensino Superior deverão aplicar avaliações presenciais em todas as suas graduações à distância a partir de 2027.
+
+Os alunos farão uma avaliação presencial a cada seis meses, que será realizada nas últimas semanas de cada semestre letivo. Esta avaliação terá duração de 3 a 4 horas e cobrirá todas as disciplinas do semestre.
+
+Dentro da semana definida, cada aluno poderá escolher entre as opções de data e horário oferecidas pela instituição, normalmente com opções na sexta-feira à noite e no sábado pela manhã, optando pela alternativa que melhor se encaixe na sua rotina. As datas e horários previstos para cada cidade serão divulgados com antecedência no calendário acadêmico, incluindo a data da segunda chamada.
+
+A avaliação deverá ser realizada em um dos locais oferecidos pelo Instituto Infnet, para ambas faculdades. As cidades com locais de avaliação presencial confirmados são Belo Horizonte, Brasília, Campinas, Curitiba, Fortaleza, Goiânia, Navegantes, Porto Alegre, Recife, Ribeirão Preto, Rio de Janeiro, Salvador, São Paulo e Vitória.
+
+Mais informações serão compartilhadas em 2027. Alunos que iniciaram seus estudos em 2025 ou antes terão regras específicas que os permitirão continuar suas graduações sem a realização de provas em cidades em que não estejam domiciliados. As regras serão divulgadas em 2027.
+
+🚍 Carteirinha e transporte
+
+# Carteirinha e Passe Livre
+
+## Carteirinha de estudante
+
+Hoje, as carteirinhas de estudante, que dão direito à meia-entrada, são emitidas pelas associações estudantis, neste site, ou na ISIC.
+
+## Passe Livre Universitário no Rio de Janeiro
+
+O Passe Livre Universitário dá direito ao uso de ônibus municipais, BRT, VLT, Vans e transportes comunitários regulamentados, dentro de certos limites, no Município do Rio de Janeiro para alunos do ProUni ou com renda domiciliar per capita de até um salário mínimo.
+
+O benefício é concedido pelo poder público, via Jaé, aos alunos matriculados em cursos de graduação presencial ou semipresencial e que frequentem aulas em unidades de ensino localizadas no Município do Rio de Janeiro, independentemente de seu município de residência.
+
+Para solicitar seu benefício do Passe Livre Universitário com o Jaé, você precisa preencher o formulário e enviar os documentos exigidos no site. A declaração de matrícula com previsão de término deve ser solicitada por requerimento na opção “A99 - Outras declarações ou documentos”.
+
+Para tirar dúvidas, você pode escrever para o Jaé em falacomigo@jae.com.br.
+
+🎓 Formatura
+
+# Formatura
+
+O nome técnico é colar grau: quando o aluno faz o juramento de sua nova profissão e legalmente "se forma". É a partir da colação de grau que a instituição inicia a emissão do diploma.
+
+## São requisitos para colar grau:
+
+- Aprovação em todas as disciplinas de sua graduação.
+
+- 400 horas de estágio obrigatório ou substituição por horas de trabalho na área.
+
+- Ter comprovado as horas de Atividades Complementares exigidas.
+
+- Ter comprovado as horas de Atividades de Extensão exigidas.
+
+- Ter participado do evento de Apresentação do Portfólio de Projetos ou obtido a dispensa emitida pela faculdade, caso seja aluno do Live.
+
+- Estar em situação regular com o ENADE.
+
+- Fornecer os documentos necessários, informados a seguir.
+
+### Documentos exigidos
+
+- Documento oficial de identidade, não sendo aceita carteira de habilitação nem identidade de classe.
+
+- CPF, se não constar na identidade.
+
+- Certidão de nascimento ou casamento com o nome idêntico ao do RG.
+
+- Título de Eleitor ou declaração de regularidade eleitoral.
+
+- Certificado de conclusão do Ensino Médio (antigo 2º grau), digitalizado frente e verso.
+
+- PDF da publicação no Diário Oficial, sempre que este for citado no verso do certificado de conclusão do Ensino Médio.
+
+- Histórico escolar final do Ensino Médio (antigo 2º grau).
+
+Graduações previstas para serem avaliadas pelo ENADE não podem ter Colação de Grau nos meses que antecedem a prova. Nestes casos, os alunos colam grau no semestre seguinte, desde que estejam em situação regular com o ENADE.
+
+## Prazo limite para conclusão
+
+Programas de graduação possuem um prazo máximo de integralização, ou seja, um tempo limite para concluí-los, estabelecido no regimento da instituição.
+
+O prazo para o aluno concluir sua graduação é a duração mínima prevista para o curso mais 50%. Ou seja, uma graduação de três anos deve ser concluída em até 4,5 anos. Excedido este prazo, o aluno geralmente perde o direito de concluir o curso.
+
+O aluno afastado, incluindo o que perdeu o prazo de integralização, pode solicitar o reingresso, que será analisado individualmente. Para abrir esta solicitação, o aluno deve preencher um requerimento "B01 - Matrícula de Aluno após período afastado", para que a instituição analise eventuais aproveitamentos e faça um planejamento de estudos conforme a matriz curricular mais atual do curso.
+
+Se o aluno ainda estiver no prazo de integralização, mas perceber que não completará a graduação a tempo, pode solicitar um planejamento de estudos com extensão de prazo através de um requerimento “B12 - Solicitação de Planejamento de Estudos”. Nesses casos, se o aluno está ativo e avançando no curso, é comum a faculdade estender o prazo, após análise.
+
+## Passo a passo para colar grau:
+
+- Completar todos os requisitos de seu curso de graduação. O aluno pode solicitar a inclusão na colação durante o último trimestre de suas disciplinas, ciente de que a colação de grau depende da aprovação nas disciplinas em andamento.
+
+- Solicitar o histórico escolar pelo site de requerimentos na opção "A04 - Histórico escolar".
+
+- Conferir seu histórico escolar, observando se cumpriu todos os requisitos, incluindo as disciplinas, estágio, Atividades Complementares e de Extensão e, para alunos Live, a apresentação ou dispensa no Portfólio de Projetos. Em caso de pendências, o aluno deve saná-las antes de pedir inclusão na colação de grau.
+
+- Solicitar[19] a inclusão na colação de grau pelo site de requerimentos na opção "C01 - Inclusão na colação de grau", informando a data de colação desejada e anexando os documentos, cada um digitalizado em PDF com alta legibilidade. Caso você deseje que os documentos, incluindo o diploma, sejam emitidos com seu nome social, informe no campo de fundamentação.
+
+- Participar da colação de grau.
+
+- Aguardar o seu diploma digital, que será enviado pelo e-mail usado para abertura do requerimento de colação de grau.
+
+## Tipos de Colação de Grau
+
+- Presencial: evento organizado pela faculdade , aberto aos alunos da modalidade presencial e da modalidade Live que desejam colar grau presencialmente no Rio de Janeiro. A colação é realizada nas instalações da faculdade ou em local indicado, no Centro do Rio de Janeiro. Quando realizada fora da instituição, pode haver o repasse dos custos associados, relacionados principalmente ao aluguel da beca, fotógrafo, ornamentação do ambiente, custo do espaço, lembranças para os homenageados e espumantes para o brinde.
+
+- Live: aberta a alunos da modalidade Live, é transmitida pelo YouTube para os convidados e não possui custos repassados aos formandos.
+
+## Diploma digital
+
+Todos os diplomas de graduação emitidos hoje são digitais, conforme a portaria do MEC nº 554/2019.
+
+O diploma digital inclui uma "Representação Visual do Diploma Digital" (RVDD) que o aluno pode imprimir, se desejar. A RVDD é enviada em PDF junto com o diploma digital.
+
+Não é mais permitido às faculdades privadas a emissão de diplomas físicos. O diploma digital é um arquivo nato-digital, que tem sua existência, emissão e armazenamento inteiramente no meio digital, e cuja validade jurídica é presumida mediante a assinatura com certificação digital e carimbo de tempo no ICP-Brasil, conforme os parâmetros do Padrão Brasileiro de Assinaturas Digitais.
+
+## Perguntas frequentes
+
+### Qual o prazo para o aluno solicitar a participação na Colação de Grau?
+
+Requerimentos feitos até 31 de maio valem para as colações de setembro, e requerimentos feitos até 30 de novembro para as colações de março.
+
+### Quantos convidados o aluno pode levar?
+
+Na Colação Presencial, depende do número de formandos, mas, normalmente, de três a cinco convidados. Na Colação Live, o número de convidados é ilimitado, e a transmissão ocorre pelo YouTube.
+
+### Quanto tempo depois de terminadas as disciplinas o aluno cola grau?
+
+Depende da época em que o aluno completa todos os requisitos. Usualmente o tempo varia de dois a oito meses, dependendo das janelas do calendário para solicitação.
+
+### O que é preciso para o aluno estar regular com o ENADE?
+
+O ENADE é um componente curricular obrigatório dos cursos que são avaliados pelo MEC, de acordo com o calendário trienal do exame. Para estar regular com o ENADE, o aluno que foi inscrito no exame deve preencher o questionário do estudante, que é enviado por e-mail, e realizar a prova no dia e local marcados. Ficar irregular impede o aluno de colar grau e ter seu diploma.
+
+### É possível fazer a colação em outra data?
+
+Não. Em razão da janela legal para a emissão do diploma, não é possível fazer em outros períodos. Se o aluno estiver viajando, pode optar por colar grau na próxima cerimônia oficial, quando retornar, ou participar da colação na modalidade Live.
+
+### O que o aluno precisa fazer para se preparar para a colação de grau?
+
+Seguir as orientações que recebe por e-mail, após solicitar a colação.
+
+### Quanto tempo leva para a emissão do diploma?
+
+O prazo para envio é de 135 dias, prorrogáveis por mais 135 dias, contados a partir da data de colação de grau, conforme os artigos 18 e 19 da portaria 1.095 de 2018.
+
+### Por que o diploma não pode ser emitido imediatamente?
+
+Todo diploma emitido por faculdade brasileira precisa ser registrado em uma universidade, que atua como um "cartório", validando o documento. A universidade que registra o diploma não tem relação com aspectos pedagógicos do Instituto Infnet, atuando apenas em seu registro, conforme a lei. Esse processo exige o cumprimento de uma série de etapas e pode demorar alguns meses.
+
+🏫 História
+
+## História da instituição
+
+Tudo começou com o Instituto Infnet, focado no ensino de tecnologia e nascido com a chegada da Internet no Brasil.
+
+O Instituto foi fundado em 1994, mesmo ano em que a Internet deixou de ser uma rede apenas acadêmica para também oferecer acesso a pessoas físicas e empresas no país. Foi um importante aliado para o desenvolvimento do mercado tech no Brasil, impulsionando a revolução digital, que dava seus primeiros passos no país.
+
+Nos primeiros anos, oferecia cursos e certificações presenciais para preparar profissionais de diferentes áreas para lidarem com os novos desafios digitais do mercado. Nessa época, formou a primeira geração de profissionais que construíram a Internet no Brasil.
+
+### Faculdade Infnet
+
+Em 2006, a partir do credenciamento do Instituto junto ao Ministério da Educação (MEC), a Faculdade Infnet foi fundada, lançando suas primeiras graduações e pós-graduações presenciais no Rio de Janeiro, com matrizes curriculares inovadoras e um ensino baseado em competências.
+
+Ao longo dos anos, a Faculdade Infnet se firmou como referência em engenharias tech. A instituição desempenhou um papel crucial na criação do curso de Engenharia de Software no Brasil, em colaboração com o MEC, propondo sua matriz curricular a partir dos Referenciais de Formação para os Cursos de Graduação em Computação da Sociedade Brasileira de Computação.
+
+### Faculdade ECDD
+
+A Faculdade ECDD é parte do Instituto Infnet, e surgiu da interdisciplinaridade trazida pela Internet, que exigia conhecimentos criativos na equipe de transformação digital.
+
+Em 1994, apenas um ano após o desenvolvimento do Mosaic, o primeiro navegador de Internet, iniciaram os cursos de criação de páginas web. O final dos anos 90 e a primeira década dos anos 2000 foram de grande expansão para essa área.
+
+Em 2006, foi criada a Faculdade ECDD – Escola de Comunicação e Design Digital, focada nos cursos voltados para a Indústria Criativa. Seu surgimento foi uma resposta natural à crescente importância da indústria criativa para a instituição. Desde 2015, a ECDD está em um lindíssimo prédio, exclusivo da faculdade, no Corredor Cultural do Centro do Rio de Janeiro.
+
+Hoje, a ECDD possui foco em inovação e novas tecnologias aplicadas, levando uma experiência de ensino especializada para criativos e voltada para o desenvolvimento do potencial dos alunos e seu preparo para atuar em agências, produtoras, empresas nacionais e multinacionais, com design, games, cinema, marketing e animação.
+
+A Faculdade ECDD fica na Rua do Rosário, 129, Centro, Rio de Janeiro.
+
+Saiba mais clicando aqui.
+
+🔗 Links úteis
+
+# Links úteis
+
+## Presença digital da Faculdade Infnet
+
+- YouTube
+
+- Instagram
+
+- LinkedIn
+
+## Presença digital da Faculdade ECDD
+
+- YouTube
+
+- Instagram
+
+- LinkedIn
+
+## Rotina acadêmica
+
+- Infnet.Online
+
+- Portal de requerimentos
+
+- Moodle
+
+## Ano letivo
+
+- Calendário acadêmico
+
+- Calendário de blocos
+
+- Onde encontro o professor?
+
+## Documentos de estágio
+
+- Contrato de convênio
+
+- Termo de Compromisso de Estágio
+
+- Rescisão de contrato
+
+- Relatório Semestral e Avaliação
+
+- Comprovação de estágio
+
+- Consulta ao registro de horas de estágio
+
+- Termo Substitutivo de Estágio
+
+## Atividades complementares
+
+- Registro de atividades complementares
+
+- Consulta ao registro de atividades
+
+- Solicitação de revisão
+
+Regimento e documentos complementares
+
+- Regimento
+
+- Relatório da CPA de 2026 (sobre 2025)
+
+- Política de segurança da informação da instituição
+
+- Contrato de Matrícula (v8)
+
+⭕ Anexo 1: Organização curricular
+
+# Organização curricular
+
+- Blocos: As graduações são divididas em blocos temáticos de seis meses. Cada bloco cobre um assunto e dura dois trimestres.
+
+- Rodas: São conjuntos de blocos que possuem pré-requisitos entre si. Se a graduação possuir várias Rodas, o aluno deve completar os blocos da primeira roda antes de fazer os da segunda roda, e assim por diante.
+
+## A jornada do aluno
+
+- Bloco de entrada: A jornada começa pelo Bloco de Entrada[20], que cobre os conceitos fundamentais para cada graduação e permite aos alunos se acostumarem com a metodologia de ensino. Neste bloco, todos os alunos estão chegando na instituição. Algumas graduações compartilham classes do bloco de entrada.
+
+- Primeira Roda: Após completar com sucesso o Bloco de Entrada, o aluno entra na roda de blocos específicos de sua graduação e passa a estudar com alunos veteranos. Dentro de uma Roda, os blocos não têm pré-requisitos entre si, podendo ser feitos na ordem em que estiverem disponíveis.
+
+- Segunda Roda: Algumas graduações possuem uma Segunda Roda de blocos, que deve ser feita após o aluno completar a primeira. Em Análise e Desenvolvimento de Sistemas, a Segunda Roda varia conforme a ênfase escolhida.
+
+- Terceira Roda: As Engenharias possuem uma Terceira Toda de blocos. Na Engenharia de Software, a terceira roda varia conforme a ênfase escolhida.
+
+As múltiplas entradas permitem que o aluno amplie seu networking, e a estrutura de Rodas evita o desnível da classe nas graduações mais longas.
+
+O valor da mensalidade não é alterado na mudança entre Rodas, permanecendo o mesmo durante toda a graduação, acrescido apenas dos reajustes anuais ordinários previstos em contrato. Eventuais bolsas de estudo também são mantidas.
+
+Dentro de uma Roda, os blocos são agendados de forma cíclica. Por exemplo, se uma roda possui três blocos de seis meses, cada um deles é oferecido em intervalos de 18 meses.
+
+#
+
+## Modalidades
+
+- Presencial, com a maior parte das atividades realizadas no campus da instituição.
+
+- Live, com a maior parte das atividades à distância, com aulas ao vivo pelo Zoom, estudo das Trilhas de Aprendizagem e desenvolvimento de projetos, além de atividades presenciais de extensão na cidade do aluno.
+
+## Evolução dos blocos
+
+A instituição orgulha-se de oferecer um ensino atualizado, desenvolvendo competências alinhadas ao mercado de trabalho. Para isso, os blocos e disciplinas precisam ser frequentemente atualizados. A maior parte dos alunos, em algum ponto de sua graduação, estuda em blocos cujos nomes, competências e conteúdos foram atualizados em relação ao planejado no início de seus estudos.
+
+## Mudança de calendário
+
+Há dois “calendários” em vigor na faculdade:
+
+- C1 (calendário 1): blocos semestrais começando em janeiro ou julho
+
+- C2 (calendário 2): blocos semestrais começando em abril ou outubro.
+
+Quando um aluno tem necessidade de trocar de uma classe ofertada no C1 para uma do C2, ou vice-versa, ocorre um intervalo de três meses entre os blocos, que o aluno deve aproveitar para estudar em disciplinas eletivas, fazer Atividades Complementares e projetos de Extensão. Durante esse trimestre sem aulas regulares, a instituição não cobra mensalidades.
+
+Essa situação afeta um grupo reduzido de alunos, ocorrendo nos casos em que as diferentes Rodas da graduação são oferecidas em calendários distintos.
+
+## Organização curricular específica
+
+Leia a sub-guia referente à sua graduação.
+
+### Faculdade Infnet
+
+- Análise e Desenvolvimento de Sistemas
+
+- Banco de Dados
+
+- Ciência de Dados
+
+- Engenharia de Computação
+
+- Engenharia de Software
+
+- Redes de Computadores
+
+- Segurança da Informação e Defesa Cibernética
+
+- Tecnologia da Informação
+
+### Faculdade ECDD
+
+- Cinema e Audiovisual
+
+- Design de Animação
+
+- Design de Games
+
+- Design Gráfico
+
+- Jogos Digitais
+
+- Marketing Digital
+
+🧩 Análise e Desenvolvimento de Sistemas
+
+# Análise e Desenvolvimento de Sistemas
+
+Esta página refere-se à matriz curricular de 2026. Alunos matriculados em 2025 ou antes devem consultar seus planejamentos de estudos.
+
+## Organização curricular
+
+O aluno inicia seus estudos pelo bloco Fundamentos do Processamento de Dados, aprendendo lógica de programação com Python e acesso a bancos de dados usando SQL.
+
+Este primeiro semestre é chamado de Bloco de Entrada, e a classe pode ser compartilhada com graduações correlatas. Neste ponto, é apresentada a metodologia de ensino da instituição, chamada de CBL+PBL, que desenvolve as competências necessárias através de projetos práticos. O aluno também estuda em duas importantes disciplinas de apoio à carreira: Planejamento de Curso e Carreira e Fluência em IA.
+
+Durante os meses iniciais, é esperada forte dedicação do aluno, especialmente na resolução de extensas listas de exercícios, para que se solidifiquem os conceitos fundamentais da programação de software.
+
+Em seguida, o aluno ingressa na Primeira Roda de Análise e Desenvolvimento de Sistemas, que possui dois blocos: Desenvolvimento de Agentes Inteligentes e Desenvolvimento Back-End. Esses blocos não têm pré-requisitos entre si, podendo ser feitos em qualquer ordem, permitindo ao aluno ampliar seu networking com os novos colegas que passam a estudar juntos. A partir desta roda, todos são alunos de Análise e Desenvolvimento de Sistemas.
+
+A Segunda Roda traz os alunos da modalidade presencial para estudarem com os alunos Live, para que tenham o dia livre para o estágio, e traz também uma escolha importante para o aluno. Além de estudar no bloco Ciência da Computação, ele deve decidir se prefere focar em Full Stack e Automação, ou se estuda sobre Agentes de IA.
+
+Para entender melhor, veja a ilustração:
+
+## Horário das aulas
+
+O Bloco de Entrada e a Primeira Roda são oferecidos em horários variados, e a Segunda Roda agrega todos os alunos.
+
+### Modalidade Presencial:
+
+Bloco de Entrada
+
+Seis meses
+
+7:00 às 10:00 em aulas presenciais
+
+10:00 às 11:00 em monitoria e apoio à carreira
+
++5 a 8 horas de estudos por semana
+
+Primeira Roda
+
+Um ano
+
+7:00 às 10:40 em aulas presenciais
+
++5 a 8 horas de estudos por semana
+
+Segunda Roda
+
+Um ano
+
+20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
+Dia livre para estagiar e desenvolver Projetos de Extensão
+
+### Modalidade Live:
+
+Bloco de Entrada
+
+Seis meses
+
+Opção N1: 19:00 às 20:30 em aulas Live
+
+Opção N2: 20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
++aulas semanais de apoio à carreira
+
+Primeira Roda
+
+Um ano
+
+Opção N1: 19:00 às 20:30 em aulas Live
+
+Opção N2: 20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
+Segunda Roda
+
+Um ano
+
+20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
+## Informações adicionais
+
+### Nome do programa[21]
+
+Análise e Desenvolvimento de Sistemas
+
+### Código do programa
+
+ADS
+
+### Coordenador Pedagógico
+
+Prof. Dr. Fernando Guimarães Ferreira | fernando.gferreira@infnet.edu.br
+
+### Coordenador Pedagógico do Bloco de Entrada
+
+Prof. Me. Alan Alonso | alan.alonso@infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Ana Cristina Curi de Figueiredo
+
+### Coaching e Psicopedagogia
+
+Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Para todos os alunos: mínimo de 60 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+30
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+20
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+20
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+30
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+60
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+10
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+10
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+30
+
+### Atividades de Extensão
+
+Alunos que iniciaram a graduação a partir de 2023: mínimo de 280 horas
+Alunos que iniciaram a graduação em 2022 ou antes[22]: não são exigidas
+
+### Estágio
+
+Mínimo de 400 horas
+
+### Múltiplas ênfases
+
+O aluno que deseja fazer duas ênfases deve abrir um requerimento "E99 - Outras solicitações" até 60 dias antes de completar as disciplinas de sua ênfase original, ao invés de abrir o requerimento para colação de grau. Nesse caso, o aluno deverá concluir com sucesso o bloco adicional da segunda ênfase, adiando a colação de grau. O diploma de Análise e Desenvolvimento de Sistemas será emitido com a anotação das duas ênfases.
+
+🧩 Banco de Dados
+
+# Banco de Dados
+
+Esta página refere-se à matriz curricular de 2026. Alunos de anos anteriores podem ter planejamentos de estudo diferentes.
+
+## Organização curricular
+
+O aluno inicia seus estudos pelo bloco Fundamentos do Processamento de Dados, aprendendo lógica de programação com Python e acesso a bancos de dados usando SQL.
+
+Este primeiro semestre é chamado de Bloco de Entrada, e a classe pode ser compartilhada com graduações correlatas. Neste ponto, é apresentada a metodologia de ensino da instituição, chamada de CBL+PBL, que desenvolve as competências necessárias através de projetos práticos. O aluno também estuda em duas importantes disciplinas de apoio à carreira: Planejamento de Curso e Carreira e Fluência em IA.
+
+Durante os meses iniciais, é esperada forte dedicação do aluno, especialmente na resolução de extensas listas de exercícios, para que se solidifiquem os conceitos fundamentais da programação de software.
+
+Em seguida, o aluno ingressa na roda única de Banco de Dados, que possui quatro blocos: Engenharia de Dados: Big Data, Business Intelligence e Data Warehousing, Engenharia de Banco de Dados e Infraestrutura e Segurança de Dados. Esses blocos não têm pré-requisitos entre si, podendo ser feitos em qualquer ordem, permitindo ao aluno ampliar seu networking com os novos colegas que passam a estudar juntos. Os blocos são ofertados de acordo com o cronograma previsto pela faculdade.
+
+Para entender melhor, veja a ilustração:
+
+## Horário das aulas
+
+Bloco de Entrada
+
+Seis meses
+
+N2: 20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
++aulas semanais de apoio à carreira
+
+Roda única
+
+Dois anos
+
+N2: 20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
+## Informações adicionais
+
+### Nome do programa[23]
+
+Banco de Dados
+
+### Código do programa
+
+BDD
+
+### Coordenador Pedagógico
+
+Prof. Me. Robson Combat | robson.combat@infnet.edu.br
+
+### Coordenador Pedagógico do Bloco de Entrada
+
+Prof. Me. Alan Alonso | alan.alonso@infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Ana Cristina Curi de Figueiredo
+
+### Coaching e Psicopedagogia
+
+Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Mínimo de 60 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+30
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+20
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+20
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+30
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+60
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+10
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+10
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+30
+
+### Atividades de Extensão
+
+Graduação iniciada a partir de julho de 2025: mínimo de 350 horas
+
+Graduação iniciada entre janeiro de 2023 e junho de 2025[24]: mínimo de 280 horas
+Graduação iniciada até 2022[25]: não são exigidas
+
+### Estágio
+
+Mínimo de 400 horas
+
+🧩 Ciência de Dados
+
+# Ciência de Dados
+
+Esta página refere-se à matriz curricular de 2026. Alunos de anos anteriores podem ter um planejamento de estudos diferente.
+
+## Organização curricular
+
+O aluno inicia seus estudos pelo bloco Fundamentos do Processamento de Dados, aprendendo lógica de programação com Python e acesso a bancos de dados usando SQL.
+
+Este primeiro semestre é chamado de Bloco de Entrada, e a classe pode ser compartilhada com graduações correlatas. Neste ponto, é apresentada a metodologia de ensino da instituição, chamada de CBL+PBL, que desenvolve as competências necessárias através de projetos práticos. O aluno também estuda em duas importantes disciplinas de apoio à carreira: Planejamento de Curso e Carreira e Fluência em IA.
+
+Durante os meses iniciais, é esperada forte dedicação do aluno, especialmente na resolução de extensas listas de exercícios, para que se solidifiquem os conceitos fundamentais da programação de software.
+
+Em seguida, o aluno ingressa na roda única de Ciência de Dados, que possui quatro blocos: Inteligência Artificial e Machine Learning, Ciência de Dados Aplicada, Engenharia de Dados: Big Data e Análise e Qualidade de Dados. Esses blocos não têm pré-requisitos entre si, podendo ser feitos em qualquer ordem, permitindo ao aluno ampliar seu networking com os novos colegas que passam a estudar juntos. Os blocos são ofertados de acordo com o cronograma previsto pela faculdade.
+
+Para entender melhor, veja a ilustração:
+
+## Horário das aulas
+
+Bloco de Entrada
+
+Seis meses
+
+N2: 20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
++aulas semanais de apoio à carreira
+
+Roda única
+
+Dois anos
+
+N2: 20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
+## Informações adicionais
+
+### Nome do programa[26]
+
+Ciência de Dados
+
+### Código do programa
+
+CDD
+
+### Coordenador Pedagógico
+
+Prof. Dr. Fernando Guimarães Ferreira | fernando.gferreira@infnet.edu.br
+
+### Coordenador Pedagógico do Bloco de Entrada
+
+Prof. Me. Alan Alonso | alan.alonso@infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Ana Cristina Curi de Figueiredo
+
+### Coaching e Psicopedagogia
+
+Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Para todos os alunos: 60 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+30
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+20
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+20
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+30
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+60
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+10
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+10
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+30
+
+### Atividades de Extensão
+
+Alunos que iniciaram a graduação a partir de 2023: mínimo de 280 horas
+Graduação iniciada até 2022[27]: não são exigidas
+
+### Estágio
+
+Mínimo de 400 horas
+
+🧩 Cinema e Audiovisual
+
+# Cinema e Audiovisual
+
+Esta página refere-se à matriz curricular de 2026. Alunos de anos anteriores podem ter um planejamento de estudos diferente.
+
+## Organização curricular
+
+O aluno inicia a graduação pelo bloco de entrada Introdução à Indústria Criativa, que oferece uma visão integrada de áreas que se conectam no mercado criativo: design, animação, games e audiovisual.
+
+Neste primeiro bloco, os alunos também fazem disciplinas de apoio à carreira, com foco em empregabilidade e futuro. Os estudos incluem mentoria em carreiras na Indústria Criativa, estruturação do portfólio, uso eficaz do LinkedIn, autoconhecimento, autogestão e posicionamento no mercado de trabalho, além de noções práticas de Inteligência Artificial.
+
+Outros objetivos importantes do bloco inicial são o nivelamento do domínio dos softwares gráficos e a apresentação da metodologia de ensino da instituição.
+
+Em seguida, o aluno estuda em sete blocos específicos de sua graduação, que não possuem pré-requisitos entre si, e são ofertados de acordo com o cronograma previsto pela faculdade. Os blocos são:
+
+- Direção de Atores
+
+- Documentário
+
+- Ficção Seriada
+
+- Comercial Publicitário
+
+- Curta de ficção
+
+- Vídeo de Eventos/Reality
+
+- Videoclipe e Cinema Musical
+
+## Horário das aulas
+
+### Modalidade Presencial:
+
+Bloco de Entrada
+
+Seis meses
+
+14:00 às 16:00 em aulas presenciais
+
+16:30 às 18:00 em monitoria e apoio à carreira, presencialmente
+
++5 a 8 horas de estudos por semana
+
+Blocos de Cinema e Audiovisual
+
+3,5 anos
+
+9:50 às 11:50 em aulas presenciais
+
++5 a 8 horas de estudos por semana
+
+## Informações adicionais
+
+### Nome do programa[28]
+
+Cinema e Audiovisual
+
+### Código do programa
+
+CAV
+
+### Coordenador Pedagógico
+
+Prof. Me. Fernando Mamari | fernando.mamari@prof.infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Maria Eugenia Costa Sayão
+
+### Coaching e Psicopedagogia
+
+Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Alunos que iniciaram a graduação a partir de 2023[29]: mínimo de 80 horas
+
+Alunos que iniciaram a graduação em 2022 ou antes: mínimo de 140 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+40
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+60
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+60
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+30
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+40
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+24
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+20
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+30
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+30
+
+(j) Produção de filmes, vídeos, programas de TV ou de rádio, propagandas e sites, participação em teatro, cinema, projetos editoriais para revistas e editoras, diretamente relacionados a uma disciplina da graduação, que não se enquadre como estágio ou freelancer.
+
+1 hora para cada hora empreendida.
+
+60
+
+(k) Assistir peças de teatro e/ou sessões de cinema com relatório técnico (de 200 a 500 palavras) anexo fazendo um alinhamento entre o produto e o conteúdo do bloco atual.
+
+1 hora para cada hora empreendida mediante relatório anexo
+
+30
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+40
+
+### Atividades de Extensão
+
+Alunos que iniciaram a graduação partir de 2023: mínimo de 350 horas
+Alunos que iniciaram a graduação em 2022 ou antes[30]: não são exigidas
+
+### Estágio
+
+Mínimo de 400 horas
+
+🧩 Design de Animação
+
+# Design de Animação
+
+Esta página refere-se à matriz curricular de 2026. Alunos de anos anteriores podem ter um planejamento de estudos diferente.
+
+## Organização curricular
+
+O aluno inicia a graduação pelo bloco de entrada Introdução à Indústria Criativa, que oferece uma visão integrada de áreas que se conectam no mercado criativo: design, animação, games e audiovisual.
+
+Neste primeiro bloco, os alunos também fazem disciplinas de apoio à carreira, com foco em empregabilidade e futuro. Os estudos incluem mentoria em carreiras na Indústria Criativa, estruturação do portfólio, uso eficaz do LinkedIn, autoconhecimento, autogestão e posicionamento no mercado de trabalho, além de noções práticas de Inteligência Artificial.
+
+Outros objetivos importantes do bloco inicial são o nivelamento do domínio dos softwares gráficos e a apresentação da metodologia de ensino da instituição.
+
+Em seguida, o aluno estuda em sete blocos específicos de sua graduação, que não possuem pré-requisitos entre si, e são ofertados de acordo com o cronograma previsto pela faculdade. Os blocos são:
+
+- Animações em Tempo Real
+
+- Pós-produção e Efeitos Visuais (Vfx)
+
+- Motion Graphics
+
+- Curta de Animação 3D
+
+- Personagem 3D: Escultura, Modelagem e Animação
+
+- Série em Animação 2D
+
+- Comercial Publicitário em Animação
+
+## Horário das aulas
+
+### Modalidade Presencial:
+
+Bloco de Entrada
+
+Seis meses
+
+14:00 às 16:00 em aulas presenciais
+
+16:30 às 18:00 em monitoria e apoio à carreira, presencialmente
+
++5 a 8 horas de estudos por semana
+
+Blocos de Design de Animação
+
+3,5 anos
+
+Opção M1: 9:50 às 11:50 em aulas presenciais
+
+Opção M2: 9:50 às 11:50 em aulas presenciais
+
+Opção T1: 14:00 às 16:00 em aulas presenciais
+
++5 a 8 horas de estudos por semana
+
+## Informações adicionais
+
+### Nome do programa[31]
+
+Design de Animação
+
+### Código do programa
+
+DDA
+
+### Coordenador Pedagógico
+
+Prof. Me. Alberto Moura | alberto.moura@prof.infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Maria Eugenia Costa Sayão
+
+### Coaching e Psicopedagogia
+
+Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Para alunos que iniciaram a partir de 2023[32]: mínimo de 80 horas
+
+Para alunos que iniciaram até 2022: mínimo de 140 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+40
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+60
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+60
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+30
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+40
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+24
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+20
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+30
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+30
+
+(j) Produção de filmes, vídeos, programas de TV ou de rádio, propagandas e sites, participação em teatro, cinema, projetos editoriais para revistas e editoras, diretamente relacionados a uma disciplina da graduação, que não se enquadre como estágio ou freelancer.
+
+1 hora para cada hora empreendida.
+
+60
+
+(k) Assistir peças de teatro e/ou sessões de cinema com relatório técnico (de 200 a 500 palavras) anexo fazendo um alinhamento entre o produto e o conteúdo do bloco atual.
+
+1 hora para cada hora empreendida mediante relatório anexo
+
+30
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+40
+
+### Atividades de Extensão
+
+Alunos que iniciaram a graduação partir de 2023: mínimo de 350 horas
+Para alunos que iniciaram em 2022 ou antes[33]: não são exigidas
+
+### Estágio
+
+Mínimo de 400 horas
+
+🧩 Design de Games
+
+# Design de Games
+
+Esta página refere-se à matriz curricular de 2026. Alunos de anos anteriores podem ter um planejamento de estudos diferente.
+
+## Organização curricular
+
+O aluno inicia a graduação pelo bloco de entrada Introdução à Indústria Criativa, que oferece uma visão integrada de áreas que se conectam no mercado criativo: design, animação, games e audiovisual.
+
+Neste primeiro bloco, os alunos também fazem disciplinas de apoio à carreira, com foco em empregabilidade e futuro. Os estudos incluem mentoria em carreiras na Indústria Criativa, estruturação do portfólio, uso eficaz do LinkedIn, autoconhecimento, autogestão e posicionamento no mercado de trabalho, além de noções práticas de Inteligência Artificial.
+
+Outros objetivos importantes do bloco inicial são o nivelamento do domínio dos softwares gráficos e a apresentação da metodologia de ensino da instituição.
+
+Em seguida, o aluno estuda em sete blocos específicos de sua graduação, que não possuem pré-requisitos entre si, e são ofertados de acordo com o cronograma previsto pela faculdade. Os blocos são:
+
+- Design de Jogos 3D FPS
+
+- Concept Art para Animação em Jogos
+
+- Jogos RPG
+
+- Advergames
+
+- Adventure Games e Narrativas Interativas
+
+- Jogos Casuais para Mobile
+
+- Jogos Educacionais e Gamificação
+
+## Horário das aulas
+
+### Modalidade Presencial:
+
+Bloco de Entrada
+
+Seis meses
+
+14:00 às 16:00 em aulas presenciais
+
+16:30 às 18:00 em instrutoria, apoio à carreira e aula extra, presencialmente
+
++5 a 8 horas de estudos por semana
+
+Blocos de Design de Games
+
+3,5 anos
+
+17:00 às 19:30 em aulas presenciais
+
++5 a 8 horas de estudos por semana
+
+## Informações adicionais
+
+Nome do programa[34]
+
+Design de Games
+
+### Código do programa
+
+DDG
+
+### Coordenador Pedagógico
+
+Prof. Cleber Maia | cleber.maia@infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Maria Eugenia Costa Sayão
+
+### Coaching e Psicopedagogia
+
+Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Alunos que iniciaram a graduação a partir de 2023[35]: mínimo de 140 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+40
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+60
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+60
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+30
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+40
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+24
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+20
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+30
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+30
+
+(j) Produção de filmes, vídeos, programas de TV ou de rádio, propagandas e sites, participação em teatro, cinema, projetos editoriais para revistas e editoras, diretamente relacionados a uma disciplina da graduação, que não se enquadre como estágio ou freelancer.
+
+1 hora para cada hora empreendida.
+
+60
+
+(k) Assistir peças de teatro e/ou sessões de cinema com relatório técnico (de 200 a 500 palavras) anexo fazendo um alinhamento entre o produto e o conteúdo do bloco atual.
+
+1 hora para cada hora empreendida mediante relatório anexo
+
+30
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+40
+
+### Atividades de Extensão
+
+Alunos que iniciaram a graduação partir de 2023: mínimo de 380 horas
+Alunos que iniciaram a graduação em 2022 ou antes[36]: não são exigidas
+
+### Estágio
+
+Mínimo de 400 horas
+
+🧩 Design Gráfico
+
+# Design Gráfico
+
+Esta página refere-se à matriz curricular de 2026. Alunos de anos anteriores podem ter um planejamento de estudos diferente.
+
+## Organização curricular
+
+O aluno inicia a graduação pelo bloco de entrada Introdução à Indústria Criativa, que oferece uma visão integrada de áreas que se conectam no mercado criativo: design, animação, games e audiovisual.
+
+Neste primeiro bloco, os alunos também fazem disciplinas de apoio à carreira, com foco em empregabilidade e futuro. Os estudos incluem mentoria em carreiras na Indústria Criativa, estruturação do portfólio, uso eficaz do LinkedIn, autoconhecimento, autogestão e posicionamento no mercado de trabalho, além de noções práticas de Inteligência Artificial.
+
+Outros objetivos importantes do bloco inicial são o nivelamento do domínio dos softwares gráficos e a apresentação da metodologia de ensino da instituição.
+
+Em seguida, o aluno ingressa na primeira roda de Design Gráfico, que possui quatro blocos na modalidade Live e sete na modalidade Presencial. Esses blocos não possuem pré-requisitos entre si. Os blocos são:
+
+Graduação Live:
+
+- Web Design
+
+- Design Editorial
+
+- Identidade Visual
+
+- UX/UI Design
+
+Bacharelado Presencial:
+
+- Webdesign
+
+- Motion Graphics
+
+- Direção de Arte para Mídias Sociais
+
+- Design Editorial
+
+- Expressões Artísticas e Fotografia
+
+- UX/UI Design
+
+- Identidade Visual
+
+## Horário das aulas
+
+### Graduação Live:
+
+Bloco de Entrada
+
+Seis meses
+
+20:30 às 22:00 em aulas Live
+
+19:30 às 20:30 em instrutoria e apoio à carreira Live.
+
++cerca de 12 horas de estudos por semana
+
+Blocos de Design Gráfico
+
+2 anos
+
+20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
+### Bacharelado Presencial:
+
+Bloco de Entrada
+
+Seis meses
+
+14:00 às 16:00 em aulas presenciais
+
+16:30 às 18:00 em instrutoria e apoio à carreira, presencialmente
+
++5 a 8 horas de estudos por semana
+
+Blocos de Design Gráfico
+
+3,5 anos
+
+Opção M1: 07:30 às 09:30
+
+Opção M2: 09:50 às 11:50
+
++5 a 8 horas de estudos por semana
+
+## Informações adicionais
+
+### Nome do programa[37]
+
+Design Gráfico
+
+### Código do programa
+
+Graduação Live - DGR
+
+Bacharelado Presencial - DGD
+
+### Coordenador Pedagógico
+
+Prof. Me. Alexander Francisco | alexander.francisco@infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Maria Eugenia Costa Sayão
+
+### Coaching e Psicopedagogia
+
+Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Para alunos da graduação Live: 60 horas
+Para alunos do bacharelado Presencial: 80 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+30
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+20
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+20
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+10
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+20
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+10
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+30
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+10
+
+(j) Produção de filmes, vídeos, programas de TV ou de rádio, propagandas e sites, participação em teatro, cinema, projetos editoriais para revistas e editoras, diretamente relacionados a uma disciplina da graduação, que não se enquadre como estágio ou freelancer.
+
+1 hora para cada hora empreendida.
+
+20
+
+(k) Assistir peças de teatro e/ou sessões de cinema com relatório técnico (de 200 a 500 palavras) anexo fazendo um alinhamento entre o produto e o conteúdo do bloco atual.
+
+1 hora para cada hora empreendida mediante relatório anexo
+
+30
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+30
+
+### Atividades de Extensão
+
+Para alunos da graduação Live: 280 horas
+Para alunos da graduação Presencial: 310 horas
+Para alunos que iniciaram em 2022 ou antes[38]: não são exigidas
+
+### Estágio
+
+Mínimo de 400 horas
+
+🧩 Engenharia de Computação
+
+# Engenharia de Computação
+
+Esta página refere-se à matriz curricular de 2026. Alunos matriculados em 2025 ou antes devem consultar seus planejamentos de estudos.
+
+## Organização curricular
+
+O aluno inicia seus estudos pelo bloco Fundamentos do Processamento de Dados, aprendendo lógica de programação com Python e acesso a bancos de dados usando SQL.
+
+Este primeiro semestre é chamado de Bloco de Entrada, e a classe pode ser compartilhada com graduações correlatas. Neste ponto, é apresentada a metodologia de ensino da instituição, chamada de CBL+PBL, que desenvolve as competências necessárias através de projetos práticos. O aluno também estuda em duas importantes disciplinas de apoio à carreira: Planejamento de Curso e Carreira e Fluência em IA.
+
+Durante os meses iniciais, é esperada forte dedicação do aluno, especialmente na resolução de extensas listas de exercícios, para que se solidifiquem os conceitos fundamentais da programação de software.
+
+Em seguida, o aluno ingressa na Primeira Roda de Engenharia de Computação, que possui dois blocos: Conectividade e Desenvolvimento Front-end e Desenvolvimento Back-End. Esses blocos não têm pré-requisitos entre si, podendo ser feitos em qualquer ordem, permitindo ao aluno ampliar seu networking com os novos colegas que passam a estudar juntos. A partir desta Roda, todos os colegas são alunos de Engenharia.
+
+Em seguida, o aluno sem pendências segue para a Segunda Roda, com três blocos sem pré-requisitos entre si e que também podem ser feitos em qualquer ordem: Ciência da Computação, Análise e Segurança de Agentes de IA e Engenharia Segura de Software Escaláveis.
+
+O aluno continua seus estudos na Terceira Roda, específica da Engenharia de Computação, composta por quatro blocos que podem ser feitos em qualquer ordem: Sistemas Computacionais Avançados, Sistemas Digitais Embarcados, Inteligência Artificial e Machine Learning e Sistemas Robóticos.
+
+Para entender melhor, veja a ilustração:
+
+## Horário das aulas
+
+### Modalidade Presencial:
+
+Bloco de Entrada
+
+Seis meses
+
+7:00 às 10:00 em aulas presenciais
+
+10:00 às 11:00 em monitoria e apoio à carreira
+
++5 a 8 horas de estudos por semana
+
++aulas semanais de apoio à carreira
+
+Primeira Roda
+
+Um ano
+
+7:00 às 9:30 em aulas presenciais
+
++5 a 8 horas de estudos por semana
+
+Segunda Roda:
+
+1,5 anos
+
+7:00 às 9:30 em aulas presenciais
+
++5 a 8 horas de estudos por semana
+
+Terceira Roda
+
+Dois anos
+
+7:00 às 9:30 em aulas presenciais
+
++5 a 8 horas de estudos por semana
+
+## Informações adicionais
+
+### Nome do programa[39]
+
+Engenharia de Computação
+
+### Código do programa
+
+EDC
+
+### Coordenador Pedagógico
+
+Prof. Dr. Fernando Guimarães Ferreira | fernando.gferreira@infnet.edu.br
+
+### Coordenador Pedagógico do Bloco de Entrada
+
+Prof. Me. Alan Alonso | alan.alonso@infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Ana Cristina Curi de Figueiredo
+
+### Coaching e Psicopedagogia
+
+Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Alunos que iniciaram a graduação a partir de 2023[40]: mínimo de 140 horas
+
+Alunos que iniciaram a graduação em 2022 ou antes: mínimo de 300 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+60
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+60
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+60
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+80
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+60
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+100
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+60
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+100
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+80
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+60
+
+### Atividades de Extensão
+
+Alunos que iniciaram a graduação a partir de 2023: 470 horas
+Alunos que iniciaram a graduação em 2022 ou antes[41]: não são exigidas
+
+### Estágio
+
+Mínimo de 400 horas
+
+### Bidiplomação com Engenharia de Software
+
+O aluno que completa a graduação em Engenharia de Computação e deseja também o diploma em Engenharia de Software deve cursar os blocos de Engenharia de Software que já não tenha concluído, considerando sempre a matriz curricular em vigor no momento da solicitação. Em geral, o aluno consegue obter os dois diplomas em pouco mais de seis anos.
+
+Engenharia de Software é a única bidiplomação possível para este curso. Para solicitá-la, o aluno deve abrir um requerimento "B05 - Solicitação de aproveitamento de estudo ou competências" a partir de 60 dias antes de completar todas as disciplinas, e no máximo em doze meses após o término. Os programas FIES e ProUni cobrem apenas uma graduação.
+
+🧩 Engenharia de Software
+
+# Engenharia de Software
+
+Esta página refere-se à matriz curricular de 2026. Alunos matriculados em 2025 ou antes devem consultar seus planejamentos de estudos.
+
+## Organização curricular
+
+O aluno inicia seus estudos pelo bloco Fundamentos do Processamento de Dados, aprendendo lógica de programação com Python e acesso a bancos de dados usando SQL.
+
+Este primeiro semestre é chamado de Bloco de Entrada, e a classe pode ser compartilhada com graduações correlatas. Neste ponto, é apresentada a metodologia de ensino da instituição, chamada de CBL+PBL, que desenvolve as competências necessárias através de projetos práticos. O aluno também estuda em duas importantes disciplinas de apoio à carreira: Planejamento de Curso e Carreira e Fluência em IA.
+
+Durante os meses iniciais, é esperada forte dedicação do aluno, especialmente na resolução de extensas listas de exercícios, para que se solidifiquem os conceitos fundamentais da programação de software.
+
+Após o bloco de entrada, o aluno ingressa na Primeira Roda de Engenharia de Software, com dois blocos, sem pré-requisitos entre si e que podem ser feitos em qualquer ordem. A partir desta Roda, todos os colegas são alunos de Engenharia.
+
+Em seguida, o aluno sem pendências segue para a Segunda Roda, com três blocos sem pré-requisitos entre si e que também podem ser feitos em qualquer ordem: Ciência da Computação, Análise e Segurança de Agentes de IA e Engenharia Segura de Software Escaláveis.
+
+Quando completados com sucesso os blocos da Segunda Roda, o aluno escolhe o tema de sua terceira roda. Para alunos que iniciaram suas graduações em 2026, os temas previstos são:
+
+- Engenharia de Software com ênfase em Cloud Computing
+
+- Engenharia de Software com ênfase em Cibersegurança
+
+- Engenharia de Software com ênfase em Engenharia de Dados
+
+- Engenharia de Software com ênfase em Sistemas Complexos
+
+- Engenharia de Software com ênfase em Inteligência Artificial
+
+Para entender melhor, veja a ilustração:
+
+## Horário das aulas
+
+### Modalidade Presencial:
+
+Bloco de Entrada
+
+Seis meses
+
+7:00 às 10:00 em aulas presenciais
+
+10:00 às 11:00 em monitoria e apoio à carreira
+
++5 a 8 horas de estudos por semana
+
++aulas semanais de apoio à carreira
+
+Primeira Roda
+
+Um ano
+
+7:00 às 9:30 em aulas presenciais
+
++5 a 8 horas de estudos por semana
+
+Segunda Roda:
+
+1,5 anos
+
+7:00 às 9:30 em aulas presenciais
+
++5 a 8 horas de estudos por semana
+
+Terceira Roda
+
+Um ano
+
+20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
+Dia livre para estagiar e desenvolver Projetos de Extensão
+
+### Modalidade Live:
+
+Bloco de Entrada
+
+Seis meses
+
+Opção N1: 19:00 às 20:30 em aulas Live
+
+Opção N2: 20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
+Primeira Roda
+
+Um ano
+
+Opção N1: 19:00 às 20:30 em aulas Live
+
+Opção N2: 20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
+Segunda Roda:
+
+1,5 anos
+
+Opção N1: 19:00 às 20:30 em aulas Live
+
+Opção N2: 20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
+Terceira Roda
+
+Um ano
+
+20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
+## Informações adicionais
+
+### Nome do programa[42]
+
+Engenharia de Software
+
+### Código do programa
+
+EDS
+
+### Coordenador Pedagógico
+
+Prof. Dr. Fernando Guimarães Ferreira | fernando.gferreira@infnet.edu.br
+
+### Coordenador Pedagógico do Bloco de Entrada
+
+Prof. Me. Alan Alonso | alan.alonso@infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Ana Cristina Curi de Figueiredo
+
+### Coaching e Psicopedagogia
+
+Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Alunos que iniciaram a graduação a partir de 2023[43]: mínimo de 140 horas
+
+Alunos que iniciaram a graduação em 2022 ou antes: mínimo de 240 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+50
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+50
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+50
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+60
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+50
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+100
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+60
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+80
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+60
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+50
+
+### Atividades de Extensão
+
+Alunos que iniciaram a graduação a partir de 2023: 400 horas
+Alunos que iniciaram a graduação em 2022 ou antes[44]: não são exigidas
+
+### Estágio
+
+Mínimo de 400 horas
+
+### Bidiplomação com Engenharia de Computação
+
+O aluno que completa a graduação em Engenharia de Software presencial e deseja também o diploma em Engenharia de Computação deve cursar os blocos de Engenharia de Computação que já não tenha concluído, considerando sempre a matriz curricular em vigor no momento da solicitação. Em geral, o aluno consegue obter os dois diplomas em pouco mais de seis anos.
+
+Engenharia de Computação é a única bidiplomação possível para este curso. Para solicitá-la, o aluno deve abrir um requerimento "B05 - Solicitação de aproveitamento de estudo ou competências" a partir de 60 dias antes de completar todas as disciplinas, e no máximo em doze meses após o término. Os programas FIES e ProUni cobrem apenas uma graduação.
+
+### Múltiplas ênfases
+
+O aluno que deseja fazer duas ênfases deve abrir um requerimento "E99 - Outras solicitações" até 60 dias antes de completar as disciplinas de sua ênfase original, ao invés de abrir o requerimento para colação de grau. Nesse caso, o aluno deverá concluir com sucesso os blocos adicionais da segunda ênfase, adiando a colação de grau. O diploma de Engenharia de Software será emitido com a anotação das duas ênfases.
+
+🧩 Jogos Digitais
+
+# Jogos Digitais
+
+Esta página refere-se à matriz curricular de 2026. Alunos de anos anteriores podem ter um planejamento de estudos diferente.
+
+## Organização curricular
+
+O aluno inicia a graduação pelo bloco de entrada Introdução à Indústria Criativa, que oferece uma visão integrada de áreas que se conectam no mercado criativo: design, animação, games e audiovisual.
+
+Neste primeiro bloco, os alunos também fazem disciplinas de apoio à carreira, com foco em empregabilidade e futuro. Os estudos incluem mentoria em carreiras na Indústria Criativa, estruturação do portfólio, uso eficaz do LinkedIn, autoconhecimento, autogestão e posicionamento no mercado de trabalho, além de noções práticas de Inteligência Artificial.
+
+Outros objetivos importantes do bloco inicial são o nivelamento do domínio dos softwares gráficos e a apresentação da metodologia de ensino da instituição.
+
+Em seguida, o aluno estuda em quatro blocos específicos de sua graduação, que não possuem pré-requisitos entre si, e são ofertados de acordo com o cronograma previsto pela faculdade. Os blocos são:
+
+- Jogos RPG
+
+- Jogos Educacionais e Gamificação
+
+- Design de Jogos 3D FPS
+
+- Adventure Games e Narrativas Interativas
+
+## Horário das aulas
+
+### Modalidade Live:
+
+Bloco de Entrada
+
+Seis meses
+
+20:30 às 22:00 em aulas Live
+
+19:30 às 20:30 em instrutoria, apoio à carreira e aula extra Live.
+
++cerca de 12 horas de estudos por semana
+
+Blocos de Jogos Digitais
+
+2 anos
+
+20:30 às 22:00 em aulas live
+
++cerca de 12 horas de estudos por semana
+
+## Informações adicionais
+
+### Nome do programa[45]
+
+Jogos Digitais
+
+### Código do programa
+
+JDG
+
+### Coordenador Pedagógico
+
+Prof. Cleber Maia | cleber.maia@infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Maria Eugenia Costa Sayão
+
+### Coaching e Psicopedagogia
+
+Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Para todos os alunos: 60 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+30
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+20
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+20
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+10
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+20
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+10
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+30
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+10
+
+(j) Produção de filmes, vídeos, programas de TV ou de rádio, propagandas e sites, participação em teatro, cinema, projetos editoriais para revistas e editoras, diretamente relacionados a uma disciplina da graduação, que não se enquadre como estágio ou freelancer.
+
+1 hora para cada hora empreendida.
+
+20
+
+(k) Assistir peças de teatro e/ou sessões de cinema com relatório técnico (de 200 a 500 palavras) anexo fazendo um alinhamento entre o produto e o conteúdo do bloco atual.
+
+1 hora para cada hora empreendida mediante relatório anexo
+
+30
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+30
+
+### Atividades de Extensão
+
+Para todos os alunos: 300 horas
+Para alunos que iniciaram em 2022 ou antes[46]: não são exigidas
+
+### Estágio
+
+Mínimo de 400 horas
+
+🧩 Marketing Digital
+
+# Marketing Digital
+
+Esta página refere-se à matriz curricular de 2026. Alunos de anos anteriores podem ter um planejamento de estudos diferente.
+
+## Organização curricular
+
+Os blocos da Graduação em Marketing oferecem uma visão integrada das principais estratégias, ferramentas e inovações do mercado de Marketing Digital. Durante o primeiro semestre de seu curso, o aluno cursa disciplinas de apoio à carreira, que tratam desde o posicionamento estratégico no mercado de trabalho e o uso eficaz do LinkedIn até noções práticas de Inteligência Artificial aplicadas aos negócios.
+
+Os temas da graduação são organizados em quatro blocos específicos da área, que não possuem pré-requisitos entre si e são ofertados de acordo com o cronograma previsto pela faculdade. Os blocos são:
+
+- Pesquisa e Desenvolvimento de Produtos
+
+- Marketing de Conteúdo
+
+- Gestão de Campanhas de Marketing Digital
+
+- Gestão Estratégica de Marketing e Varejo
+
+## Horário das aulas
+
+### Modalidade Live:
+
+Blocos de Marketing Digital
+
+2 anos
+
+20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
+No primeiro semestre de aulas do aluno:
+
+19:30 às 20:30 em apoio à carreira, modalidade Live
+
+## Informações adicionais
+
+### Nome do programa[47]
+
+Marketing Digital
+
+### Código do programa
+
+MKT
+
+### Coordenador Pedagógico
+
+Prof. Me. Lucas Andrade de Souza | lucas.souza@prof.infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Maria Eugenia Costa Sayão
+
+### Coaching e Psicopedagogia
+
+Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Para todos os alunos: 60 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+20
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+20
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+30
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+30
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+30
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+20
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+20
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+24
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+24
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+20
+
+### Atividades de Extensão
+
+Para todos os alunos: 250 horas
+Para alunos que iniciaram em 2022 ou antes[48]: não são exigidas
+
+### Estágio
+
+Mínimo de 400 horas
+
+🧩 Redes de Computadores
+
+# Redes de Computadores
+
+Esta página refere-se à matriz curricular de 2026. Alunos de anos anteriores podem ter um planejamento de estudos diferente.
+
+## Organização curricular
+
+O aluno inicia seus estudos pelo bloco Arquitetura de Computadores, Redes e Cibersegurança para dominar os fundamentos de hardware, infraestrutura de comunicação e proteção de dados corporativos.
+
+Este primeiro semestre é chamado de Bloco de Entrada, e a classe pode ser compartilhada com graduações correlatas. Neste ponto, é apresentada a metodologia de ensino da instituição, chamada de CBL+PBL, que desenvolve as competências necessárias através de projetos práticos. O aluno também estuda em duas importantes disciplinas de apoio à carreira: Planejamento de Curso e Carreira e Fluência em IA.
+
+Em seguida, o aluno ingressa na Roda Única de Redes de Computadores, que possui quatro blocos: Infraestrutura e Segurança de Redes, Cloud Computing e Conteinerização, Normas e Controles para Segurança dos Dados e Arquitetura e Infraestrutura Microsoft. Esses blocos não têm pré-requisitos entre si, podendo ser feitos em qualquer ordem, permitindo ao aluno ampliar seu networking com os novos colegas que passam a estudar juntos. Os blocos são ofertados de acordo com o cronograma previsto pela faculdade.
+
+Para entender melhor, veja a ilustração:
+
+## Horário das aulas
+
+Bloco de Entrada
+
+Seis meses
+
+N2: 20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
++aulas semanais de apoio à carreira
+
+Roda Única
+
+Dois anos
+
+N2: 20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
+## Informações adicionais
+
+### Nome do programa[49]
+
+Redes de Computadores
+
+### Código do programa
+
+RDC
+
+### Coordenador Pedagógico
+
+Prof. Dr. Paulo Tostes | paulo.tostes@infnet.edu.br
+
+### Coordenador Pedagógico do Bloco de Entrada
+
+Prof. Me. Alan Alonso | alan.alonso@infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Ana Cristina Curi de Figueiredo
+
+### Coaching e Psicopedagogia
+
+Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Mínimo de 60 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+30
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+20
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+20
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+30
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+60
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+10
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+10
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+30
+
+### Atividades de Extensão
+
+Alunos que iniciaram a graduação a partir de 2023: mínimo de 280 horas
+Graduação iniciada até 2022[50]: não são exigidas
+
+### Estágio
+
+Mínimo de 400 horas
+
+🧩 Segurança da Informação e Defesa Cibernética
+
+# Segurança da Informação e Defesa Cibernética
+
+## Organização curricular
+
+O aluno inicia seus estudos pelo bloco Arquitetura de Computadores, Redes e Cibersegurança para dominar os fundamentos de hardware, infraestrutura de comunicação e proteção de dados corporativos.
+
+Este primeiro semestre é chamado de Bloco de Entrada, e a classe pode ser compartilhada com graduações correlatas. Neste ponto, é apresentada a metodologia de ensino da instituição, chamada de CBL+PBL, que desenvolve as competências necessárias através de projetos práticos. O aluno também estuda em duas importantes disciplinas de apoio à carreira: Planejamento de Curso e Carreira e Fluência em IA.
+
+Em seguida, o aluno ingressa na Roda Única de Segurança da Informação e Defesa Cibernética, que possui quatro blocos: Segurança Defensiva com SOC e Blue Team, Segurança Ofensiva com Red Team, Purple Team: Segurança de Aplicações e Computação Forense e Normas e Controles para Segurança dos Dados. Esses blocos não têm pré-requisitos entre si, podendo ser feitos em qualquer ordem, permitindo ao aluno ampliar seu networking com os novos colegas que passam a estudar juntos. Os blocos são ofertados de acordo com o cronograma previsto pela faculdade.
+
+Para entender melhor, veja a ilustração:
+
+## Horário das aulas
+
+Bloco de Entrada
+
+Seis meses
+
+Opção N1: 19:00 às 20:30 em aulas Live | Calendário 2[51]
+
+Opção N2: 20:30 às 22:00 em aulas Live | Calendário 1[52]
+
++cerca de 12 horas de estudos por semana
+
++aulas semanais de apoio à carreira
+
+Roda Única
+
+Dois anos
+
+Opção N1: 19:00 às 20:30 em aulas Live | Calendário 2
+
+Opção N2: 20:30 às 22:00 em aulas Live | Calendário 1
+
++cerca de 12 horas de estudos por semana
+
+## Informações adicionais
+
+### Nome do programa[53]
+
+Segurança da Informação e Defesa Cibernética
+
+### Código do programa
+
+SDC
+
+### Coordenador Pedagógico
+
+Prof. Dr. Paulo Tostes | paulo.tostes@infnet.edu.br
+
+### Coordenador Pedagógico do Bloco de Entrada
+
+Prof. Me. Alan Alonso | alan.alonso@infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Ana Cristina Curi de Figueiredo
+
+### Coaching e Psicopedagogia
+
+### Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Mínimo de 60 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+30
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+20
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+20
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+30
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+60
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+10
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+10
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+30
+
+### Atividades de Extensão
+
+Mínimo de 280 horas
+
+### Estágio
+
+Mínimo de 400 horas
+
+🧩 Tecnologia da Informação
+
+# Tecnologia da Informação
+
+Esta página refere-se à matriz curricular de 2026. Alunos de anos anteriores podem ter um planejamento de estudos diferente.
+
+## Organização curricular
+
+O aluno inicia seus estudos pelo bloco Arquitetura de Computadores, Redes e Cibersegurança para dominar os fundamentos de hardware, infraestrutura de comunicação e proteção de dados corporativos.
+
+Este primeiro semestre é chamado de Bloco de Entrada, e a classe pode ser compartilhada com graduações correlatas. Neste ponto, é apresentada a metodologia de ensino da instituição, chamada de CBL+PBL, que desenvolve as competências necessárias através de projetos práticos. O aluno também estuda em duas importantes disciplinas de apoio à carreira: Planejamento de Curso e Carreira e Fluência em IA.
+
+Em seguida, o aluno ingressa na Roda Única de Tecnologia da Informação, que possui quatro blocos: Fundamentos do Processamento de Dados, Fundamentos do Desenvolvimento de Software, Cloud Computing e Conteinerização e Arquitetura e Infraestrutura Microsoft. Esses blocos não têm pré-requisitos entre si, podendo ser feitos em qualquer ordem, permitindo ao aluno ampliar seu networking com os novos colegas que passam a estudar juntos. Os blocos são ofertados de acordo com o cronograma previsto pela faculdade.
+
+Para entender melhor, veja a ilustração:
+
+## Horário das aulas
+
+Bloco de Entrada
+
+Seis meses
+
+N2: 20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
++aulas semanais de apoio à carreira
+
+Roda Única
+
+Dois anos
+
+N2: 20:30 às 22:00 em aulas Live
+
++cerca de 12 horas de estudos por semana
+
+## Informações adicionais
+
+### Nome do programa[54]
+
+Tecnologia da Informação
+
+### Código do programa
+
+TDI
+
+### Coordenador Pedagógico
+
+Prof. Dr. Paulo Tostes | paulo.tostes@infnet.edu.br
+
+### Coordenador Pedagógico do Bloco de Entrada
+
+Prof. Me. Alan Alonso | alan.alonso@infnet.edu.br
+
+### Gerente Acadêmica
+
+Prof. Ana Cristina Curi de Figueiredo
+
+### Coaching e Psicopedagogia
+
+Psicóloga Luana Zanelli
+
+### Atividades Complementares
+
+Mínimo de 60 horas
+
+Tipo de atividade:
+
+Regra de concessão:
+
+Limite de horas:
+
+(a) Participação em palestras, encontros, debates, visitas técnicas e eventos científicos. É preciso informar, no relatório de solicitação de horas, qual a relação entre o evento e algum dos blocos de sua graduação.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+30
+
+(b) Participação em projetos sociais ou atividades comunitárias que cooperem com o desenvolvimento de competências correlatas ao programa. É preciso informar, no relatório de solicitação de horas, qual a relação entre a atividade e a competência desenvolvida.
+
+1 hora para cada hora de atividade, limitadas a 5 horas por dia
+
+20
+
+(c) Participação em projetos ou desenvolvimento de iniciativas próprias de combate à discriminação e ao sexismo e valorização da mulher, do negro e de minorias em geral no mercado de trabalho, aplicando os conhecimentos adquiridos no curso.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(d) Participação em hackatons ou maratonas criativas.
+
+10 horas por dia de evento, +10 horas se for da equipe vencedora.
+
+20
+
+(e) Cursos de extensão, cursos livres, aulas de nivelamento, aperfeiçoamento ou preparação para certificações ou exames variados, presenciais ou à distância.
+
+1 hora para cada hora de curso.
+
+30
+
+(f) Certificações oficiais, feitas em centros de exames Prometric, VUE ou similares, diretamente relacionadas à área do curso. Não são aceitas certificações ou provas online sem proctoring (fiscalização).
+
+20 horas por certificação oficial obtida.
+
+60
+
+(g) Publicação de artigo científico em revista especializada, apresentação de resumo, cartaz, palestra ou workshop em congresso. Ministrar palestra em instituição de ensino.
+
+10 horas
+
+10
+
+(h) Atuação em qualquer projeto para o Instituto Infnet, incluindo monitoria.
+
+1 hora para cada hora investida no projeto.
+
+20
+
+(i) Assistir (e ser aprovado) em cursos de língua estrangeira, presenciais ou a distância.
+
+1 hora para cada 3 horas de curso.
+
+10
+
+(l) Extraordinária, não prevista nos itens acima.
+
+1 hora para cada hora de atividade
+
+30
+
+### Atividades de Extensão
+
+Alunos que iniciaram a graduação a partir de 2023: mínimo de 280 horas
+Graduação iniciada até 2022[55]: não são exigidas
+
+### Estágio
+
+Mínimo de 400 horas
+
+🔈 Anexo 2: Datas e prazos
+
+# Datas de Reavaliação de Disciplina
+
+## 1º semestre de 2026
+
+- Requerimento: 26 de janeiro a 31 de janeiro de 2026.
+
+- Execução: 16 de março a 21 de maio de 2026.
+
+- Entrega do Assessment: em data e horário acordado com o professor, na última semana de execução.
+
+- Lançamento do resultado no Moodle até 13 de junho de 2026.
+
+## 2º semestre de 2026
+
+- Requerimento: 20 de julho a 25 de julho de 2026.
+
+- Execução: 8 de setembro a 13 de novembro de 2026.
+
+- Entrega do Assessment: em data e horário acordado com o professor, na última semana de execução.
+
+- Lançamento do resultado no Moodle até 05 de dezembro de 2026.
+
+## 1º semestre de 2027
+
+- Requerimento: 25 de janeiro a 30 de janeiro de 2027.
+
+- Execução: 17 de março à 21 de maio de 2027.
+
+- Entrega do Assessment: em data e horário acordado com o professor, na última semana de execução.
+
+- Lançamento do resultado no Moodle até 12 de junho de 2027.
+
+## 2º semestre de 2027
+
+- Requerimento: 19 de julho a 24 de julho de 2027.
+
+- Execução: 08 de setembro à 12 de novembro de 2027.
+
+- Entrega do Assessment: em data e horário acordado com o professor, na última semana de execução.
+
+- Lançamento do resultado no Moodle até 04 de dezembro de 2027.
+
+# Datas para evento de apresentação de Portfólio de Projetos
+
+## 2º semestre de 2026
+
+- 6 de novembro de 2026, 16h às 20h, com inscrições até 15 de outubro de 2026.
+
+## 1º semestre de 2027
+
+- 7 de maio de 2027, 16h às 20h, com inscrições até 16 de abril de 2027.
+
+# Datas para Colações de Grau
+
+## 2º semestre de 2026
+
+- Faculdade Infnet: 2/setembro (Live) e 16/setembro (Presencial)
+
+- Faculdade ECDD: 10/setembro (Presencial) e 24/setembro (Live)
+
+## 1º semestre de 2027
+
+- Faculdade Infnet: 10/março (Live) e 24/março (Presencial)
+
+- Faculdade ECDD: 18/março (Presencial) e 1/abril (Live)
+
+## 2º semestre de 2027
+
+- Faculdade Infnet: 1/setembro (Live) e 15/setembro (Presencial)
+
+- Faculdade ECDD: 9/setembro (Presencial) e 16/setembro (Live)
+
+# Versão
+
+Este manual está na versão 3.01.
+
+# Atualizações neste manual
+
+- 22/05/26: Revisão completa e mudança do formato para Google Documento.
+
+- 23/07/26: Diversos pequenos ajustes necessários após a reformulação do manual, a partir de feedbacks.
+
+- 11/08/26: Informações complementares sobre a infraestrutura necessária para acompanhar as aulas.
+
+- 24/08/26: Correção no número de horas de atividades complementares de CAV.
+
+Anexo 3: Dicionário
+
+# Dicionário
+
+## Siglas e termos da faculdade
+
+Faculdade ECDD: É o nome de uma das faculdades do Instituto Infnet e significa “Escola de Comunicação e Design Digital”.
+
+Faculdade Infnet: É o nome de uma das faculdades do Instituto Infnet.
+
+ENADE: É uma prova aplicada pelo governo para medir o conhecimento de alunos formados em algumas graduações. Ela é organizada em ciclos trienais e, portanto, somente alunos que pretendem se formar em determinados anos são convocados a fazerem o ENADE, que é obrigatório.
+
+TP (Teste de Performance): Os TPs são trabalhos obrigatórios que o aluno precisa fazer ao longo de cada disciplina. Atrasos e falta de entrega podem acarretar em limitações nos resultados da disciplina ou reprovação.
+
+AT (Assessment): É a avaliação individual que cobre todas as competências previstas para uma Disciplina Regular, geralmente realizada ao final do trimestre para verificar o desempenho do aluno.
+
+CBL (Competency Based Learning): Modelo de ensino adotado pela instituição que significa "aprendizagem baseada em competências". Foca no desenvolvimento prático de habilidades alinhadas às exigências do mercado de trabalho.
+
+PBL (Project/Portfolio Based Learning): Modelo de ensino adotado pela instituição que significa "aprendizagem baseada em projetos ou portfólio". É a essência da metodologia prática, onde o aprendizado ocorre através da execução de projetos e desafios reais.
+
+PB (Projeto de Bloco): Disciplina com duração de dois trimestres, cujo foco é a integração dos conhecimentos do bloco em um projeto prático. A aprovação nesta disciplina é requisito obrigatório para a aprovação nas demais disciplinas do mesmo bloco.
+
+RSE (Relatório Semestral de Estágio): Documento obrigatório, exigido por lei, que o aluno deve apresentar a cada seis meses para comprovar as atividades realizadas no estágio e garantir a contabilização das horas para a formatura.
+
+TAE (Termo Aditivo de Estágio): Documento utilizado exclusivamente para a renovação de um contrato de estágio (TCE) que está prestes a vencer, permitindo a continuidade das atividades por mais um período.
+
+TCE (Termo de Compromisso de Estágio): Instrumento jurídico que formaliza o acordo de estágio entre o aluno, a empresa contratante e a instituição de ensino, detalhando as atividades e obrigações de cada parte conforme a legislação vigente.
+
+TSE (Termo Substitutivo de Estágio): Documento utilizado pelo aluno para solicitar a substituição da carga horária de estágio obrigatório por horas de trabalho ou experiência profissional prévia que tenha relação direta com as competências do curso.
+
+CPA (Comissão Própria de Avaliação): Órgão responsável por coordenar os processos de avaliação interna da instituição. Seus relatórios são fundamentais para o monitoramento e a melhoria contínua da qualidade educacional.
+
+ESG (Environmental, Social and Governance): Termo que se refere às práticas ambientais, sociais e de governança corporativa. O tema é frequentemente abordado na faculdade como parte da formação crítica e cidadã, especialmente em disciplinas eletivas.
+
+FIES (Fundo de Financiamento Estudantil): Programa do Ministério da Educação destinado a financiar a graduação de estudantes regularmente matriculados em cursos superiores privados.
+
+Infnet.Online: Portal oficial de comunicação e gestão acadêmica do aluno. É o sistema utilizado diariamente para acessar aulas ao vivo (via link para Zoom), baixar materiais didáticos, interagir com professores, coordenadores e colegas, e acompanhar o progresso acadêmico.
+
+Moodle: Plataforma de aprendizagem (Learning Management System) utilizada para a gestão das disciplinas. É onde o aluno consulta o calendário de entregas, envia os trabalhos (TPs, ATs) e recebe as correções e feedbacks dos professores.
+
+OSC (Organizações da Sociedade Civil): Organizações privadas sem fins lucrativos que podem ofertar vagas de estágio, desde que o ambiente e as atividades oferecidas tenham relação direta com as competências da graduação do aluno.
+
+ProUni (Programa Universidade para Todos): Programa do Governo Federal que oferece bolsas de estudo integrais e parciais para cursos de graduação em instituições de ensino superior privadas.
+
+RVDD (Representação Visual do Diploma Digital): Documento em formato PDF que apresenta visualmente os dados do diploma digital. Embora não seja o arquivo nativo do diploma, possui valor informativo e pode ser impresso pelo aluno.
+
+UX/UI: Sigla que une User Experience (Experiência do Usuário) e User Interface (Interface do Usuário). São áreas fundamentais em diversos cursos de design e tecnologia, focadas na criação de interfaces digitais funcionais e centradas no usuário.
+
+## Siglas das graduações
+
+ADS (Análise e Desenvolvimento de Sistemas): Graduação da Faculdade Infnet focada na criação e manutenção de sistemas de software, lógica de programação e arquitetura de sistemas para o mercado de TI.
+
+BDD (Banco de Dados): Graduação da Faculdade Infnet voltada para engenharia de dados, business intelligence, data warehousing e gestão de infraestrutura e segurança da informação.
+
+CDD (Ciência de Dados): Graduação da Faculdade Infnet especializada em inteligência artificial, machine learning, análise estatística de dados e big data para suporte à decisão estratégica.
+
+CAV (Cinema e Audiovisual): Graduação da Faculdade ECDD voltada para a produção cinematográfica e audiovisual, abrangendo roteiro, direção, documentários, ficção seriada e conteúdo publicitário.
+
+DDA (Design de Animação): Graduação da Faculdade ECDD focada nas técnicas de animação 2D e 3D, efeitos visuais (VFX), motion graphics e criação de personagens.
+
+DDG (Design de Games): Graduação da Faculdade ECDD especializada no desenvolvimento de jogos digitais, incluindo design de níveis, mecânicas, narrativas interativas e gamificação.
+
+DGR (Design Gráfico - Live): Graduação da Faculdade ECDD na modalidade Live, focada em web design, design editorial, UX/UI e identidade visual.
+
+DGD (Design Gráfico - Bacharelado Presencial): Bacharelado presencial da Faculdade ECDD, com foco aprofundado em direção de arte, fotografia, design editorial, motion graphics e UX/UI.
+
+EDC (Engenharia de Computação): Graduação da Faculdade Infnet que integra software e hardware, abordando sistemas embarcados, robótica, inteligência artificial e computação avançada.
+
+EDS (Engenharia de Software): Graduação da Faculdade Infnet focada na construção de sistemas escaláveis, abrangendo nuvem (cloud computing), cibersegurança, engenharia de dados e arquitetura de software de grande porte.
+
+JDG (Jogos Digitais): Graduação da Faculdade ECDD concentrada na criação de jogos de RPG, jogos educacionais, 3D FPS e experiências de narrativas interativas.
+
+RDC (Redes de Computadores): Graduação da Faculdade Infnet voltada para infraestrutura de redes, protocolos de comunicação, arquitetura de sistemas e conectividade.
+
+SDC (Segurança da Informação e Defesa Cibernética): Graduação da Faculdade Infnet especializada na proteção de dados, segurança de sistemas, criptografia e resposta a incidentes cibernéticos.
+
+TDI (Tecnologia da Informação): Graduação da Faculdade Infnet com foco abrangente em tecnologias emergentes, gestão de TI e suporte a sistemas corporativos.
+
+## Valores Institucionais
+
+Corretude: É a atitude de cumprir o combinado. É não “driblar” as normas. É não ser “malandro”. É não “enrolar” outras pessoas. É ser imparcial. É não se omitir ao ver alguém fazendo algo errado (é obrigação de todos reportar e/ou agir quando se vê algo errado). É buscar educar e não “mimar”. É não "dar carteirada" (que é referir-se a uma “autoridade” sem relação com o caso em questão para conseguir seu objetivo “na marra”). É ser honesto por opção, especialmente em situações que não lhe favoreçam, e incentivar os outros a serem honestos. É tratar com alunos e futuros alunos de forma honesta, inclusive durante os processos seletivos e comerciais. É agir com respeito aos direitos humanos, sem preconceitos de raça, orientação sexual ou escolha religiosa.
+
+Trabalho em Equipe: É a atitude de compartilhar seu conhecimento respondendo dúvidas, treinando colegas, escrevendo padrões e mostrando-se disponível. É buscar conhecer a operação como um todo, mesmo mantendo-se focado em suas metas. É conseguir contribuir e trabalhar de forma produtiva não apenas com a sua equipe, mas também com as demais equipes da instituição e equipes de fornecedores externos. É estar sempre de bom-humor, com atitude construtiva, positiva, buscando o melhor, sendo solícito e agindo com os alunos, colaboradores e fornecedores com cordialidade, atenção e respeito.
+
+Foco nos Resultados: É a atitude de, ao receber uma meta, planejá-la e trabalhar com seus fornecedores internos e externos para batê-la. É agir sempre com atenção especial para o resultado do trabalho, medindo parciais, inclusive para evitar percepções erradas sobre o que é esperado, e evitando distrações pelo meio do caminho. É a séria e focada preocupação, refletida em atitudes e comportamentos, com os resultados do trabalho, especialmente os estabelecidos em metas.
+
+Espírito de Excelência com qualidade nos resultados: É surpreender os colegas e o chefe com a qualidade de cada trabalho feito. É fazer mais do que se espera. É a atitude, em tudo que se faz, de querer fazer o melhor do mundo. É nunca estar plenamente satisfeito com os próprios resultados, é não se acomodar com a situação atual. É buscar entregar resultados cada vez melhores, documentos bem revisados e formatados, pesquisas e análises mais aprofundadas, cálculos corretos, comunicações bem feitas, etc.
+
+Franqueza Empática: É a atitude de sempre preferir a sinceridade e a transparência nos relacionamentos, em todos os níveis, inclusive aceitando e valorizando a franqueza de outros colaboradores em relação ao seu trabalho. É a atitude de dizer a verdade, mas de forma cuidadosa, reservada e no tom e meios adequados, de acordo com o receptor. Ser duro com os fatos mas suave com as pessoas. E para o receptor, ser compreensivo caso a forma não tenha sido ideal. É relatar quando encontra algo errado, e que necessita ser corrigido. É incentivar a troca de ideias e o questionamento em busca da verdade, o mais rápido possível. É dar feedbacks precisos e com agilidade.
+
+Disciplina: É valorizar os padrões e processos da sua área e da instituição. É trabalhar com pontualidade e assiduidade, sendo fiel aos compromissos assumidos, incluindo seus horários de atendimento e reuniões, e prazos combinados. É chegar nas reuniões com seu “dever de casa cumprido” e evitar desmarcá-las com frequência, evitando desperdiçar o tempo dos demais participantes. É cumprir as regras da sua área e da instituição, tais como as 4 marcações diárias do ponto eletrônico, os limites do banco de horas, o horário de almoço e vestuário adequado.
+
+Atitude de Dono: É agir como se fosse o dono da instituição. É ser apaixonado pelo que faz, vivenciando profundamente o dia a dia operacional. É estar comprometido e presente na instituição. No caso de gestores, é também estar verdadeiramente à frente da sua área, resolvendo os problemas que surgem no dia a dia, com uma atitude “mão na massa”. É ser capaz de ir além dos interesses das próprias áreas e funções, buscando oportunidades de melhoria da instituição como um todo.
+
+Apoio ao Método de Gestão: É adotar as "Quatro Chaves para a Gestão de Pessoas" (Selecionar com Base no Talento, Definir os Resultados Certos, Concentrar-se nos Pontos Fortes, Encontrar a Adequação Certa) conforme definido no livro “Quebre Todas as Regras”. É buscar feedbacks a partir dos resultados da pesquisa Gallup Q12. É apoiar a melhoria contínua, via métodos PDCA e SDCA. É criar, atualizar, treinar e conseguir que sua equipe use padrões e planos de ação, fazendo análises mais profundas de causas.
+
+Meritocracia e Diferenciação: É tratar colaboradores de forma diferenciada, conforme seu mérito: histórico de desempenho e de alinhamento aos valores. É priorizar o mérito e não o relacionamento. É reconhecer o mérito com frequência e de forma personalizada. O gestor deve priorizar atender as demandas das pessoas de mais alto desempenho de sua equipe.
+
+[1] Exceto a graduação em Marketing.
+
+[2] O limite de faltas não se aplica aos alunos da modalidade Live que começaram a graduação até 2025 e mantiveram a continuidade dos seus estudos.
+
+[3] Nas Disciplinas Regulares, o prazo limite é a segunda-feira da semana 10 do calendário acadêmico, e nas de Projeto de Bloco o prazo limite é a segunda-feira da semana 8 do segundo ciclo do bloco do calendário acadêmico.
+
+[4] Alunos da modalidade Live que iniciaram sua graduação em 2025 ou antes e não interromperam seus estudos, não possuem o requisito de presença ao vivo. As disciplinas de Planejamento de Curso e Carreira e Fluência em IA não reprovam por frequência, embora seja extremamente recomendado que sejam assistidas ao vivo.
+
+[5] Projetos de Bloco iniciados em 2024 ou antes não são requisitos para aprovação das demais disciplinas do bloco.
+
+[6] Alunos da modalidade Live que iniciaram sua graduação em 2025 ou antes e não interromperam seus estudos, não possuem o requisito de presença ao vivo. As disciplinas de Planejamento de Curso e Carreira e Fluência em IA não reprovam por frequência, embora seja extremamente recomendado que sejam assistidas ao vivo.
+
+[7] Em disciplinas de Projeto de Bloco, o aluno pode ficar reprovado caso atrase TPs, ainda que dentro do prazo limite.
+
+[8]Os blocos de uma mesma Roda não têm pré-requisitos entre si. Nestes casos, o aluno pode seguir seus estudos e refazer o bloco no final da Roda em que está estudando. Se for o Bloco de Entrada, o aluno deverá refazê-lo imediatamente, antes de prosseguir.
+
+[9] A exigência foi implantada pelo Plano Nacional de Educação, estabelecido pela Lei 13.005 de 2014, que determinou que projetos de extensão devem corresponder a pelo menos 10% da carga horária de todos os cursos de graduação no Brasil, em vigor a partir de 2023.
+
+[10] Exceto quando informado no Planejamento de Estudos do aluno, para atender situações extraordinárias.
+
+[11] Clique e selecione "USAR MODELO" no canto superior direito
+
+[12] Clique e selecione "USAR MODELO" no canto superior direito
+
+[13] Se o TCE estiver impresso, o aluno pode fotografá-lo todas as páginas e usar este site para juntá-las em um PDF.
+
+[14] Clique e selecione "USAR MODELO" no canto superior direito.
+
+[15] Caso o estágio tenha sido encerrado antes do período definido no termo, é preciso enviar a Carta de Desligamento de Estágio por requerimento antes de enviar o Relatório.
+
+[16] Alunos com cota excedida recebem uma mensagem de erro "servidor rejeitado".
+
+[17] clique em "USAR MODELO" no canto superior direito
+
+[18] A conta de aluno é encerrada pela Google se não for acessada por dois anos. Nos casos em que o aluno interrompe seus estudos sem completar o curso, ela pode ser encerrada pela instituição. A política de manter a conta de aluno após o encerramento dos estudos pode ser alterada caso a Google modifique as regras da parceria educacional.
+
+[19] A opção para solicitar fica disponível no sistema de requerimentos apenas em certos períodos do ano.
+
+[20] Exceto a graduação em Marketing.
+
+[21] Esta é a denominação oficial do programa, como constará no diploma do aluno.
+
+[22] Caso o aluno interrompa sua graduação, a regra será a vigente no seu retorno.
+
+[23] Esta é a denominação oficial do programa, como constará no diploma.
+
+[24] Caso o aluno interrompa sua graduação, a regra será a vigente no seu retorno.
+
+[25] Caso o aluno interrompa sua graduação, a regra será a vigente no seu retorno.
+
+[26] Esta é a denominação oficial do programa, como constará no diploma do aluno.
+
+[27] Caso o aluno interrompa sua graduação, a regra será a vigente no seu retorno.
+
+[28] Esta é a denominação oficial do programa, como constará no diploma do aluno.
+
+[29] A partir de 2023, graduações que exigiam mais de 140 horas em atividades complementares foram ajustadas considerando a entrada em vigor da exigência de horas em atividades de extensão.
+
+[30] Caso o aluno interrompa sua graduação, a regra será a vigente no seu retorno.
+
+[31] Esta é a denominação oficial do programa, como constará no diploma do aluno.
+
+[32] A partir de 2023, graduações que exigiam mais de 140 horas em atividades complementares foram ajustadas considerando a entrada em vigor da exigência de horas em atividades de extensão.
+
+[33] Caso o aluno interrompa sua graduação, a regra será a vigente no seu retorno.
+
+[34] Esta é a denominação oficial do programa, como constará no diploma do aluno.
+
+[35] A partir de 2023, graduações que exigiam mais de 140 horas em atividades complementares foram ajustadas considerando a entrada em vigor da exigência de horas em atividades de extensão.
+
+[36] Caso o aluno interrompa sua graduação, a regra será a vigente no seu retorno.
+
+[37] Esta é a denominação oficial do programa, como constará no diploma do aluno.
+
+[38] Caso o aluno interrompa sua graduação, a regra será a vigente no seu retorno.
+
+[39] Esta é a denominação oficial do programa, como constará no diploma do aluno.
+
+[40] A partir de 2023, graduações que exigiam mais de 140 horas em atividades complementares foram ajustadas considerando a entrada em vigor da exigência de horas em atividades de extensão.
+
+[41] Caso o aluno interrompa sua graduação, a regra será a vigente no seu retorno.
+
+[42] Esta é a denominação oficial do programa, como constará no diploma do aluno.
+
+[43] A partir de 2023, graduações que exigiam mais de 140 horas em atividades complementares foram ajustadas considerando a entrada em vigor da exigência de horas em atividades de extensão.
+
+[44] Caso o aluno interrompa sua graduação, a regra será a vigente no seu retorno.
+
+[45] Esta é a denominação oficial do programa, como constará no diploma do aluno.
+
+[46] Caso o aluno interrompa sua graduação, a regra será a vigente no seu retorno.
+
+[47] Esta é a denominação oficial do programa, como constará no diploma do aluno.
+
+[48] Caso o aluno interrompa sua graduação, a regra será a vigente no seu retorno.
+
+[49] Esta é a denominação oficial do programa, como constará no diploma.
+
+[50] Caso o aluno interrompa sua graduação, a regra será a vigente no seu retorno.
+
+[51] Blocos do Calendário 2 iniciam em abril e outubro.
+
+[52] Blocos do Calendário 1 iniciam em janeiro e julho.
+
+[53] Esta é a denominação oficial do programa, como constará no diploma.
+
+[54] Esta é a denominação oficial do programa, como constará no diploma.
+
+[55] Caso o aluno interrompa sua graduação, a regra será a vigente no seu retorno.

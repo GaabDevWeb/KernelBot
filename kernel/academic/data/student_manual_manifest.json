@@ -1,0 +1,62 @@
+{
+  "title": "Manual do Aluno — Faculdade Infnet (graduação)",
+  "default_course_slug": "analise-e-desenvolvimento-de-sistemas",
+  "total_budget_chars": 14000,
+  "always_on_max_chars": 2800,
+  "matched_max_chars": 5000,
+  "always_on_slugs": [
+    "o-minimo-para-saber",
+    "politica-de-ia",
+    "sistemas",
+    "presencas",
+    "atendimento",
+    "links-uteis"
+  ],
+  "keyword_map": {
+    "politica-de-ia": [
+      "ia generativa",
+      "inteligencia artificial",
+      "chatgpt",
+      "copilot",
+      "gemini",
+      "claude",
+      "sinal verde",
+      "sinal amarelo",
+      "sinal vermelho",
+      "plagio",
+      "integridade academica"
+    ],
+    "presencas": ["presenca", "presença", "falta", "faltas", "frequencia", "frequência", "25%", "ausencia"],
+    "atendimento": ["secretaria", "atendimento", "suporte", "financeiro", "requerimento", "psicopedagogia", "carreiras"],
+    "dedicacao": ["dedicacao", "dedicação", "horas de estudo", "trilha", "trilhas de aprendizagem"],
+    "atividades-complementares": ["atividade complementar", "atividades complementares", "ac ", "horas ac"],
+    "extensao": ["extensao", "extensão", "projeto supervisionado", "pse"],
+    "estagio": ["estagio", "estágio", "estagiar"],
+    "eletivas": ["eletiva", "eletivas"],
+    "formatura": ["formatura", "colacao", "colação", "diploma"],
+    "comportamento": ["comportamento", "disciplinar", "regime disciplinar", "conduta"],
+    "rematricula-e-trancamento": ["rematricula", "rematrícula", "trancamento", "trancar", "cancelamento"],
+    "aproveitamento-e-transferencias": ["aproveitamento", "transferencia", "transferência"],
+    "avaliacao-presencial": ["avaliacao presencial", "avaliação presencial", "prova presencial"],
+    "carteirinha-e-transporte": ["carteirinha", "transporte", "passe"],
+    "bibliotecas": ["biblioteca", "oreilly", "o'reilly", "acervo"],
+    "calendario-academico": ["calendario academico", "calendário acadêmico", "ferias", "férias", "recesso"],
+    "portfolio-de-projetos": ["portfolio", "portfólio"],
+    "links-uteis": ["links uteis", "links úteis", "infnet.online", "moodle"],
+    "sistemas": ["moodle", "zoom", "infnet.online", "google workspace", "login", "sistema"],
+    "modelo-de-ensino": ["cbl", "pbl", "metodologia", "competencia", "competência", "assessment", "tp ", "trabalho pratico"],
+    "o-minimo-para-saber": ["manual do aluno", "bloco de entrada", "reprova", "reentrega", "arguicao"]
+  },
+  "discipline_course_slugs": {
+    "python": "analise-e-desenvolvimento-de-sistemas",
+    "visualizacao-sql": "analise-e-desenvolvimento-de-sistemas",
+    "sql-modelagem-relacional": "analise-e-desenvolvimento-de-sistemas",
+    "python-processamento-dados": "analise-e-desenvolvimento-de-sistemas",
+    "projeto-bloco": "analise-e-desenvolvimento-de-sistemas",
+    "planejamento-curso-carreira": "analise-e-desenvolvimento-de-sistemas",
+    "fluencia-ia": "analise-e-desenvolvimento-de-sistemas",
+    "fundamentos-java": "analise-e-desenvolvimento-de-sistemas",
+    "fundamentos-csharp": "analise-e-desenvolvimento-de-sistemas",
+    "projeto-bloco-backend": "analise-e-desenvolvimento-de-sistemas"
+  }
+}

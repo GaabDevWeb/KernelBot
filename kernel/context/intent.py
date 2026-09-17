@@ -32,6 +32,7 @@ class TemporalIntent:
 def _normalize(text: str) -> str:
     """minúsculas + sem acentos, para regexes estáveis em PT-BR."""
     lowered = (text or "").strip().lower()
+    lowered = re.sub(r"\bhj\b", "hoje", lowered)
     decomposed = unicodedata.normalize("NFKD", lowered)
     return "".join(c for c in decomposed if not unicodedata.combining(c))
 
@@ -79,6 +80,8 @@ _CALENDAR_FACT_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
         r"\b(tp|tps|at|ats)\s+(temos|tem)\s+(para\s+)?entregar\b",
         r"\bqual\s+tp\s+(e|eh|tem|temos)\b",
         r"\bhoje\s+tem\s+(java|python|sql|c#|csharp|backend)\b",
+        r"\b(nao\s+)?tem\s+" + _CALENDAR_TERMS + r"\b",
+        r"\b(segunda|terca|quarta|quinta|sexta)(?:-feira)?\b.*\b(nao\s+)?tem\s+aula\b",
     )
 )
 

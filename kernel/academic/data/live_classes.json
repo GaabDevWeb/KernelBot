@@ -1,0 +1,94 @@
+{
+  "title": "Links das aulas ao vivo (Zoom INFNET)",
+  "semesters": [
+    {
+      "id": 1,
+      "label": "Semestre 1",
+      "sessions": [
+        {
+          "discipline_id": "python",
+          "label": "Introdução a Programação com Python",
+          "weekday": "Segunda-feira",
+          "time": "20h30",
+          "zoom_url": "https://infnet.zoom.us/j/95017611174"
+        },
+        {
+          "discipline_id": "planejamento-curso-carreira",
+          "label": "Planejamento de Curso e Carreira",
+          "weekday": "Terça-feira",
+          "time": "19h30",
+          "zoom_url": "https://infnet.zoom.us/j/97952185272"
+        },
+        {
+          "discipline_id": "visualizacao-sql",
+          "label": "Introdução a Visualização de Dados e SQL",
+          "weekday": "Terça-feira",
+          "time": "20h30",
+          "zoom_url": "https://infnet.zoom.us/j/97981048599"
+        },
+        {
+          "discipline_id": "python",
+          "label": "Introdução a Programação com Python",
+          "weekday": "Quarta-feira",
+          "time": "20h30",
+          "zoom_url": "https://infnet.zoom.us/j/95017611174"
+        },
+        {
+          "discipline_id": "visualizacao-sql",
+          "label": "Introdução a Visualização de Dados e SQL",
+          "weekday": "Quinta-feira",
+          "time": "20h30",
+          "zoom_url": "https://infnet.zoom.us/j/97981048599"
+        },
+        {
+          "discipline_id": "projeto-bloco",
+          "label": "Projeto de Bloco",
+          "weekday": "Sexta-feira",
+          "time": "20h30",
+          "zoom_url": "https://infnet.zoom.us/j/99977385075"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "label": "Semestre 2",
+      "sessions": [
+        {
+          "discipline_id": "fundamentos-csharp",
+          "label": "Fundamentos de Desenvolvimento com C#",
+          "weekday": "Segunda-feira",
+          "time": "20h30",
+          "zoom_url": "https://infnet.zoom.us/j/94117523851"
+        },
+        {
+          "discipline_id": "fundamentos-csharp",
+          "label": "Fundamentos de Desenvolvimento com C#",
+          "weekday": "Terça-feira",
+          "time": "20h30",
+          "zoom_url": "https://infnet.zoom.us/j/94117523851"
+        },
+        {
+          "discipline_id": "projeto-bloco-backend",
+          "label": "Projeto de Bloco",
+          "weekday": "Quarta-feira",
+          "time": "20h30",
+          "zoom_url": "https://infnet.zoom.us/j/97134165078"
+        },
+        {
+          "discipline_id": "fundamentos-java",
+          "label": "Fundamentos de Desenvolvimento com Java",
+          "weekday": "Quinta-feira",
+          "time": "20h30",
+          "zoom_url": "https://infnet.zoom.us/j/95408861227"
+        },
+        {
+          "discipline_id": "fundamentos-java",
+          "label": "Fundamentos de Desenvolvimento com Java",
+          "weekday": "Sexta-feira",
+          "time": "20h30",
+          "zoom_url": "https://infnet.zoom.us/j/95408861227"
+        }
+      ]
+    }
+  ]
+}
