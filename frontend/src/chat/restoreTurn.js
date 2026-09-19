@@ -5,8 +5,8 @@ import {
     setContextBadges,
     setTurnHintBadge,
     mountMessageToolbar,
+    buildMessageMeta,
 } from "../components/MessageRow.js";
-import { fmt } from "../utils/time.js";
 import { stripDisciplinePrefixForDisplay } from "../config/disciplines.js";
 import { buildIssMarkdownContext } from "../utils/issLinks.js";
 
@@ -286,6 +286,7 @@ export function restoreBotTurn({
  *   sourceHandlers?: { onPinSource?: (d: Record<string, unknown>) => void },
  *   chipHandlers?: { onSelect: (c: { title?: string, discipline?: string, slug?: string }) => void },
  *   toolbarHandlers?: { onRegenerate?: () => void, isLastBot?: boolean },
+ *   botAvatarUrl?: string,
  * }} opts
  */
 export function appendMessageRowWithMeta(chatBox, opts) {
@@ -302,16 +303,14 @@ export function appendMessageRowWithMeta(chatBox, opts) {
         sourceHandlers,
         chipHandlers,
         toolbarHandlers,
+        botAvatarUrl,
     } = opts;
 
     const row = document.createElement("div");
     row.classList.add("message-row", role);
     if (animated) row.style.animationDelay = "0ms";
 
-    const meta = document.createElement("div");
-    meta.className = "message-meta";
-    const now = new Date();
-    meta.textContent = role === "user" ? `Você · ${fmt(now)}` : `Kernel · ${fmt(now)}`;
+    const meta = buildMessageMeta(role, botAvatarUrl);
 
     const breadcrumbs = document.createElement("div");
     breadcrumbs.className = "message-breadcrumbs";

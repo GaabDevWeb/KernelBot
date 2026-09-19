@@ -16,24 +16,38 @@ export function getHeaderConversationLabelEl() {
     return document.getElementById("header-conversation-label");
 }
 
+/** @returns {HTMLImageElement | null} */
+export function getHeaderConversationAvatarEl() {
+    return /** @type {HTMLImageElement | null} */ (
+        document.getElementById("header-conversation-avatar")
+    );
+}
+
 export function refreshHeaderConversationLabelVisibility() {
     const el = getHeaderConversationLabelEl();
-    if (!el) return;
+    const avatarEl = getHeaderConversationAvatarEl();
 
     const sidebar = document.getElementById("conversation-sidebar");
     const collapsed = sidebar?.classList.contains("conversation-sidebar--collapsed") ?? false;
     const show = !isLanding() && (isChatActive() || collapsed);
-    el.hidden = !show;
+    if (el) el.hidden = !show;
+    if (avatarEl) avatarEl.hidden = !show || !avatarEl.src;
 }
 
 /**
  * @param {string} title
+ * @param {string} [avatarUrl]
  */
-export function updateHeaderConversationLabel(title) {
+export function updateHeaderConversationLabel(title, avatarUrl) {
     const el = getHeaderConversationLabelEl();
-    if (!el) return;
-    const full = String(title || "Nova conversa").trim() || "Nova conversa";
-    el.textContent = formatConversationLabelTitle(full);
-    el.title = full;
+    if (el) {
+        const full = String(title || "Nova conversa").trim() || "Nova conversa";
+        el.textContent = formatConversationLabelTitle(full);
+        el.title = full;
+    }
+    const avatarEl = getHeaderConversationAvatarEl();
+    if (avatarEl && avatarUrl) {
+        avatarEl.src = avatarUrl;
+    }
     refreshHeaderConversationLabelVisibility();
 }

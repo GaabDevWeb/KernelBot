@@ -6,7 +6,7 @@ const LANDING_CROSSFADE_MS = 250;
 const SCROLL_BOTTOM_THRESHOLD = 80;
 
 /**
- * @param {{ chatBox: HTMLElement, emptyState: HTMLElement | null, renderMarkdown: (t: string) => string, sourceHandlers?: { onPinSource?: (d: Record<string, unknown>) => void }, chipHandlers?: { onSelect: (c: { title?: string, discipline?: string, slug?: string }) => void }, onRegenerate?: () => void }} opts
+ * @param {{ chatBox: HTMLElement, emptyState: HTMLElement | null, renderMarkdown: (t: string) => string, sourceHandlers?: { onPinSource?: (d: Record<string, unknown>) => void }, chipHandlers?: { onSelect: (c: { title?: string, discipline?: string, slug?: string }) => void }, onRegenerate?: () => void, getBotAvatarUrl?: () => string }} opts
  */
 export function createChatView({
     chatBox,
@@ -15,6 +15,7 @@ export function createChatView({
     sourceHandlers,
     chipHandlers,
     onRegenerate,
+    getBotAvatarUrl,
 }) {
     /** @type {HTMLButtonElement | null} */
     let scrollFab = null;
@@ -150,6 +151,7 @@ export function createChatView({
     ) {
         hideEmptyState();
         const toolbarHandlers = toolbarHandlersForRole(role, text);
+        const botAvatarUrl = role === "bot" ? getBotAvatarUrl?.() : undefined;
         if (role === "bot" && (turnMeta || sources?.length || sourceDetails?.length)) {
             return appendMessageRowWithMeta(chatBox, {
                 role,
@@ -164,6 +166,7 @@ export function createChatView({
                 sourceHandlers,
                 chipHandlers,
                 toolbarHandlers,
+                botAvatarUrl,
             });
         }
         return appendMessageRow(chatBox, {
@@ -177,6 +180,7 @@ export function createChatView({
             scrollBottom,
             sourceHandlers,
             toolbarHandlers,
+            botAvatarUrl,
         });
     }
 
@@ -187,6 +191,7 @@ export function createChatView({
             const isLastBot =
                 role === "bot" &&
                 !hist.slice(index + 1).some((t) => t.role === "bot");
+            const botAvatarUrl = role === "bot" ? getBotAvatarUrl?.() : undefined;
             if (role === "bot" && (turnMeta || sources?.length || sourceDetails?.length)) {
                 appendMessageRowWithMeta(chatBox, {
                     role,
@@ -201,6 +206,7 @@ export function createChatView({
                     sourceHandlers,
                     chipHandlers,
                     toolbarHandlers: { onRegenerate, isLastBot },
+                    botAvatarUrl,
                 });
             } else {
                 appendMessageRow(chatBox, {
@@ -214,6 +220,7 @@ export function createChatView({
                     scrollBottom,
                     sourceHandlers,
                     toolbarHandlers: { onRegenerate, isLastBot: role === "bot" && isLastBot },
+                    botAvatarUrl,
                 });
             }
         });
@@ -235,7 +242,7 @@ export function createChatView({
 
     function startBotStream() {
         hideEmptyState();
-        return createStreamingBotRow(chatBox, scrollBottom);
+        return createStreamingBotRow(chatBox, scrollBottom, getBotAvatarUrl?.());
     }
 
     return {

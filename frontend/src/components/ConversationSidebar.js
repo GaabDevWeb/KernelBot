@@ -5,6 +5,7 @@ import {
     restoreConversation,
     switchConversation,
 } from "../utils/conversations.js";
+import { avatarUrl } from "../utils/avatars.js";
 import { syncUrlState } from "../utils/deepLink.js";
 import { showToast } from "../utils/toast.js";
 import {
@@ -394,14 +395,6 @@ export function createConversationSidebar(opts) {
         return menuWrap;
     }
 
-    /**
-     * @param {string} title
-     */
-    function conversationInitial(title) {
-        const trimmed = (title || "N").trim();
-        return trimmed.charAt(0).toUpperCase();
-    }
-
     function selectConversation(convId) {
         if (convId === getActiveId()) {
             closeMobile();
@@ -471,6 +464,13 @@ export function createConversationSidebar(opts) {
             btn.setAttribute("role", "listitem");
             if (conv.id === activeId) btn.classList.add("conversation-sidebar__item--active");
 
+            const avatarImg = document.createElement("img");
+            avatarImg.className = "conversation-sidebar__item-avatar";
+            avatarImg.src = avatarUrl(conv.avatar);
+            avatarImg.alt = "";
+            avatarImg.setAttribute("aria-hidden", "true");
+            btn.appendChild(avatarImg);
+
             const label = document.createElement("span");
             label.className = "conversation-sidebar__item-label";
             label.textContent = title;
@@ -486,7 +486,12 @@ export function createConversationSidebar(opts) {
             const initialBtn = document.createElement("button");
             initialBtn.type = "button";
             initialBtn.className = "conversation-sidebar__item-initial";
-            initialBtn.textContent = conversationInitial(title);
+            const initialAvatarImg = document.createElement("img");
+            initialAvatarImg.className = "conversation-sidebar__item-initial-avatar";
+            initialAvatarImg.src = avatarUrl(conv.avatar);
+            initialAvatarImg.alt = "";
+            initialAvatarImg.setAttribute("aria-hidden", "true");
+            initialBtn.appendChild(initialAvatarImg);
             initialBtn.title = title;
             initialBtn.setAttribute("aria-label", title);
             initialBtn.addEventListener("click", () => selectConversation(conv.id));
