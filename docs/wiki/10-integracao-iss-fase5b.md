@@ -56,6 +56,17 @@ Objetivos: {csv separado por ;}
 - Falha CI se drift crítico
 - `POST /reload` após ingest bem-sucedido
 
+## Rows extra: transcrições e calendário
+
+Além das lições, o ingest do ISS (`knowledge_extras.py`) grava na mesma tabela:
+
+| Tipo | `discipline` | `slug` | Conteúdo |
+|------|--------------|--------|----------|
+| Transcrição bruta | a da aula | `transcricao__NN__DDMMYYYY` | Texto integral do `.vtt` com `[mm:ss]` a cada ~60 s; sem nomes de quem fala |
+| Calendário | `calendario` | `calendario-YYYY-trim-N` | Resumo de entregas TP/AT/PB + grelha semanal (planilha pública Infnet) |
+
+No KernelBot nada muda estruturalmente: são rows normais, chunkadas a 500 palavras. O `__NN__` do slug vira «Aula NN» na UI; o título vem da 1.ª linha do chunk quando a row não está no catálogo. Essas chaves aparecem como `index_only` no `/health/catalog` — o `verify-kernelbot-sync.mjs` exclui-as da contagem de lições e só falha por `catalog_only`.
+
 ## O que o KernelBot **não** faz na ingest
 
 | Não faz | Quem faz |

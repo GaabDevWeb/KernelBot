@@ -539,11 +539,14 @@ def _build_source_details_for_ui(
                 slug = parts[0]
 
         entry = lesson_catalog.entry_for_source(src) if lesson_catalog else None
-        lesson_title = (
-            (entry.title or entry.name).strip()
-            if entry
-            else _display_name_from_source(src)
-        )
+        if entry:
+            lesson_title = (entry.title or entry.name).strip()
+        else:
+            # Rows fora do catálogo (transcrições, calendário): o chunk começa pelo título
+            # (`{title}\n…` ou `Título: {title}\n…` em engine.database._chunk_text).
+            first_line = (chunk.get("text") or "").split("\n", 1)[0].strip()
+            first_line = first_line.removeprefix("Título:").strip()
+            lesson_title = first_line or _display_name_from_source(src)
         chunk_excerpt = _excerpt_for_ui(chunk.get("text") or "")
         catalog_excerpt = (entry.excerpt or "").strip() if entry else ""
         excerpt = chunk_excerpt or _excerpt_for_ui(catalog_excerpt, max_len=220)

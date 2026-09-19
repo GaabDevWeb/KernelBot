@@ -120,12 +120,13 @@ Se **não** houver fonte e o tema estiver fora do material, o Kernel deve dizer 
 
 ## Dúvidas sobre a faculdade (prazos, professores, Living Code)
 
-Hoje o bot responde melhor sobre **conteúdo de aula**. Informação administrativa (datas oficiais, regulamento completo, corpo docente) depende de estar **indexada** no corpus.
+**Datas de TP, AT e Projeto de Bloco**: o calendário acadêmico oficial está indexado por trimestre (`/calendario` ou pergunte «quando é a entrega do TP2?»). O bot responde com a **semana** (ex.: 09 a 14/11); o dia e a hora exatos de cada entrega são definidos pelo professor no portal — confirme lá.
 
-Se a resposta for vaga ou disser que não encontrou na base:
+**«O que o professor disse sobre X?»**: além das lições resumidas, as **transcrições das aulas** estão indexadas com marcadores de minuto `[mm:ss]`. Quando a resposta citar «aula 11, por volta de [23:10]», é o ponto da gravação para conferir.
+
+Regulamento completo, corpo docente e outras informações administrativas ainda **não** estão no corpus. Se a resposta for vaga ou disser que não encontrou na base:
 
 - Consulte o **portal / AVA** e a **coordenação**
-- Em breve: documentos institucionais dedicados no índice
 
 ---
 
