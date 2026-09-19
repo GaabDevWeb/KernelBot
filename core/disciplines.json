@@ -160,6 +160,32 @@
         "print(",
         "for "
       ]
+    },
+    {
+      "id": "calendario",
+      "label": "Calendário acadêmico",
+      "command": "/calendario",
+      "menuShort": "/calendario",
+      "siloClass": "calendario",
+      "menuDescription": "Datas de TP, AT, Projeto de Bloco, feriados e recessos (calendário oficial)",
+      "queryMarkers": [
+        "calendário",
+        "calendario",
+        "cronograma",
+        "prazo",
+        "data de entrega",
+        "quando é a entrega",
+        "quando e a entrega",
+        "quando entrega",
+        "quando é o at",
+        "quando e o at",
+        "quando é o tp",
+        "quando e o tp",
+        "reentrega",
+        "feriado",
+        "recesso",
+        "trimestre"
+      ]
     }
   ]
 }
